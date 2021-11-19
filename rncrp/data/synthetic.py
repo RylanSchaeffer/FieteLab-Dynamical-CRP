@@ -7,41 +7,41 @@ import torchvision
 from typing import Dict, Union
 
 
-def convert_binary_latent_features_to_left_order_form(
-        indicators: np.ndarray) -> np.ndarray:
-    """
-    Reorder to "Left Ordered Form" i.e. permute columns such that column
-    as binary integers are decreasing
+# def convert_binary_latent_features_to_left_order_form(
+#         indicators: np.ndarray) -> np.ndarray:
+#     """
+#     Reorder to "Left Ordered Form" i.e. permute columns such that column
+#     as binary integers are decreasing
 
-    :param indicators: shape (num customers, num dishes) of binary values
-    """
-    #
-    # def left_order_form_indices_recursion(indicators_matrix, indices, row_idx):
-    #     # https://stackoverflow.com/a/67699595/4570472
-    #     if indices.size <= 1 or row_idx >= indicators_matrix.shape[0]:
-    #         return indices
-    #     left_indices = indices[np.where(indicators_matrix[row_idx, indices] == 1)]
-    #     right_indices = indices[np.where(indicators_matrix[row_idx, indices] == 0)]
-    #     return np.concatenate(
-    #         (left_order_form_indices_recursion(indicators_matrix, indices=left_indices, row_idx=row_idx + 1),
-    #          left_order_form_indices_recursion(indicators_matrix, indices=right_indices, row_idx=row_idx + 1)))
+#     :param indicators: shape (num customers, num dishes) of binary values
+#     """
+#     #
+#     # def left_order_form_indices_recursion(indicators_matrix, indices, row_idx):
+#     #     # https://stackoverflow.com/a/67699595/4570472
+#     #     if indices.size <= 1 or row_idx >= indicators_matrix.shape[0]:
+#     #         return indices
+#     #     left_indices = indices[np.where(indicators_matrix[row_idx, indices] == 1)]
+#     #     right_indices = indices[np.where(indicators_matrix[row_idx, indices] == 0)]
+#     #     return np.concatenate(
+#     #         (left_order_form_indices_recursion(indicators_matrix, indices=left_indices, row_idx=row_idx + 1),
+#     #          left_order_form_indices_recursion(indicators_matrix, indices=right_indices, row_idx=row_idx + 1)))
 
-    # sort columns via recursion
-    # reordered_indices = left_order_form_indices_recursion(
-    #     indicators_matrix=indicators,
-    #     row_idx=0,
-    #     indices=np.arange(indicators.shape[1]))
-    # left_ordered_indicators = indicators[:, reordered_indices]
+#     # sort columns via recursion
+#     # reordered_indices = left_order_form_indices_recursion(
+#     #     indicators_matrix=indicators,
+#     #     row_idx=0,
+#     #     indices=np.arange(indicators.shape[1]))
+#     # left_ordered_indicators = indicators[:, reordered_indices]
 
-    # sort columns via lexicographic sorting
-    left_ordered_indicators_2 = indicators[:, np.lexsort(-indicators[::-1])]
+#     # sort columns via lexicographic sorting
+#     left_ordered_indicators_2 = indicators[:, np.lexsort(-indicators[::-1])]
 
-    # check equality of both approaches
-    # assert np.all(left_ordered_indicators == left_ordered_indicators_2)
+#     # check equality of both approaches
+#     # assert np.all(left_ordered_indicators == left_ordered_indicators_2)
 
-    return left_ordered_indicators_2
+#     return left_ordered_indicators_2
 
-
+# Generate mixture of gaussians
 def generate_gaussian_params_from_gaussian_prior(num_gaussians: int = 3,
                                                  gaussian_dim: int = 2,
                                                  feature_prior_cov_scaling: float = 3.,
