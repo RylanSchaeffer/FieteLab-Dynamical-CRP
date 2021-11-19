@@ -46,21 +46,48 @@ def generate_gaussian_params_from_gaussian_prior(num_gaussians: int = 3,
                                                  gaussian_dim: int = 2,
                                                  feature_prior_cov_scaling: float = 3.,
                                                  gaussian_cov_scaling: float = 0.3):
-    # sample Gaussians' means from prior = N(0, rho * I)
+    # Sample Gaussian means from prior N(0, rho * I)
     means = np.random.multivariate_normal(
         mean=np.zeros(gaussian_dim),
         cov=feature_prior_cov_scaling * np.eye(gaussian_dim),
         size=num_gaussians)
 
-    # all Gaussians have same covariance
     cov = gaussian_cov_scaling * np.eye(gaussian_dim)
     covs = np.repeat(cov[np.newaxis, :, :],
                      repeats=num_gaussians,
                      axis=0)
 
     mixture_of_gaussians = dict(means=means, covs=covs)
-
     return mixture_of_gaussians
+
+# Sample from mixture
+def sample_from_mixture_of_gaussians(seq_len: int = 100,
+                                              num_gaussians: int = None,
+                                              gaussian_params: dict = {}):
+
+    assert num_gaussians is not None
+    assigned_table_seq = np.random.choice(np.arange(num_gaussians),
+                                          replace=True,
+                                          size=seq_len)
+
+    mixture_of_gaussians = generate_mixture_of_gaussians(num_gaussians=num_gaussians, **gaussian_params)
+
+    gaussian_samples_seq = np.array([
+        np.random.multivariate_normal(mean=mixture_of_gaussians['means'][assigned_table],
+                                      cov=mixture_of_gaussians['covs'][assigned_table])
+        for assigned_table in assigned_table_seq])
+
+    assigned_table_seq_one_hot = np.zeros((seq_len, seq_len))
+    assigned_table_seq_one_hot[np.arange(seq_len), assigned_table_seq] = 1.
+
+    result = dict(
+        mixture_of_gaussians=mixture_of_gaussians,
+        assigned_table_seq=assigned_table_seq,
+        assigned_table_seq_one_hot=assigned_table_seq_one_hot,
+        gaussian_samples_seq=gaussian_samples_seq
+    )
+
+    return result
 
 
 def sample_ibp(num_mc_sample: int,
