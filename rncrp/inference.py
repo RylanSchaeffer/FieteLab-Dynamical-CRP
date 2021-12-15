@@ -276,44 +276,39 @@ def dp_means(observations,
     for pass_idx in range(num_passes):
         for obs_idx in range(1, len(observations)):
 
-            # compute distance of new sample from previous centroids:
+            # Obtain distances between current sample and previous centroids:
             distances = np.linalg.norm(observations[obs_idx, :] - means[:num_clusters, :],
                                        axis=1)
             assert len(distances) == num_clusters
 
-            # if smallest distance greater than cutoff concentration_param, create new cluster:
+            # Create a new cluster if the smallest distance > the cutoff:
             if np.min(distances) > concentration_param:
 
-                # increment number of clusters by 1:
                 num_clusters += 1
 
-                # centroid of new cluster = new sample
+                # Set centroid of new cluster = new sample
                 means[num_clusters - 1, :] = observations[obs_idx, :]
                 cluster_assgts[obs_idx, num_clusters - 1] = 1.
 
             else:
-
-                # If the smallest distance is less than the cutoff concentration_param, assign point
-                # to one of the older clusters
+                # Assign sample to a previous cluster
                 assigned_cluster = np.argmin(distances)
                 cluster_assgts[obs_idx, assigned_cluster] = 1.
 
         for cluster_idx in range(num_clusters):
-            # get indices of all observations assigned to that cluster:
+            # Obtain indices of all samples assigned to current cluster:
             indices_of_points_in_assigned_cluster = cluster_assgts[:, cluster_idx] == 1
 
-            # get observations assigned to that cluster
+            # Obtain the samples in the current cluster
             points_in_assigned_cluster = observations[indices_of_points_in_assigned_cluster, :]
-
             assert points_in_assigned_cluster.shape[0] >= 1
 
-            # recompute centroid incorporating this new sample
+            # Recompute centroid after adding current sample
             means[cluster_idx, :] = np.mean(points_in_assigned_cluster,
                                             axis=0)
-
     cluster_assgt_posteriors_running_sum = np.cumsum(np.copy(cluster_assgts), axis=0)
 
-    # returns classes assigned and centroids of corresponding classes
+    # Return the assigned classes and their centroids
     dp_means_offline_results = dict(
         cluster_assgt_posteriors=cluster_assgts,
         cluster_assgt_posteriors_running_sum=cluster_assgt_posteriors_running_sum,

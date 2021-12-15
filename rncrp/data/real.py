@@ -5,6 +5,105 @@ import sklearn
 import torch
 import torchvision
 
+def load_omniglot_dataset(data_dir: str = 'data',
+                          num_data: int = None,
+                          center_crop: bool = True,
+                          avg_pool: bool = False,
+                          feature_extractor_method: str = 'vae',
+                          shuffle=False):
+
+    assert feature_extractor_method in {'vae', None}
+
+    # Preprocess data as needed
+    transforms = [torchvision.transforms.ToTensor()]
+    if center_crop:
+        transforms.append(torchvision.transforms.CenterCrop((80, 80)))
+    if avg_pool:
+        transforms.append(torchvision.transforms.Lambda(
+            lambda x: torch.nn.functional.avg_pool2d(x, kernel_size=9, stride=3)))
+
+    # Obtain dataset
+    omniglot_dataset = torchvision.datasets.Omniglot(
+        root=data_dir,
+        download=True,
+        transform=torchvision.transforms.Compose(transforms))
+
+    # Truncate dataset as instructed
+    alphabets = omniglot_dataset._alphabets.copy()
+    omniglot_dataset._alphabets = random.sample(alphabets, 5)
+
+    omniglot_dataset._characters: List[str] = sum(
+            ([join(a, c) for c in list_dir(join(omniglot_dataset.target_folder, a))] for a in omniglot_dataset._alphabets), [])
+    omniglot_dataset._character_images = [
+        [(image, idx) for image in list_files(join(omniglot_dataset.target_folder, character), ".png")]
+        for idx, character in enumerate(omniglot_dataset._characters)]
+    omniglot_dataset._flat_character_images: List[Tuple[str, int]] = sum(omniglot_dataset._character_images, [])
+
+    # Truncate 
+    if num_data is None:
+        num_data = len(omniglot_dataset._flat_character_images)
+    omniglot_dataset._flat_character_images = omniglot_dataset._flat_character_images[:num_data]
+    dataset_size = len(omniglot_dataset._flat_character_images)
+
+    # Prepare data for use
+    omniglot_dataloader = torch.utils.data.DataLoader(dataset=omniglot_dataset,
+                                                        batch_size=1,
+                                                        shuffle=False)
+    images, labels = [], []
+    for image, label in omniglot_dataloader:
+        labels.append(label)
+        images.append(image[0, 0, :, :])
+    images = torch.stack(images).numpy()
+
+    _, image_height, image_width = images.shape
+    labels = np.array(labels)
+
+    # if feature_extractor_method == 'pca':
+    #     from sklearn.decomposition import PCA
+    #     reshaped_images = np.reshape(images, newshape=(dataset_size, image_height * image_width))
+    #     pca = PCA(n_components=20)
+    #     pca_latents = pca.fit_transform(reshaped_images)
+    #     image_features = pca.inverse_transform(pca_latents)
+    #     # image_features = np.reshape(pca.inverse_transform(pca_latents),
+    #     #                             newshape=(dataset_size, image_height, image_width))
+    #     feature_extractor = pca
+
+    if feature_extractor_method == 'vae':
+        vae_data = np.load(os.path.join(os.getcwd(),
+                                        'data/omniglot_vae/omniglot_data.npz'))
+        labels = vae_data['targets']
+
+        # Order samples by label
+        indices_for_sorting_labels = np.random.choice(np.arange(len(labels)),
+                                                    size=num_data,
+                                                    replace=False)
+        labels = labels[indices_for_sorting_labels][:num_data]
+        images = vae_data['images'][indices_for_sorting_labels][:num_data, :, :]
+        image_features = vae_data['latents'][indices_for_sorting_labels][:num_data, :]
+        feature_extractor = None
+    
+    elif feature_extractor_method is None:
+        image_features = np.reshape(images, newshape=(dataset_size, image_height * image_width))
+        feature_extractor = None
+    
+    # else:
+    #     raise ValueError(f'Impermissible feature method: {feature_extractor_method}')
+
+    # # Optional image visualization
+    # import matplotlib.pyplot as plt
+    # for idx in range(10):
+    #     plt.imshow(image_features[idx], cmap='gray')
+    #     plt.show()
+
+    omniglot_dataset_results = dict(
+        images=images,
+        labels=labels,
+        feature_extractor_method=feature_extractor_method,
+        feature_extractor=feature_extractor,
+        image_features=image_features)
+
+    return omniglot_dataset_results
+
 
 def load_moseq_dataset(data_dir: str = 'data'):
     """
@@ -118,199 +217,66 @@ def load_newsgroup_dataset(data_dir: str = 'data',
     return newsgroup_dataset_results
 
 
-def load_mnist_dataset(data_dir: str = 'data',
-                       num_data: int = None,
-                       center_crop: bool = False,
-                       avg_pool: bool = False,
-                       feature_extractor_method: str = 'pca'):
+# def load_mnist_dataset(data_dir: str = 'data',
+#                        num_data: int = None,
+#                        center_crop: bool = False,
+#                        avg_pool: bool = False,
+#                        feature_extractor_method: str = 'pca'):
 
-    assert feature_extractor_method in {'pca', None}
-    transforms = [torchvision.transforms.ToTensor()]
-    if center_crop:
-        transforms.append(torchvision.transforms.CenterCrop((80, 80)))
-    if avg_pool:
-        transforms.append(torchvision.transforms.Lambda(
-            lambda x: torch.nn.functional.avg_pool2d(x, kernel_size=9, stride=3)))
-        raise NotImplementedError
+#     assert feature_extractor_method in {'pca', None}
+#     transforms = [torchvision.transforms.ToTensor()]
+#     if center_crop:
+#         transforms.append(torchvision.transforms.CenterCrop((80, 80)))
+#     if avg_pool:
+#         transforms.append(torchvision.transforms.Lambda(
+#             lambda x: torch.nn.functional.avg_pool2d(x, kernel_size=9, stride=3)))
+#         raise NotImplementedError
 
-    mnist_dataset = torchvision.datasets.MNIST(
-        root=data_dir,
-        download=True,
-        transform=torchvision.transforms.Compose(transforms))
+#     mnist_dataset = torchvision.datasets.MNIST(
+#         root=data_dir,
+#         download=True,
+#         transform=torchvision.transforms.Compose(transforms))
 
-    if num_data is None:
-        num_data = mnist_dataset.data.shape[0]
-    indices = np.random.choice(np.arange(mnist_dataset.data.shape[0]),
-                               size=num_data,
-                               replace=False)
-    observations = mnist_dataset.data[indices, :, :].numpy()
-    labels = mnist_dataset.targets[indices].numpy()
+#     if num_data is None:
+#         num_data = mnist_dataset.data.shape[0]
+#     indices = np.random.choice(np.arange(mnist_dataset.data.shape[0]),
+#                                size=num_data,
+#                                replace=False)
+#     observations = mnist_dataset.data[indices, :, :].numpy()
+#     labels = mnist_dataset.targets[indices].numpy()
 
-    if feature_extractor_method == 'pca':
-        from sklearn.decomposition import PCA
-        image_height = mnist_dataset.data.shape[1]
-        image_width = mnist_dataset.data.shape[2]
-        reshaped_images = np.reshape(observations, newshape=(num_data, image_height * image_width))
-        pca = PCA(n_components=50)
-        pca_latents = pca.fit_transform(reshaped_images)
-        image_features = np.reshape(pca.inverse_transform(pca_latents),
-                                    newshape=(num_data, image_height, image_width))
-        feature_extractor = pca
-    elif feature_extractor_method is None:
-        image_features = observations.reshape(observations.shape[0], -1)
-        feature_extractor = None
-    else:
-        raise ValueError(f'Impermissible feature method: {feature_extractor_method}')
+#     if feature_extractor_method == 'pca':
+#         from sklearn.decomposition import PCA
+#         image_height = mnist_dataset.data.shape[1]
+#         image_width = mnist_dataset.data.shape[2]
+#         reshaped_images = np.reshape(observations, newshape=(num_data, image_height * image_width))
+#         pca = PCA(n_components=50)
+#         pca_latents = pca.fit_transform(reshaped_images)
+#         image_features = np.reshape(pca.inverse_transform(pca_latents),
+#                                     newshape=(num_data, image_height, image_width))
+#         feature_extractor = pca
+#     elif feature_extractor_method is None:
+#         image_features = observations.reshape(observations.shape[0], -1)
+#         feature_extractor = None
+#     else:
+#         raise ValueError(f'Impermissible feature method: {feature_extractor_method}')
 
-    # # visualize observations if curious
-    # import matplotlib.pyplot as plt
-    # for idx in range(10):
-    #     plt.imshow(image_features[idx], cmap='gray')
-    #     plt.show()
+#     # # visualize observations if curious
+#     # import matplotlib.pyplot as plt
+#     # for idx in range(10):
+#     #     plt.imshow(image_features[idx], cmap='gray')
+#     #     plt.show()
 
-    mnist_dataset_results = dict(
-        observations=observations,
-        labels=labels,
-        feature_extractor_method=feature_extractor_method,
-        feature_extractor=feature_extractor,
-        image_features=image_features,
-    )
+#     mnist_dataset_results = dict(
+#         observations=observations,
+#         labels=labels,
+#         feature_extractor_method=feature_extractor_method,
+#         feature_extractor=feature_extractor,
+#         image_features=image_features,
+#     )
 
-    return mnist_dataset_results
+#     return mnist_dataset_results
 
-
-def load_omniglot_dataset(data_dir: str = 'data',
-                          num_data: int = None,
-                          center_crop: bool = True,
-                          avg_pool: bool = False,
-                          feature_extractor_method: str = 'pca',
-                          shuffle=True):
-    """
-
-    """
-
-    assert feature_extractor_method in {'pca', 'cnn', 'vae', 'vae_old', None}
-
-    # https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
-    transforms = [torchvision.transforms.ToTensor()]
-    if center_crop:
-        transforms.append(torchvision.transforms.CenterCrop((80, 80)))
-    if avg_pool:
-        transforms.append(torchvision.transforms.Lambda(
-            lambda x: torch.nn.functional.avg_pool2d(x, kernel_size=9, stride=3)))
-
-    omniglot_dataset = torchvision.datasets.Omniglot(
-        root=data_dir,
-        download=True,
-        transform=torchvision.transforms.Compose(transforms))
-
-    # truncate dataset for now
-
-    if num_data is None:
-        num_data = len(omniglot_dataset._flat_character_images)
-    omniglot_dataset._flat_character_images = omniglot_dataset._flat_character_images[:num_data]
-    dataset_size = len(omniglot_dataset._flat_character_images)
-
-    omniglot_dataloader = torch.utils.data.DataLoader(
-        dataset=omniglot_dataset,
-        batch_size=1,
-        shuffle=False)
-
-    images, labels = [], []
-    for image, label in omniglot_dataloader:
-        labels.append(label)
-        images.append(image[0, 0, :, :])
-        # uncomment to deterministically append the first image
-        # images.append(omniglot_dataset[0][0][0, :, :])
-    images = torch.stack(images).numpy()
-
-    # these might be swapped but I think height = width for omniglot
-    _, image_height, image_width = images.shape
-    labels = np.array(labels)
-
-    if feature_extractor_method == 'pca':
-        from sklearn.decomposition import PCA
-        reshaped_images = np.reshape(images, newshape=(dataset_size, image_height * image_width))
-        pca = PCA(n_components=20)
-        pca_latents = pca.fit_transform(reshaped_images)
-        image_features = pca.inverse_transform(pca_latents)
-        # image_features = np.reshape(pca.inverse_transform(pca_latents),
-        #                             newshape=(dataset_size, image_height, image_width))
-        feature_extractor = pca
-    elif feature_extractor_method == 'cnn':
-        # # for some reason, omniglot uses 1 for background and 0 for stroke
-        # # whereas MNIST uses 0 for background and 1 for stroke
-        # # for consistency, we'll invert omniglot
-        # images = 1. - images
-        #
-        # from utils.omniglot_feature_extraction import cnn_load
-        # lenet = cnn_load()
-        #
-        # from skimage.transform import resize
-        # downsized_images = np.stack([resize(image, output_shape=(28, 28))
-        #                              for image in images])
-        #
-        # # import matplotlib.pyplot as plt
-        # # plt.imshow(downsized_images[0], cmap='gray')
-        # # plt.title('Test Downsized Omniglot')
-        # # plt.show()
-        #
-        # # add channel dimension for CNN
-        # reshaped_images = np.expand_dims(downsized_images, axis=1)
-        #
-        # # make sure dropout is turned off
-        # lenet.eval()
-        # image_features = lenet(torch.from_numpy(reshaped_images)).detach().numpy()
-        #
-        # feature_extractor = lenet
-
-        raise NotImplementedError
-    elif feature_extractor_method == 'vae':
-        vae_data = np.load(os.path.join(os.getcwd(),
-                                        'data/omniglot_vae/omniglot_data.npz'))
-        labels = vae_data['targets']
-        # indices_to_sort_labels = np.argsort(labels)
-        indices_to_sort_labels = np.random.choice(
-            np.arange(len(labels)),
-            size=num_data,
-            replace=False)
-        # make sure labels are sorted so we get multiple instances of the same class
-        labels = labels[indices_to_sort_labels][:num_data]
-        images = vae_data['images'][indices_to_sort_labels][:num_data, :, :]
-        image_features = vae_data['latents'][indices_to_sort_labels][:num_data, :]
-        feature_extractor = None
-    elif feature_extractor_method is None:
-        image_features = np.reshape(
-            images,
-            newshape=(dataset_size, image_height * image_width))
-        feature_extractor = None
-    else:
-        raise ValueError(f'Impermissible feature method: {feature_extractor_method}')
-
-    # # visualize images if curious
-    # import matplotlib.pyplot as plt
-    # for idx in range(10):
-    #     plt.imshow(image_features[idx], cmap='gray')
-    #     plt.show()
-
-    if shuffle:
-        random_indices = np.random.choice(
-            np.arange(num_data),
-            size=num_data,
-            replace=False)
-        images = images[random_indices]
-        labels = labels[random_indices]
-        image_features = image_features[random_indices]
-
-    omniglot_dataset_results = dict(
-        images=images,
-        labels=labels,
-        feature_extractor_method=feature_extractor_method,
-        feature_extractor=feature_extractor,
-        image_features=image_features,
-    )
-
-    return omniglot_dataset_results
 
 
 def load_reddit_dataset(num_data: int,
