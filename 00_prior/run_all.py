@@ -13,8 +13,6 @@ import logging
 import os
 import subprocess
 
-import rncrp.helpers
-
 
 def run_all():
     # create directory
@@ -23,10 +21,10 @@ def run_all():
     os.makedirs(results_dir_path, exist_ok=True)
 
     num_customers = [50]
-    num_mc_samples = [10000]  # number of Monte Carlo samples to draw
+    num_mc_samples = [5000]  # number of Monte Carlo samples to draw
     alphas = [1.1, 10.78, 15.37, 30.91]
-    betas = [0.3, 5.6, 12.9, 21.3]
-    dynamics_strs = utils.dynamics.dynamics_strs[:-1]
+    betas = [0.]
+    dynamics_strs = ['step', 'exp', 'sinusoid', 'hyperbolic']
 
     hyperparams = [num_customers, num_mc_samples, alphas, betas, dynamics_strs]
     for num_customer, num_mc_sample, alpha, beta, dynamics_str in itertools.product(*hyperparams):

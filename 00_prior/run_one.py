@@ -1,6 +1,6 @@
 """
-Compare the analytical DCRP marginal distribution against
-Monte-Carlo estimates of the DCRP marginal distribution.
+Compare the analytical RNCRP marginal distribution against
+Monte-Carlo estimates of the RNCRP marginal distribution.
 
 Example usage:
 
@@ -20,8 +20,8 @@ from typing import Dict
 
 
 import plot
-import utils.data
-import utils.helpers
+import rncrp.data
+import rncrp.helpers
 
 
 def run_one(args: argparse.Namespace):
