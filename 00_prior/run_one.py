@@ -245,7 +245,7 @@ def sample_monte_carlo_rncrp_and_save(num_customer: int,
 
     if not os.path.isfile(monte_carlo_rncrp_path):
         monte_carlo_rncrp_results = sample_rncrp(
-            num_mc_sample=num_mc_sample,
+            num_mc_samples=num_mc_sample,
             num_customer=num_customer,
             alpha=alpha,
             beta=beta,

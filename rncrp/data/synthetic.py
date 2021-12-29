@@ -6,40 +6,8 @@ import torch
 import torchvision
 from typing import Dict, Union
 
+import rncrp.helpers.dynamics
 
-# def convert_binary_latent_features_to_left_order_form(
-#         indicators: np.ndarray) -> np.ndarray:
-#     """
-#     Reorder to "Left Ordered Form" i.e. permute columns such that column
-#     as binary integers are decreasing
-
-#     :param indicators: shape (num customers, num dishes) of binary values
-#     """
-#     #
-#     # def left_order_form_indices_recursion(indicators_matrix, indices, row_idx):
-#     #     # https://stackoverflow.com/a/67699595/4570472
-#     #     if indices.size <= 1 or row_idx >= indicators_matrix.shape[0]:
-#     #         return indices
-#     #     left_indices = indices[np.where(indicators_matrix[row_idx, indices] == 1)]
-#     #     right_indices = indices[np.where(indicators_matrix[row_idx, indices] == 0)]
-#     #     return np.concatenate(
-#     #         (left_order_form_indices_recursion(indicators_matrix, indices=left_indices, row_idx=row_idx + 1),
-#     #          left_order_form_indices_recursion(indicators_matrix, indices=right_indices, row_idx=row_idx + 1)))
-
-#     # sort columns via recursion
-#     # reordered_indices = left_order_form_indices_recursion(
-#     #     indicators_matrix=indicators,
-#     #     row_idx=0,
-#     #     indices=np.arange(indicators.shape[1]))
-#     # left_ordered_indicators = indicators[:, reordered_indices]
-
-#     # sort columns via lexicographic sorting
-#     left_ordered_indicators_2 = indicators[:, np.lexsort(-indicators[::-1])]
-
-#     # check equality of both approaches
-#     # assert np.all(left_ordered_indicators == left_ordered_indicators_2)
-
-#     return left_ordered_indicators_2
 
 # Generate mixture of gaussians
 def generate_gaussian_params_from_gaussian_prior(num_gaussians: int = 3,
@@ -59,6 +27,7 @@ def generate_gaussian_params_from_gaussian_prior(num_gaussians: int = 3,
 
     mixture_of_gaussians = dict(means=means, covs=covs)
     return mixture_of_gaussians
+
 
 # Sample from mixture
 def sample_from_mixture_of_gaussians(seq_len: int = 100,
@@ -262,48 +231,53 @@ def sample_from_linear_gaussian(num_obs: int = 100,
     return sampled_data_result
 
 
-def sample_rncrp(num_mc_sample: int,
+def sample_rncrp(num_mc_samples: int,
                  num_customer: int,
                  alpha: float,
                  beta: float,
                  dynamics_str: str,
-                 time_sampling_str: str) -> Dict[str, np.ndarray]:
+                 ) -> Dict[str, np.ndarray]:
+
     assert alpha > 0.
     assert beta >= 0.
 
-    dynamics = utils.helpers.convert_dynamics_str_to_dynamics_obj(
+    dynamics = rncrp.helpers.dynamics.convert_dynamics_str_to_dynamics_obj(
         dynamics_str=dynamics_str)
 
-    time_sampling_fn = utils.helpers.convert_time_sampling_str_to_time_sampling_fn(
-        time_sampling_str=time_sampling_str)
+    # time_sampling_fn = utils.helpers.convert_time_sampling_str_to_time_sampling_fn(
+    #     time_sampling_str=time_sampling_str)
+
+    def time_sampling_fn(num_customer: int) -> np.ndarray:
+        return 1. + np.arange(num_customer)
+
     customer_times = time_sampling_fn(num_customer=num_customer)
 
     pseudo_table_occupancies_by_customer = np.zeros(
-        shape=(num_mc_sample, num_customer, num_customer))
+        shape=(num_mc_samples, num_customer, num_customer))
     one_hot_customer_assignments_by_customer = np.zeros(
-        shape=(num_mc_sample, num_customer, num_customer))
+        shape=(num_mc_samples, num_customer, num_customer))
     customer_assignments_by_customer = np.zeros(
-        shape=(num_mc_sample, num_customer,),
+        shape=(num_mc_samples, num_customer,),
         dtype=np.int)
     num_tables_by_customer = np.zeros(
-        shape=(num_mc_sample, num_customer, num_customer))
+        shape=(num_mc_samples, num_customer, num_customer))
 
     # the first customer always goes at the first table
     pseudo_table_occupancies_by_customer[:, 0, 0] = 1
     one_hot_customer_assignments_by_customer[:, 0, 0] = 1.
     num_tables_by_customer[:, 0, 0] = 1.
 
-    for smpl_idx in range(num_mc_sample):
+    for mc_sample_idx in range(num_mc_samples):
         new_table_idx = 1
         dynamics.initialize_state(
-            customer_assignment_probs=one_hot_customer_assignments_by_customer[smpl_idx, 0, :],
+            customer_assignment_probs=one_hot_customer_assignments_by_customer[mc_sample_idx, 0, :],
             time=customer_times[0])
         for cstmr_idx in range(1, num_customer):
             state = dynamics.run_dynamics(
                 time_start=customer_times[cstmr_idx - 1],
                 time_end=customer_times[cstmr_idx])
             current_pseudo_table_occupancies = state['N']
-            pseudo_table_occupancies_by_customer[smpl_idx, cstmr_idx, :] = current_pseudo_table_occupancies.copy()
+            pseudo_table_occupancies_by_customer[mc_sample_idx, cstmr_idx, :] = current_pseudo_table_occupancies.copy()
 
             # Add alpha, normalize and sample from that distribution.
             current_pseudo_table_occupancies = current_pseudo_table_occupancies.copy()
@@ -314,16 +288,16 @@ def sample_rncrp(num_mc_sample: int,
             assert customer_assignment < cstmr_idx + 1
 
             # store sampled customer
-            one_hot_customer_assignments_by_customer[smpl_idx, cstmr_idx, customer_assignment] = 1.
+            one_hot_customer_assignments_by_customer[mc_sample_idx, cstmr_idx, customer_assignment] = 1.
             new_table_idx = max(new_table_idx, customer_assignment + 1)
-            num_tables_by_customer[smpl_idx, cstmr_idx, new_table_idx - 1] = 1.
-            customer_assignments_by_customer[smpl_idx, cstmr_idx] = customer_assignment
+            num_tables_by_customer[mc_sample_idx, cstmr_idx, new_table_idx - 1] = 1.
+            customer_assignments_by_customer[mc_sample_idx, cstmr_idx] = customer_assignment
 
             # Increment psuedo-table occupancies
             state = dynamics.update_state(
-                customer_assignment_probs=one_hot_customer_assignments_by_customer[smpl_idx, cstmr_idx, :],
+                customer_assignment_probs=one_hot_customer_assignments_by_customer[mc_sample_idx, cstmr_idx, :],
                 time=customer_times[cstmr_idx])
-            pseudo_table_occupancies_by_customer[smpl_idx, cstmr_idx, :] = state['N'].copy()
+            pseudo_table_occupancies_by_customer[mc_sample_idx, cstmr_idx, :] = state['N'].copy()
 
     sample_dcrp_results = {
         'customer_times': customer_times,
