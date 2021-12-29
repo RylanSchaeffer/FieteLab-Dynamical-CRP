@@ -6,7 +6,7 @@ Example usage:
 
 00_prior/run_one.py --results_dir_path=00_prior/results \
  --num_customer=50 --num_mc_sample=2000 \
- --alpha=2.51 --beta=3.7 --dynamics_str=exp
+ --alpha=2.51 --beta=0.0 --dynamics_str=exp
 """
 
 import argparse
@@ -16,44 +16,44 @@ import numpy as np
 import os
 import scipy.stats
 from sympy.functions.combinatorial.numbers import stirling
+import torch
 from typing import Dict
 
 
 import plot
-import rncrp.data
-import rncrp.helpers
+from rncrp.data.synthetic import sample_rncrp
+from rncrp.helpers.run import set_seed
 
 
 def run_one(args: argparse.Namespace):
 
     run_one_results_dir = setup(args=args)
 
-    sample_dcrp_results = sample_dcrp_and_save(
+    monte_carlo_rncrp_results = sample_monte_carlo_rncrp_and_save(
         num_customer=args.num_customer,
         alpha=args.alpha,
         beta=args.beta,
         run_one_results_dir=run_one_results_dir,
         num_mc_sample=args.num_mc_sample,
-        dynamics_str=args.dynamics_str,
-        time_sampling_str=args.time_sampling_str)
+        dynamics_str=args.dynamics_str,)
 
-    analytical_dcrp_results = compute_analytical_dcrp_and_save(
+    analytical_dcrp_results = compute_analytical_rncrp_and_save(
         num_customer=args.num_customer,
         alpha=args.alpha,
         beta=args.beta,
         run_one_results_dir=run_one_results_dir,
         dynamics_str=args.dynamics_str,
-        customer_times=sample_dcrp_results['customer_times'])
+        customer_times=monte_carlo_rncrp_results['customer_times'])
 
     plot.plot_customer_assignments_analytical_vs_monte_carlo(
-        sampled_customer_assignments_by_customer=sample_dcrp_results['one_hot_customer_assignments_by_customer'],
+        sampled_customer_assignments_by_customer=monte_carlo_rncrp_results['one_hot_customer_assignments_by_customer'],
         analytical_customer_assignments_by_customer=analytical_dcrp_results['customer_assignment_probs_by_customer'],
         alpha=args.alpha,
         beta=args.beta,
         plot_dir=run_one_results_dir)
 
     plot.plot_num_tables_analytical_vs_monte_carlo(
-        sampled_num_tables_by_customer=sample_dcrp_results['num_tables_by_customer'],
+        sampled_num_tables_by_customer=monte_carlo_rncrp_results['num_tables_by_customer'],
         analytical_num_tables_by_customer=analytical_dcrp_results['num_table_probs_by_customer'],
         alpha=args.alpha,
         beta=args.beta,
@@ -193,12 +193,13 @@ def compute_analytical_dcrp(num_customer: int,
     return analytical_dcrp_results
 
 
-def compute_analytical_dcrp_and_save(num_customer: int,
-                                     alpha: float,
-                                     beta: float,
-                                     dynamics_str: str,
-                                     customer_times: np.ndarray,
-                                     run_one_results_dir: str) -> Dict[str, np.ndarray]:
+def compute_analytical_rncrp_and_save(num_customer: int,
+                                      alpha: float,
+                                      beta: float,
+                                      dynamics_str: str,
+                                      customer_times: np.ndarray,
+                                      run_one_results_dir: str,
+                                      ) -> Dict[str, np.ndarray]:
 
     crp_analytical_path = os.path.join(
         run_one_results_dir,
@@ -230,70 +231,53 @@ def compute_analytical_dcrp_and_save(num_customer: int,
     return analytical_dcrp_results
 
 
-def sample_dcrp_and_save(num_customer: int,
-                         alpha: float,
-                         beta: float,
-                         num_mc_sample: int,
-                         dynamics_str: str,
-                         time_sampling_str: str,
-                         run_one_results_dir: str) -> Dict[str, np.ndarray]:
+def sample_monte_carlo_rncrp_and_save(num_customer: int,
+                                      alpha: float,
+                                      beta: float,
+                                      num_mc_sample: int,
+                                      dynamics_str: str,
+                                      run_one_results_dir: str,
+                                      ) -> Dict[str, np.ndarray]:
 
-    crp_samples_path = os.path.join(
+    monte_carlo_rncrp_path = os.path.join(
         run_one_results_dir,
         f'monte_carlo_samples={num_mc_sample}.joblib')
 
-    # if not os.path.isfile(crp_samples_path):
+    if not os.path.isfile(monte_carlo_rncrp_path):
+        monte_carlo_rncrp_results = sample_rncrp(
+            num_mc_sample=num_mc_sample,
+            num_customer=num_customer,
+            alpha=alpha,
+            beta=beta,
+            dynamics_str=dynamics_str)
+        logging.info(f'Generated samples for {monte_carlo_rncrp_path}')
+        joblib.dump(filename=monte_carlo_rncrp_path,
+                    value=monte_carlo_rncrp_results)
 
-    sample_dcrp_results = utils.data.sample_dcrp(
-        num_mc_sample=num_mc_sample,
-        num_customer=num_customer,
-        alpha=alpha,
-        beta=beta,
-        dynamics_str=dynamics_str,
-        time_sampling_str=time_sampling_str)
-    logging.info(f'Generated samples for {crp_samples_path}')
-    joblib.dump(filename=crp_samples_path,
-                value=sample_dcrp_results)
+    monte_carlo_rncrp_results = joblib.load(filename=monte_carlo_rncrp_path)
 
-    # sample_dcrp_results = joblib.load(filename=crp_samples_path)
-    assert sample_dcrp_results['customer_times'].shape \
+    assert monte_carlo_rncrp_results['customer_times'].shape \
            == (num_customer, )
-    assert sample_dcrp_results['pseudo_table_occupancies_by_customer'].shape \
+    assert monte_carlo_rncrp_results['pseudo_table_occupancies_by_customer'].shape \
            == (num_mc_sample, num_customer, num_customer)
-    assert sample_dcrp_results['customer_assignments_by_customer'].shape \
+    assert monte_carlo_rncrp_results['customer_assignments_by_customer'].shape \
            == (num_mc_sample, num_customer)
-    assert sample_dcrp_results['one_hot_customer_assignments_by_customer'].shape \
+    assert monte_carlo_rncrp_results['one_hot_customer_assignments_by_customer'].shape \
            == (num_mc_sample, num_customer, num_customer)
-    assert sample_dcrp_results['num_tables_by_customer'].shape \
+    assert monte_carlo_rncrp_results['num_tables_by_customer'].shape \
            == (num_mc_sample, num_customer, num_customer)
 
-    logging.info(f'Loaded samples for {crp_samples_path}')
-    return sample_dcrp_results
-
-
-# def construct_analytical_crt(T,
-#                              alphas):
-#     table_nums = 1 + np.arange(T)
-#     table_distributions_by_alpha_by_T = {}
-#     for alpha in alphas:
-#         table_distributions_by_alpha_by_T[alpha] = {}
-#         for t in table_nums:
-#             result = np.zeros(shape=T)
-#             for repeat_idx in np.arange(1, 1 + t):
-#                 result[repeat_idx - 1] = chinese_table_restaurant_distribution(
-#                     t=t,
-#                     k=repeat_idx,
-#                     alpha=alpha)
-#             table_distributions_by_alpha_by_T[alpha][t] = result
-#     return table_distributions_by_alpha_by_T
+    logging.info(f'Loaded samples for {monte_carlo_rncrp_path}')
+    return monte_carlo_rncrp_results
 
 
 def setup(args: argparse.Namespace):
     run_one_results_dir = os.path.join(
         args.results_dir_path,
-        f'dyn={args.dynamics_str}_a={args.alpha}_b={args.beta}_time={args.time_sampling_str}')
+        f'dyn={args.dynamics_str}_a={args.alpha}_b={args.beta}_time={args.dynamics_str}')
     os.makedirs(run_one_results_dir, exist_ok=True)
     np.random.seed(args.seed)
+    set_seed(seed=args.seed)
     return run_one_results_dir
 
 
@@ -312,11 +296,8 @@ if __name__ == '__main__':
     parser.add_argument('--beta', type=float,
                         help='DCRP beta parameter.')
     parser.add_argument('--dynamics_str', type=str,
-                        choices=utils.dynamics.dynamics_strs,
+                        choices=['step', 'exp', 'sinusoid', 'hyperbolic'],
                         help='Choice of Temporal decay function.')
-    parser.add_argument('--time_sampling_str', type=str, default='identity',
-                        choices=utils.helpers.time_sampling_strs,
-                        help='How index times should be sampled.')
     args = parser.parse_args()
     run_one(args)
     logging.info('Finished.')

@@ -262,6 +262,81 @@ def sample_from_linear_gaussian(num_obs: int = 100,
     return sampled_data_result
 
 
+def sample_rncrp(num_mc_sample: int,
+                 num_customer: int,
+                 alpha: float,
+                 beta: float,
+                 dynamics_str: str,
+                 time_sampling_str: str) -> Dict[str, np.ndarray]:
+    assert alpha > 0.
+    assert beta >= 0.
+
+    dynamics = utils.helpers.convert_dynamics_str_to_dynamics_obj(
+        dynamics_str=dynamics_str)
+
+    time_sampling_fn = utils.helpers.convert_time_sampling_str_to_time_sampling_fn(
+        time_sampling_str=time_sampling_str)
+    customer_times = time_sampling_fn(num_customer=num_customer)
+
+    pseudo_table_occupancies_by_customer = np.zeros(
+        shape=(num_mc_sample, num_customer, num_customer))
+    one_hot_customer_assignments_by_customer = np.zeros(
+        shape=(num_mc_sample, num_customer, num_customer))
+    customer_assignments_by_customer = np.zeros(
+        shape=(num_mc_sample, num_customer,),
+        dtype=np.int)
+    num_tables_by_customer = np.zeros(
+        shape=(num_mc_sample, num_customer, num_customer))
+
+    # the first customer always goes at the first table
+    pseudo_table_occupancies_by_customer[:, 0, 0] = 1
+    one_hot_customer_assignments_by_customer[:, 0, 0] = 1.
+    num_tables_by_customer[:, 0, 0] = 1.
+
+    for smpl_idx in range(num_mc_sample):
+        new_table_idx = 1
+        dynamics.initialize_state(
+            customer_assignment_probs=one_hot_customer_assignments_by_customer[smpl_idx, 0, :],
+            time=customer_times[0])
+        for cstmr_idx in range(1, num_customer):
+            state = dynamics.run_dynamics(
+                time_start=customer_times[cstmr_idx - 1],
+                time_end=customer_times[cstmr_idx])
+            current_pseudo_table_occupancies = state['N']
+            pseudo_table_occupancies_by_customer[smpl_idx, cstmr_idx, :] = current_pseudo_table_occupancies.copy()
+
+            # Add alpha, normalize and sample from that distribution.
+            current_pseudo_table_occupancies = current_pseudo_table_occupancies.copy()
+            current_pseudo_table_occupancies[new_table_idx] = alpha
+            probs = current_pseudo_table_occupancies / np.sum(current_pseudo_table_occupancies)
+            customer_assignment = np.random.choice(np.arange(new_table_idx + 1),
+                                                   p=probs[:new_table_idx + 1])
+            assert customer_assignment < cstmr_idx + 1
+
+            # store sampled customer
+            one_hot_customer_assignments_by_customer[smpl_idx, cstmr_idx, customer_assignment] = 1.
+            new_table_idx = max(new_table_idx, customer_assignment + 1)
+            num_tables_by_customer[smpl_idx, cstmr_idx, new_table_idx - 1] = 1.
+            customer_assignments_by_customer[smpl_idx, cstmr_idx] = customer_assignment
+
+            # Increment psuedo-table occupancies
+            state = dynamics.update_state(
+                customer_assignment_probs=one_hot_customer_assignments_by_customer[smpl_idx, cstmr_idx, :],
+                time=customer_times[cstmr_idx])
+            pseudo_table_occupancies_by_customer[smpl_idx, cstmr_idx, :] = state['N'].copy()
+
+    sample_dcrp_results = {
+        'customer_times': customer_times,
+        'pseudo_table_occupancies_by_customer': pseudo_table_occupancies_by_customer,
+        'customer_assignments_by_customer': customer_assignments_by_customer,
+        'one_hot_customer_assignments_by_customer': one_hot_customer_assignments_by_customer,
+        'num_tables_by_customer': num_tables_by_customer,
+    }
+
+    return sample_dcrp_results
+
+
+
 # def sample_from_griffiths_ghahramani_2005(num_obs: int = 100,
 #                                           indicator_sampling_params: Dict[str, Union[float, np.ndarray]] = None,
 #                                           gaussian_likelihood_params: Dict[str, float] = None):
