@@ -16,6 +16,7 @@ import rncrp.data.real
 from rncrp.data.real import *
 torch.set_default_tensor_type('torch.FloatTensor')
 
+
 def single_run(dataset_dir, omniglot_dataset_results):
 
     concentration_params = np.linspace(0.1*np.log(omniglot_dataset_results['assigned_table_seq'].shape[0]),
