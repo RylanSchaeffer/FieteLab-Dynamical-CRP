@@ -355,18 +355,18 @@ def convert_dynamics_str_to_dynamics_obj(dynamics_str: str,
         dynamics = HarmonicOscillator(
             params={'omega': np.pi / 2})
     elif dynamics_str == 'hyperbolic':
-        raise NotImplementedError
+        raise NotImplementedError(dynamics_str)
     elif dynamics_str == 'statetransition':
         # dynamics = StateTransition(
         #     params={})
-        raise NotImplementedError
+        raise NotImplementedError(dynamics_str)
     elif dynamics_str == 'logistic':
         # dynamics_constructor: dy/dt = a y - b y^2 + delta
         # def dynamics_fn(state: np.ndarray, time_delta: float,
         #                 a: float = 1., b: float = 1.):
         #     d = a / 1. - b
         #     return np.multiply(state, 1. / (1. + np.exp(time_delta)))
-        raise NotImplementedError
+        raise NotImplementedError(dynamics_str)
     else:
         raise ValueError(f'Impermissible dynamics_str: {dynamics_str}')
     return dynamics
