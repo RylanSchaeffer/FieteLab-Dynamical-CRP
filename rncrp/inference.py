@@ -37,6 +37,40 @@ def likelihood_multivariate_normal(torch_observation,
 
     return likelihoods_per_latent, log_likelihoods_per_latent
 
+# Dirichlet multinomial cluster parameters
+def setup_cluster_params_dirichlet_multinomial(torch_observation,
+                                                obs_idx,
+                                                cluster_parameters):
+    assert_no_nan_no_inf_is_real(torch_observation)
+    epsilon = 10. 									# May need to change
+    cluster_parameters['concentrations'].data[obs_idx, :] = torch_observation + epsilon
+
+# Dirichlet multinomial likelihood setup
+def likelihood_dirichlet_multinomial(torch_observation,
+                                     obs_idx,
+                                     cluster_parameters):
+    words_in_doc = torch.sum(torch_observation)
+    total_concentrations_per_latent = torch.sum(
+        cluster_parameters['concentrations'][:obs_idx + 1], dim=1)
+
+    # Intermediate computations
+    log_numerator = torch.log(words_in_doc) + log_beta(a=total_concentrations_per_latent, b=words_in_doc)
+    log_beta_terms = log_beta(a=cluster_parameters['concentrations'][:obs_idx + 1],
+        						b=torch_observation)
+    
+    log_x_times_beta_terms = torch.add(log_beta_terms, torch.log(torch_observation))
+    log_x_times_beta_terms[torch.isnan(log_x_times_beta_terms)] = 0.
+    log_denominator = torch.sum(log_x_times_beta_terms, dim=1)
+    
+    assert_no_nan_no_inf_is_real(log_denominator)
+    log_likelihoods_per_latent = log_numerator - log_denominator
+
+    assert_no_nan_no_inf_is_real(log_likelihoods_per_latent)
+    likelihoods_per_latent = torch.exp(log_likelihoods_per_latent)
+
+    return likelihoods_per_latent, log_likelihoods_per_latent
+
+
 # RN-CRP
 def rn_crp(observations,
                   concentration_param: float,
@@ -44,7 +78,7 @@ def rn_crp(observations,
                   learning_rate,
                   num_em_steps: int = 3):
     assert concentration_param > 0
-    assert likelihood_model in {'multivariate_normal'} # todo: add more for other settings
+    assert likelihood_model in {'multivariate_normal','dirichlet_multinomial'} # todo: add more for other settings
     
     num_obs, obs_dim = observations.shape
     max_num_latents = num_obs
@@ -80,8 +114,17 @@ def rn_crp(observations,
                                         fill_value=0.,
                                         dtype=torch.float64,
                                         requires_grad=True))
-    # todo: set up other likelihoods
+    
+    elif likelihood_model == 'dirichlet_multinomial':
+        setup_cluster_params_fn = setup_cluster_params_dirichlet_multinomial
+        likelihood_fn = likelihood_dirichlet_multinomial
 
+        cluster_params = dict(concentrations=torch.full(size=(max_num_latents, obs_dim),
+                                    fill_value=np.nan,
+                                    dtype=torch.float64,
+                                    requires_grad=True))
+
+    # todo: set up other likelihoods as needed
     else:
         raise NotImplementedError
 

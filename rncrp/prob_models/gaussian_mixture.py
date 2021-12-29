@@ -27,12 +27,12 @@ def single_run(num_gaussians: int = 3,
         gaussian_params=dict(gaussian_cov_scaling=gaussian_cov_scaling,
                              gaussian_mean_prior_cov_scaling=gaussian_mean_prior_cov_scaling))
 
-    concentration_params = 0.01 + np.arange(0.,6.01,0.25) # todo: select values range & step
+    concentration_params = 0.01 + np.arange(0.,6.01,0.25) # todo: select other values as needed
 
     inference_alg_strs = ['RN-CRP',
 				        'DP-Means (online)',
 				        'DP-Means (offline)',
-				        'DP-GMM (15 Init, 30 Iter)'] # todo: change DP-GMM parameters
+				        'DP-GMM (15 Init, 30 Iter)'] # todo: modify DP-GMM parameters as needed
 
     inference_algs_results = {}
     for inference_alg_str in inference_alg_strs:
