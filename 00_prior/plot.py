@@ -14,22 +14,26 @@ alphas_color_map = {
     30.91: 'tab:green'
 }
 
+plt.rcParams.update({'font.size': 20})
+
 
 def plot_customer_assignments_analytical_vs_monte_carlo(sampled_customer_assignments_by_customer,
                                                         analytical_customer_assignments_by_customer,
                                                         alpha: float,
                                                         beta: float,
-                                                        plot_dir):
+                                                        plot_dir: str,
+                                                        dynamics_latex_str: str):
     # plot customer assignments, comparing analytics versus monte carlo estimates
     fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
+
+    fig.suptitle(dynamics_latex_str)
 
     avg_sampled_customer_assignments_by_customer = np.mean(
         sampled_customer_assignments_by_customer, axis=0)
 
     # replace 0s with nans to allow for log scaling
-    nan_idx = avg_sampled_customer_assignments_by_customer == 0.
-    avg_sampled_customer_assignments_by_customer[nan_idx] = np.nan
-    cutoff = np.nanmin(avg_sampled_customer_assignments_by_customer)
+    cutoff = np.nanmin(avg_sampled_customer_assignments_by_customer[
+                           avg_sampled_customer_assignments_by_customer > 0.])
     cutoff_idx = avg_sampled_customer_assignments_by_customer < cutoff
     avg_sampled_customer_assignments_by_customer[cutoff_idx] = np.nan
 
@@ -60,22 +64,27 @@ def plot_customer_assignments_analytical_vs_monte_carlo(sampled_customer_assignm
     ax.set_title(rf'Analytical ($\alpha=${alpha})')  # , $\beta=${beta}
     ax.set_xlabel(r'Table Index')
 
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])  # left, bottom right, top in normalized coordinates
+
     # for some reason, on OpenMind, colorbar ticks disappear without calling plt.show() first
     fig.savefig(os.path.join(plot_dir, f'customer_assignments_monte_carlo_vs_analytical.png'),
                 bbox_inches='tight',
                 dpi=300)
-    plt.show()
+    # plt.show()
     plt.close()
 
 
-def plot_num_tables_analytical_vs_monte_carlo(sampled_num_tables_by_customer,
-                                              analytical_num_tables_by_customer,
+def plot_num_tables_analytical_vs_monte_carlo(sampled_num_tables_by_customer: np.ndarray,
+                                              analytical_num_tables_by_customer: np.ndarray,
                                               alpha: float,
                                               beta: float,
-                                              plot_dir):
+                                              plot_dir: str,
+                                              dynamics_latex_str: str):
 
     # plot customer assignments, comparing analytics versus monte carlo estimates
     fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
+
+    fig.suptitle(dynamics_latex_str)
 
     avg_sampled_num_tables_by_customer = np.mean(
         sampled_num_tables_by_customer, axis=0)
@@ -112,10 +121,11 @@ def plot_num_tables_analytical_vs_monte_carlo(sampled_num_tables_by_customer,
     ax.set_xlabel(r'Table Index')
 
     # for some reason, on OpenMind, colorbar ticks disappear without calling plt.show() first
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])  # left, bottom right, top in normalized coordinates
     fig.savefig(os.path.join(plot_dir, f'num_tables_monte_carlo_vs_analytical.png'),
                 bbox_inches='tight',
                 dpi=300)
-    plt.show()
+    # plt.show()
     plt.close()
 
 

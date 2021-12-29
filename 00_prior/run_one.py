@@ -16,12 +16,12 @@ import numpy as np
 import os
 import scipy.stats
 from sympy.functions.combinatorial.numbers import stirling
-import torch
 from typing import Dict
 
 
 import plot
 from rncrp.data.synthetic import sample_rncrp
+from rncrp.helpers.dynamics import convert_dynamics_str_to_dynamics_obj
 from rncrp.helpers.run import set_seed
 
 
@@ -45,22 +45,36 @@ def run_one(args: argparse.Namespace):
         dynamics_str=args.dynamics_str,
         customer_times=monte_carlo_rncrp_results['customer_times'])
 
+    if args.dynamics_str == 'step':
+        dynamics_latex_str = r'$\Theta(\Delta)$'
+    elif args.dynamics_str == 'exp':
+        dynamics_latex_str = r'$\exp(-\Delta)$'
+    elif args.dynamics_str == 'sinusoid':
+        dynamics_latex_str = r'$\cos(\Delta)$'
+    elif args.dynamics_str == 'hyperbolic':
+        dynamics_latex_str = r'$\frac{1}{1 + \Delta}$'
+    else:
+        raise NotImplementedError
+    dynamics_latex_str = 'Time Function: ' + dynamics_latex_str
+
     plot.plot_customer_assignments_analytical_vs_monte_carlo(
         sampled_customer_assignments_by_customer=monte_carlo_rncrp_results['one_hot_customer_assignments_by_customer'],
         analytical_customer_assignments_by_customer=analytical_dcrp_results['customer_assignment_probs_by_customer'],
         alpha=args.alpha,
         beta=args.beta,
-        plot_dir=run_one_results_dir)
+        plot_dir=run_one_results_dir,
+        dynamics_latex_str=dynamics_latex_str)
 
     plot.plot_num_tables_analytical_vs_monte_carlo(
         sampled_num_tables_by_customer=monte_carlo_rncrp_results['num_tables_by_customer'],
         analytical_num_tables_by_customer=analytical_dcrp_results['num_table_probs_by_customer'],
         alpha=args.alpha,
         beta=args.beta,
-        plot_dir=run_one_results_dir)
+        plot_dir=run_one_results_dir,
+        dynamics_latex_str=dynamics_latex_str)
 
 
-def chinese_table_restaurant_distribution(t, k, alpha):
+def compute_chinese_table_restaurant_distribution(t, k, alpha):
     if k > t:
         prob = 0.
     else:
@@ -71,11 +85,11 @@ def chinese_table_restaurant_distribution(t, k, alpha):
     return prob
 
 
-def compute_analytical_dcrp(num_customer: int,
-                            alpha: float,
-                            beta: float,
-                            dynamics_str: str,
-                            customer_times: np.ndarray) -> Dict[str, np.ndarray]:
+def compute_analytical_rncrp(num_customer: int,
+                             alpha: float,
+                             beta: float,
+                             dynamics_str: str,
+                             customer_times: np.ndarray) -> Dict[str, np.ndarray]:
 
     """
 
@@ -93,7 +107,7 @@ def compute_analytical_dcrp(num_customer: int,
 
     assert customer_times.shape == (num_customer, )
 
-    dynamics = utils.helpers.convert_dynamics_str_to_dynamics_obj(
+    dynamics = convert_dynamics_str_to_dynamics_obj(
         dynamics_str=dynamics_str)
 
     # Create arrays to store all information.
@@ -108,7 +122,7 @@ def compute_analytical_dcrp(num_customer: int,
     num_table_poisson_rate_by_customer = np.zeros(
         shape=(num_customer + 1,))
 
-    if dynamics_str == 'perfectintegrator':
+    if dynamics_str == 'step':
         # Can do additional error checking for the CRP
         analytical_crt_probs_by_customer = np.zeros(
             shape=(1 + num_customer, 1 + num_customer))
@@ -140,8 +154,8 @@ def compute_analytical_dcrp(num_customer: int,
         weighted_alpha = alpha * num_table_probs_by_customer[cstmr_idx - 1, :]
         current_pseudo_table_occupancies[1:cstmr_idx+1] += weighted_alpha[:cstmr_idx]  # right shift
 
-        if dynamics_str == 'perfectintegrator':
-            # check for correctness, if possible
+        if dynamics_str == 'step':
+            # if possible, check for correctness
             assert np.allclose(np.sum(current_pseudo_table_occupancies), alpha + cstmr_idx - 1)
 
         normalization_const = np.sum(current_pseudo_table_occupancies)
@@ -169,10 +183,10 @@ def compute_analytical_dcrp(num_customer: int,
         # Check that we have a proper distribution over the number of tables
         assert np.allclose(np.sum(num_table_probs_by_customer[cstmr_idx, :]), 1.)
 
-        if dynamics_str == 'perfectintegrator':
-            # check for correctness, if possible
+        if dynamics_str == 'step':
+            # if possible, check for correctness
             for k_idx in range(1 + cstmr_idx):
-                analytical_crt_probs_by_customer[cstmr_idx, k_idx] = chinese_table_restaurant_distribution(
+                analytical_crt_probs_by_customer[cstmr_idx, k_idx] = compute_chinese_table_restaurant_distribution(
                     t=cstmr_idx,
                     k=k_idx,
                     alpha=alpha)
@@ -205,19 +219,19 @@ def compute_analytical_rncrp_and_save(num_customer: int,
         run_one_results_dir,
         'analytical.joblib')
 
-    # if not os.path.isfile(crp_analytical_path):
-    analytical_dcrp_results = compute_analytical_dcrp(
-        num_customer=num_customer,
-        alpha=alpha,
-        beta=beta,
-        dynamics_str=dynamics_str,
-        customer_times=customer_times)
-    logging.info(f'Computed analytical results for {crp_analytical_path}')
-    joblib.dump(filename=crp_analytical_path,
-                value=analytical_dcrp_results)
+    if not os.path.isfile(crp_analytical_path):
+        analytical_dcrp_results = compute_analytical_rncrp(
+            num_customer=num_customer,
+            alpha=alpha,
+            beta=beta,
+            dynamics_str=dynamics_str,
+            customer_times=customer_times)
+        logging.info(f'Computed analytical results for {crp_analytical_path}')
+        joblib.dump(filename=crp_analytical_path,
+                    value=analytical_dcrp_results)
 
     # this gives weird error: joblib ValueError: EOF: reading array data, expected 262144 bytes got 225056
-    # analytical_dcrp_results = joblib.load(crp_analytical_path)
+    analytical_dcrp_results = joblib.load(crp_analytical_path)
     assert analytical_dcrp_results['customer_times'].shape \
            == (num_customer, )
     assert analytical_dcrp_results['pseudo_table_occupancies_by_customer'].shape \
@@ -274,7 +288,7 @@ def sample_monte_carlo_rncrp_and_save(num_customer: int,
 def setup(args: argparse.Namespace):
     run_one_results_dir = os.path.join(
         args.results_dir_path,
-        f'dyn={args.dynamics_str}_a={args.alpha}_b={args.beta}_time={args.dynamics_str}')
+        f'dyn={args.dynamics_str}_a={args.alpha}_b={args.beta}')
     os.makedirs(run_one_results_dir, exist_ok=True)
     np.random.seed(args.seed)
     set_seed(seed=args.seed)
