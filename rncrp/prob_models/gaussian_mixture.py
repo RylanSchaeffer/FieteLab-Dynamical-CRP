@@ -17,15 +17,20 @@ torch.set_default_tensor_type('torch.FloatTensor')
 
 
 def single_run(num_gaussians: int = 3,
+            gaussian_dim: int = 2,
             gaussian_cov_scaling: float = 0.3,
             gaussian_mean_prior_cov_scaling: float = 6.,
-            dataset_dir,):
+            dataset_dir,
+            anisotropy: bool = False):
+
 
     sampled_gaussian_data = sample_from_mixture_of_gaussians(
         seq_len=100,
         num_gaussians=num_gaussians,
+        gaussian_dim=gaussian_dim,
         gaussian_params=dict(gaussian_cov_scaling=gaussian_cov_scaling,
-                             gaussian_mean_prior_cov_scaling=gaussian_mean_prior_cov_scaling))
+                             gaussian_mean_prior_cov_scaling=gaussian_mean_prior_cov_scaling),
+        anisotropy=anisotropy)
 
     concentration_params = 0.01 + np.arange(0.,6.01,0.25) # todo: select other values as needed
 
@@ -126,29 +131,127 @@ def run_and_plot_inference_alg(sampled_gaussian_data,
 
     return inference_alg_concentration_param_results
 
+
+def generate_plots(plot_dir, sweep_setting):
+    assert sweep_setting in {'sweep_dimensions', 'sweep_means', 'sweep_means_anisotropy'}
+    
+    num_datasets = 10
+
+    # Generate datasets and record performance for each
+    # if sweep_setting == 'sweep_dimensions':
+    #     for dim in np.arange(3., 20., 4.):
+    #         for dataset_idx in range(num_datasets):
+    #             print(f'Dataset Index: {dataset_idx}')
+    #             dataset_dir = os.path.join(plot_dir, f'dataset={dataset_idx}')
+    #             os.makedirs(dataset_dir, exist_ok=True)
+                
+    #             dataset_inference_algs_results, dataset_sampled_mix_of_gaussians_results = single_run(
+    #                 num_gaussians=dim,
+    #                 # gaussian_cov_scaling: float = 0.3,
+    #                 # gaussian_mean_prior_cov_scaling: float = 6.,
+    #                 dataset_dir=dataset_dir, 
+    #                 sweep_setting=sweep_setting)
+
+    #             inference_algs_results_by_dataset_idx[dataset_idx] = dataset_inference_algs_results
+    #             sampled_gaussian_data_by_dataset_idx[dataset_idx] = dataset_sampled_mix_of_gaussians_results
+
+    #         plot.plot_inference_algs_comparison(
+    #             plot_dir=plot_dir,
+    #             inference_algs_results_by_dataset_idx=inference_algs_results_by_dataset_idx,
+    #             dataset_by_dataset_idx=sampled_gaussian_data_by_dataset_idx)
+
+    # Sweep over number of dimensions
+    if sweep_setting == 'sweep_dimensions':
+        for dim in np.arange(2, 20, 3):
+            plot_dir += '/dim_'
+            plot_dir += str(dim)
+
+            inference_algs_results_by_dataset_idx = {}
+            sampled_gaussian_data_by_dataset_idx = {}
+
+            for dataset_idx in range(num_datasets):
+                print(f'Dataset Index: {dataset_idx}')
+                dataset_dir = os.path.join(plot_dir, f'dataset={dataset_idx}')
+                os.makedirs(dataset_dir, exist_ok=True)
+                
+                dataset_inference_algs_results, dataset_sampled_mix_of_gaussians_results = single_run(
+                    gaussian_dim=dim,
+                    dataset_dir=dataset_dir, 
+                    anisotropy=False)
+
+                inference_algs_results_by_dataset_idx[dataset_idx] = dataset_inference_algs_results
+                sampled_gaussian_data_by_dataset_idx[dataset_idx] = dataset_sampled_mix_of_gaussians_results
+
+            plot.plot_inference_algs_comparison(
+                plot_dir=plot_dir,
+                inference_algs_results_by_dataset_idx=inference_algs_results_by_dataset_idx,
+                dataset_by_dataset_idx=sampled_gaussian_data_by_dataset_idx)
+
+    # Sweep over spread of cluster means
+    elif sweep_setting == 'sweep_means':
+        for spread in np.arange(3., 20., 4.):
+            plot_dir += '/spread_'
+            plot_dir += str(spread)
+
+            inference_algs_results_by_dataset_idx = {}
+            sampled_gaussian_data_by_dataset_idx = {}
+
+            for dataset_idx in range(num_datasets):
+                print(f'Dataset Index: {dataset_idx}')
+                dataset_dir = os.path.join(plot_dir, f'dataset={dataset_idx}')
+                os.makedirs(dataset_dir, exist_ok=True)
+                
+                dataset_inference_algs_results, dataset_sampled_mix_of_gaussians_results = single_run(
+                    gaussian_mean_prior_cov_scaling=spread,
+                    dataset_dir=dataset_dir, 
+                    anisotropy=False)
+
+                inference_algs_results_by_dataset_idx[dataset_idx] = dataset_inference_algs_results
+                sampled_gaussian_data_by_dataset_idx[dataset_idx] = dataset_sampled_mix_of_gaussians_results
+
+            plot.plot_inference_algs_comparison(
+                plot_dir=plot_dir,
+                inference_algs_results_by_dataset_idx=inference_algs_results_by_dataset_idx,
+                dataset_by_dataset_idx=sampled_gaussian_data_by_dataset_idx)
+
+    # Sweep over anisotropy of cluster means
+    elif sweep_setting == 'sweep_means_anisotropy':
+        inference_algs_results_by_dataset_idx = {}
+        sampled_gaussian_data_by_dataset_idx = {}
+
+        for dataset_idx in range(num_datasets):
+            print(f'Dataset Index: {dataset_idx}')
+            dataset_dir = os.path.join(plot_dir, f'dataset={dataset_idx}')
+            os.makedirs(dataset_dir, exist_ok=True)
+            
+            dataset_inference_algs_results, dataset_sampled_mix_of_gaussians_results = single_run(
+                gaussian_mean_prior_cov_scaling=spread,
+                dataset_dir=dataset_dir, 
+                anisotropy=True)
+
+            inference_algs_results_by_dataset_idx[dataset_idx] = dataset_inference_algs_results
+            sampled_gaussian_data_by_dataset_idx[dataset_idx] = dataset_sampled_mix_of_gaussians_results
+
+        plot.plot_inference_algs_comparison(
+            plot_dir=plot_dir,
+            inference_algs_results_by_dataset_idx=inference_algs_results_by_dataset_idx,
+            dataset_by_dataset_idx=sampled_gaussian_data_by_dataset_idx)
+
+
 def main():
     plot_dir = 'rncrp/gaussian_mixture/plots'
     os.makedirs(plot_dir, exist_ok=True)
     np.random.seed(1)
 
-    num_datasets = 10
-    inference_algs_results_by_dataset_idx = {}
-    sampled_gaussian_data_by_dataset_idx = {}
+    # Number of dimensions
+    generate_plots(plot_dir+'/sweep_dimensions','sweep_dimensions')
 
-    # Generate datasets and record performance for each
-    for dataset_idx in range(num_datasets):
-        print(f'Dataset Index: {dataset_idx}')
-        dataset_dir = os.path.join(plot_dir, f'dataset={dataset_idx}')
-        os.makedirs(dataset_dir, exist_ok=True)
-        dataset_inference_algs_results, dataset_sampled_mix_of_gaussians_results = single_run(
-            dataset_dir=dataset_dir)
-        inference_algs_results_by_dataset_idx[dataset_idx] = dataset_inference_algs_results
-        sampled_gaussian_data_by_dataset_idx[dataset_idx] = dataset_sampled_mix_of_gaussians_results
+    # Spread of cluster means
+    generate_plots(plot_dir+'/sweep_means','sweep_means')
 
-    plot.plot_inference_algs_comparison(
-        plot_dir=plot_dir,
-        inference_algs_results_by_dataset_idx=inference_algs_results_by_dataset_idx,
-        dataset_by_dataset_idx=sampled_gaussian_data_by_dataset_idx)
+    # Anisotropy of cluster means
+    generate_plots(plot_dir+'/sweep_means_anisotropy','sweep_means_anisotropy')
+
 
 
 if __name__ == '__main__':

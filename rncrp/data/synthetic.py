@@ -42,15 +42,26 @@ from typing import Dict, Union
 #     return left_ordered_indicators_2
 
 # Generate mixture of gaussians
-def generate_gaussian_params_from_gaussian_prior(num_gaussians: int = 3,
-                                                 gaussian_dim: int = 2,
-                                                 feature_prior_cov_scaling: float = 3.,
-                                                 gaussian_cov_scaling: float = 0.3):
-    # Sample Gaussian means from prior N(0, rho * I)
-    means = np.random.multivariate_normal(
-        mean=np.zeros(gaussian_dim),
-        cov=feature_prior_cov_scaling * np.eye(gaussian_dim),
-        size=num_gaussians)
+def generate_mixture_of_gaussians(num_gaussians: int = 3,
+                                 gaussian_dim: int = 2,
+                                 gaussian_mean_prior_cov_scaling: float = 3.,
+                                 gaussian_cov_scaling: float = 0.3,
+                                 anisotropy: bool = False):
+    
+    # Sample Gaussian means
+    if not anisotropy:  # means from isotropic prior N(0, rho * I)
+        means = np.random.multivariate_normal(
+            mean=np.zeros(gaussian_dim),
+            cov=gaussian_mean_prior_cov_scaling * np.eye(gaussian_dim),
+            size=num_gaussians)
+    
+    else: # means from anisotropic prior
+        means = np.random.multivariate_normal(
+            mean=np.zeros(gaussian_dim),
+            cov=gaussian_mean_prior_cov_scaling * np.random.randint(low=1, 
+                                                                    high=20, 
+                                                                    size=(gaussian_dim,gaussian_dim)),
+            size=num_gaussians)
 
     cov = gaussian_cov_scaling * np.eye(gaussian_dim)
     covs = np.repeat(cov[np.newaxis, :, :],
@@ -62,15 +73,20 @@ def generate_gaussian_params_from_gaussian_prior(num_gaussians: int = 3,
 
 # Sample from mixture
 def sample_from_mixture_of_gaussians(seq_len: int = 100,
-                                              num_gaussians: int = None,
-                                              gaussian_params: dict = {}):
+                                      num_gaussians: int = None,
+                                      gaussian_dim: int = 2,
+                                      gaussian_params: dict = {},
+                                      anisotropy: bool = False):
 
     assert num_gaussians is not None
     assigned_table_seq = np.random.choice(np.arange(num_gaussians),
                                           replace=True,
                                           size=seq_len)
 
-    mixture_of_gaussians = generate_mixture_of_gaussians(num_gaussians=num_gaussians, **gaussian_params)
+    mixture_of_gaussians = generate_mixture_of_gaussians(num_gaussians=num_gaussians, 
+                                                        gaussian_dim=gaussian_dim,
+                                                        **gaussian_params,
+                                                        anisotropy=anisotropy)
 
     gaussian_samples_seq = np.array([
         np.random.multivariate_normal(mean=mixture_of_gaussians['means'][assigned_table],
@@ -90,176 +106,176 @@ def sample_from_mixture_of_gaussians(seq_len: int = 100,
     return result
 
 
-def sample_ibp(num_mc_sample: int,
-               num_customer: int,
-               alpha: float,
-               beta: float) -> Dict[str, np.ndarray]:
-    assert alpha > 0.
-    assert beta > 0.
+# def sample_ibp(num_mc_sample: int,
+#                num_customer: int,
+#                alpha: float,
+#                beta: float) -> Dict[str, np.ndarray]:
+#     assert alpha > 0.
+#     assert beta > 0.
 
-    # preallocate results
-    # use 10 * expected number of dishes as heuristic
-    max_dishes = 10 * int(alpha * beta * np.sum(1 / (1 + np.arange(num_customer))))
-    sampled_dishes_by_customer_idx = np.zeros(
-        shape=(num_mc_sample, num_customer, max_dishes),
-        dtype=np.int16)
-    cum_sampled_dishes_by_customer_idx = np.zeros(
-        shape=(num_mc_sample, num_customer, max_dishes),
-        dtype=np.int16)
-    num_dishes_by_customer_idx = np.zeros(
-        shape=(num_mc_sample, num_customer, max_dishes),
-        dtype=np.int16)
+#     # preallocate results
+#     # use 10 * expected number of dishes as heuristic
+#     max_dishes = 10 * int(alpha * beta * np.sum(1 / (1 + np.arange(num_customer))))
+#     sampled_dishes_by_customer_idx = np.zeros(
+#         shape=(num_mc_sample, num_customer, max_dishes),
+#         dtype=np.int16)
+#     cum_sampled_dishes_by_customer_idx = np.zeros(
+#         shape=(num_mc_sample, num_customer, max_dishes),
+#         dtype=np.int16)
+#     num_dishes_by_customer_idx = np.zeros(
+#         shape=(num_mc_sample, num_customer, max_dishes),
+#         dtype=np.int16)
 
-    for smpl_idx in range(num_mc_sample):
-        current_num_dishes = 0
-        for cstmr_idx in range(1, num_customer + 1):
-            # sample existing dishes
-            prob_new_customer_sampling_dish = cum_sampled_dishes_by_customer_idx[smpl_idx, cstmr_idx - 2, :] / \
-                                              (beta + cstmr_idx - 1)
-            existing_dishes_for_new_customer = np.random.binomial(
-                n=1,
-                p=prob_new_customer_sampling_dish[np.newaxis, :])[0]
-            sampled_dishes_by_customer_idx[smpl_idx, cstmr_idx - 1,
-            :] = existing_dishes_for_new_customer  # .astype(np.int)
+#     for smpl_idx in range(num_mc_sample):
+#         current_num_dishes = 0
+#         for cstmr_idx in range(1, num_customer + 1):
+#             # sample existing dishes
+#             prob_new_customer_sampling_dish = cum_sampled_dishes_by_customer_idx[smpl_idx, cstmr_idx - 2, :] / \
+#                                               (beta + cstmr_idx - 1)
+#             existing_dishes_for_new_customer = np.random.binomial(
+#                 n=1,
+#                 p=prob_new_customer_sampling_dish[np.newaxis, :])[0]
+#             sampled_dishes_by_customer_idx[smpl_idx, cstmr_idx - 1,
+#             :] = existing_dishes_for_new_customer  # .astype(np.int)
 
-            # sample number of new dishes for new customer
-            # subtract 1 from to cstmr_idx because of 1-based iterating
-            num_new_dishes = np.random.poisson(alpha * beta / (beta + cstmr_idx - 1))
-            start_dish_idx = current_num_dishes
-            end_dish_idx = current_num_dishes + num_new_dishes
-            sampled_dishes_by_customer_idx[smpl_idx, cstmr_idx - 1, start_dish_idx:end_dish_idx] = 1
+#             # sample number of new dishes for new customer
+#             # subtract 1 from to cstmr_idx because of 1-based iterating
+#             num_new_dishes = np.random.poisson(alpha * beta / (beta + cstmr_idx - 1))
+#             start_dish_idx = current_num_dishes
+#             end_dish_idx = current_num_dishes + num_new_dishes
+#             sampled_dishes_by_customer_idx[smpl_idx, cstmr_idx - 1, start_dish_idx:end_dish_idx] = 1
 
-            # increment current num dishes
-            current_num_dishes += num_new_dishes
-            num_dishes_by_customer_idx[smpl_idx, cstmr_idx - 1, current_num_dishes] = 1
+#             # increment current num dishes
+#             current_num_dishes += num_new_dishes
+#             num_dishes_by_customer_idx[smpl_idx, cstmr_idx - 1, current_num_dishes] = 1
 
-            # increment running sums
-            cum_sampled_dishes_by_customer_idx[smpl_idx, cstmr_idx - 1, :] = np.add(
-                cum_sampled_dishes_by_customer_idx[smpl_idx, cstmr_idx - 2, :],
-                sampled_dishes_by_customer_idx[smpl_idx, cstmr_idx - 1, :])
+#             # increment running sums
+#             cum_sampled_dishes_by_customer_idx[smpl_idx, cstmr_idx - 1, :] = np.add(
+#                 cum_sampled_dishes_by_customer_idx[smpl_idx, cstmr_idx - 2, :],
+#                 sampled_dishes_by_customer_idx[smpl_idx, cstmr_idx - 1, :])
 
-    sample_ibp_results = {
-        'cum_sampled_dishes_by_customer_idx': cum_sampled_dishes_by_customer_idx,
-        'sampled_dishes_by_customer_idx': sampled_dishes_by_customer_idx,
-        'num_dishes_by_customer_idx': num_dishes_by_customer_idx,
-    }
+#     sample_ibp_results = {
+#         'cum_sampled_dishes_by_customer_idx': cum_sampled_dishes_by_customer_idx,
+#         'sampled_dishes_by_customer_idx': sampled_dishes_by_customer_idx,
+#         'num_dishes_by_customer_idx': num_dishes_by_customer_idx,
+#     }
 
-    # import matplotlib.pyplot as plt
-    # mc_avg = np.mean(sample_ibp_results['sampled_dishes_by_customer_idx'], axis=0)
-    # plt.imshow(mc_avg)
-    # plt.show()
+#     # import matplotlib.pyplot as plt
+#     # mc_avg = np.mean(sample_ibp_results['sampled_dishes_by_customer_idx'], axis=0)
+#     # plt.imshow(mc_avg)
+#     # plt.show()
 
-    return sample_ibp_results
+#     return sample_ibp_results
 
 
-def sample_from_linear_gaussian(num_obs: int = 100,
-                                indicator_sampling_str: str = 'categorical',
-                                indicator_sampling_params: Dict[str, float] = None,
-                                feature_prior_params: Dict[str, float] = None,
-                                likelihood_params: Dict[str, float] = None) -> Dict[str, np.ndarray]:
-    """
-    Draw sample from Binary Linear-Gaussian model.
+# def sample_from_linear_gaussian(num_obs: int = 100,
+#                                 indicator_sampling_str: str = 'categorical',
+#                                 indicator_sampling_params: Dict[str, float] = None,
+#                                 feature_prior_params: Dict[str, float] = None,
+#                                 likelihood_params: Dict[str, float] = None) -> Dict[str, np.ndarray]:
+#     """
+#     Draw sample from Binary Linear-Gaussian model.
 
-    :return:
-        sampled_indicators: NumPy array with shape (seq_len,) of (integer) sampled classes
-        linear_gaussian_samples_seq: NumPy array with shape (seq_len, obs_dim) of
-                                binary linear-Gaussian samples
-    """
+#     :return:
+#         sampled_indicators: NumPy array with shape (seq_len,) of (integer) sampled classes
+#         linear_gaussian_samples_seq: NumPy array with shape (seq_len, obs_dim) of
+#                                 binary linear-Gaussian samples
+#     """
 
-    if feature_prior_params is None:
-        feature_prior_params = {}
+#     if feature_prior_params is None:
+#         feature_prior_params = {}
 
-    if likelihood_params is None:
-        likelihood_params = {'sigma_x': 1e-1}
+#     if likelihood_params is None:
+#         likelihood_params = {'sigma_x': 1e-1}
 
-    # Otherwise, use categorical or IBP to sample number of features
-    if indicator_sampling_str not in {'categorical', 'IBP', 'GriffithsGhahramani'}:
-        raise ValueError(f'Impermissible class sampling value: {indicator_sampling_str}')
+#     # Otherwise, use categorical or IBP to sample number of features
+#     if indicator_sampling_str not in {'categorical', 'IBP', 'GriffithsGhahramani'}:
+#         raise ValueError(f'Impermissible class sampling value: {indicator_sampling_str}')
 
-    # Unique case of generating Griffiths & Ghahramani data
-    if indicator_sampling_str == 'GriffithsGhahramani':
-        sampled_data_result = sample_from_griffiths_ghahramani_2005(
-            num_obs=num_obs,
-            gaussian_likelihood_params=likelihood_params)
-        sampled_data_result['indicator_sampling_str'] = indicator_sampling_str
+#     # Unique case of generating Griffiths & Ghahramani data
+#     if indicator_sampling_str == 'GriffithsGhahramani':
+#         sampled_data_result = sample_from_griffiths_ghahramani_2005(
+#             num_obs=num_obs,
+#             gaussian_likelihood_params=likelihood_params)
+#         sampled_data_result['indicator_sampling_str'] = indicator_sampling_str
 
-        indicator_sampling_descr_str = '{}_probs=[{}]'.format(
-            indicator_sampling_str,
-            ','.join([str(i) for i in sampled_data_result['indicator_sampling_params']['probs']]))
-        sampled_data_result['indicator_sampling_descr_str'] = indicator_sampling_descr_str
-        return sampled_data_result
+#         indicator_sampling_descr_str = '{}_probs=[{}]'.format(
+#             indicator_sampling_str,
+#             ','.join([str(i) for i in sampled_data_result['indicator_sampling_params']['probs']]))
+#         sampled_data_result['indicator_sampling_descr_str'] = indicator_sampling_descr_str
+#         return sampled_data_result
 
-    if indicator_sampling_str is None:
-        indicator_sampling_params = dict()
+#     if indicator_sampling_str is None:
+#         indicator_sampling_params = dict()
 
-    if indicator_sampling_str == 'categorical':
+#     if indicator_sampling_str == 'categorical':
 
-        # if probabilities per cluster aren't specified, go with uniform probabilities
-        if 'probs' not in indicator_sampling_params:
-            indicator_sampling_params['probs'] = np.ones(5) / 5
+#         # if probabilities per cluster aren't specified, go with uniform probabilities
+#         if 'probs' not in indicator_sampling_params:
+#             indicator_sampling_params['probs'] = np.ones(5) / 5
 
-        indicator_sampling_descr_str = '{}_probs={}'.format(
-            indicator_sampling_str,
-            list(indicator_sampling_params['probs']))
-        indicator_sampling_descr_str = indicator_sampling_descr_str.replace(' ', '')
+#         indicator_sampling_descr_str = '{}_probs={}'.format(
+#             indicator_sampling_str,
+#             list(indicator_sampling_params['probs']))
+#         indicator_sampling_descr_str = indicator_sampling_descr_str.replace(' ', '')
 
-    elif indicator_sampling_str == 'IBP':
-        if 'alpha' not in indicator_sampling_params:
-            indicator_sampling_params['alpha'] = 3.98
-        if 'beta' not in indicator_sampling_params:
-            indicator_sampling_params['beta'] = 4.97
-        indicator_sampling_descr_str = '{}_a={}_b={}'.format(
-            indicator_sampling_str,
-            indicator_sampling_params['alpha'],
-            indicator_sampling_params['beta'])
+#     elif indicator_sampling_str == 'IBP':
+#         if 'alpha' not in indicator_sampling_params:
+#             indicator_sampling_params['alpha'] = 3.98
+#         if 'beta' not in indicator_sampling_params:
+#             indicator_sampling_params['beta'] = 4.97
+#         indicator_sampling_descr_str = '{}_a={}_b={}'.format(
+#             indicator_sampling_str,
+#             indicator_sampling_params['alpha'],
+#             indicator_sampling_params['beta'])
 
-    else:
-        raise NotImplementedError
+#     else:
+#         raise NotImplementedError
 
-    if indicator_sampling_str == 'categorical':
-        num_gaussians = indicator_sampling_params['probs'].shape[0]
-        sampled_indicators = np.random.binomial(
-            n=1,
-            p=indicator_sampling_params['probs'][np.newaxis, :],
-            size=(num_obs, num_gaussians))
-    elif indicator_sampling_str == 'IBP':
-        sampled_indicators = sample_ibp(
-            num_mc_sample=1,
-            num_customer=num_obs,
-            alpha=indicator_sampling_params['alpha'],
-            beta=indicator_sampling_params['beta'])['sampled_dishes_by_customer_idx'][0, :, :]
-        num_gaussians = np.argwhere(np.sum(sampled_indicators, axis=0) == 0.)[0, 0]
-        sampled_indicators = sampled_indicators[:, :num_gaussians]
-    else:
-        raise ValueError(f'Impermissible class sampling: {indicator_sampling_str}')
+#     if indicator_sampling_str == 'categorical':
+#         num_gaussians = indicator_sampling_params['probs'].shape[0]
+#         sampled_indicators = np.random.binomial(
+#             n=1,
+#             p=indicator_sampling_params['probs'][np.newaxis, :],
+#             size=(num_obs, num_gaussians))
+#     elif indicator_sampling_str == 'IBP':
+#         sampled_indicators = sample_ibp(
+#             num_mc_sample=1,
+#             num_customer=num_obs,
+#             alpha=indicator_sampling_params['alpha'],
+#             beta=indicator_sampling_params['beta'])['sampled_dishes_by_customer_idx'][0, :, :]
+#         num_gaussians = np.argwhere(np.sum(sampled_indicators, axis=0) == 0.)[0, 0]
+#         sampled_indicators = sampled_indicators[:, :num_gaussians]
+#     else:
+#         raise ValueError(f'Impermissible class sampling: {indicator_sampling_str}')
 
-    gaussian_params = generate_gaussian_params_from_gaussian_prior(
-        num_gaussians=num_gaussians,
-        **feature_prior_params)
+#     gaussian_params = generate_gaussian_params_from_gaussian_prior(
+#         num_gaussians=num_gaussians,
+#         **feature_prior_params)
 
-    features = gaussian_params['means']
-    obs_dim = features.shape[1]
-    obs_means = np.matmul(sampled_indicators, features)
-    obs_cov = np.square(likelihood_params['sigma_x']) * np.eye(obs_dim)
-    observations = np.array([
-        np.random.multivariate_normal(
-            mean=obs_means[obs_idx],
-            cov=obs_cov)
-        for obs_idx in range(num_obs)])
+#     features = gaussian_params['means']
+#     obs_dim = features.shape[1]
+#     obs_means = np.matmul(sampled_indicators, features)
+#     obs_cov = np.square(likelihood_params['sigma_x']) * np.eye(obs_dim)
+#     observations = np.array([
+#         np.random.multivariate_normal(
+#             mean=obs_means[obs_idx],
+#             cov=obs_cov)
+#         for obs_idx in range(num_obs)])
 
-    sampled_data_result = dict(
-        gaussian_params=gaussian_params,
-        sampled_indicators=sampled_indicators,
-        observations=observations,
-        features=features,
-        indicator_sampling_str=indicator_sampling_str,
-        indicator_sampling_params=indicator_sampling_params,
-        indicator_sampling_descr_str=indicator_sampling_descr_str,
-        feature_prior_params=feature_prior_params,
-        likelihood_params=likelihood_params,
-    )
+#     sampled_data_result = dict(
+#         gaussian_params=gaussian_params,
+#         sampled_indicators=sampled_indicators,
+#         observations=observations,
+#         features=features,
+#         indicator_sampling_str=indicator_sampling_str,
+#         indicator_sampling_params=indicator_sampling_params,
+#         indicator_sampling_descr_str=indicator_sampling_descr_str,
+#         feature_prior_params=feature_prior_params,
+#         likelihood_params=likelihood_params,
+#     )
 
-    return sampled_data_result
+#     return sampled_data_result
 
 
 # def sample_from_griffiths_ghahramani_2005(num_obs: int = 100,
