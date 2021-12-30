@@ -2,7 +2,6 @@ import abc
 import numpy as np
 from typing import Dict
 
-
 dynamics_strs = [
     'perfectintegrator',
     'leakyintegrator',
@@ -191,19 +190,20 @@ class Hyperbolic(Dynamics):
         """
 
         if params is None:
-            params = {'c': 1., 'num_exponentials': 150}
+            params = {'c': 1., 'num_exponentials': 100}
         assert 'c' in params
         super().__init__(params=params)
 
         # We approximate the integral with a Riemann sum.
+        # Shift by a half-width to use the midpoint.
         width = 0.05
         rates = np.linspace(start=0,
-                            stop=width*params['num_exponentials'],
-                            num=params['num_exponentials'])
+                            stop=width * params['num_exponentials'],
+                            num=params['num_exponentials']) + width / 2
         self._exponentials = [
             LinearFirstOrder(params={'a': 1, 'b': rate})
             for rate in rates]
-        self._probabilities = width * np.exp(-rates/params['c']) / params['c']
+        self._probabilities = width * np.exp(-rates / params['c']) / params['c']
 
     def initialize_state(self,
                          customer_assignment_probs: np.ndarray,
@@ -254,6 +254,7 @@ class Hyperbolic(Dynamics):
         self._state = {
             'N': N_weighted_avg}
         return self._state
+
 
 # class LinearSecondOrder(Dynamics):
 #     """
@@ -371,7 +372,6 @@ class StateTransition(Dynamics):
     def run_dynamics(self,
                      time_start: float,
                      time_end: float) -> Dict[str, np.ndarray]:
-
         normalized_transition = self._normalize_transition()
         new_N = np.matmul(normalized_transition, self._state['N'])
         self._state = {
@@ -384,7 +384,6 @@ class StateTransition(Dynamics):
                      customer_assignment_probs: np.ndarray,
                      time: float
                      ) -> Dict[str, np.ndarray]:
-
         self._new_state_idx += 1
 
         # add transition probability
