@@ -12,7 +12,7 @@ import helpers.torch
 import utils.inference
 import utils.metrics
 import utils.plot
-import utils.single_run
+from utils.single_run import *
 import data.real
 from data.real import *
 torch.set_default_tensor_type('torch.FloatTensor')
@@ -61,7 +61,7 @@ def main():
             assigned_table_seq=np.copy(omniglot_data['assigned_table_seq']),
             observations=np.copy(omniglot_data['image_features']))
 
-        dataset_inference_algs_results = single_run.single_run(
+        dataset_inference_algs_results = single_run(
             dataset_dir=plot_dir,
             sampled_data=omniglot_data,
             setting='omniglot')

@@ -11,7 +11,7 @@ import helpers.torch
 import utils.inference
 import utils.metrics
 import utils.plot
-import utils.single_run
+from utils.single_run import *
 from data.synthetic import *
 torch.set_default_tensor_type('torch.FloatTensor')
 
@@ -42,7 +42,7 @@ def sweep_parameters(plot_dir, sweep_setting):
                                          gaussian_mean_prior_cov_scaling=6.),
                     anisotropy=False)
 
-                dataset_inference_algs_results, dataset_sampled_mix_of_gaussians_results = single_run.single_run(
+                dataset_inference_algs_results, dataset_sampled_mix_of_gaussians_results = single_run(
                     dataset_dir=dataset_dir, 
                     sampled_data=sampled_gaussian_data,
                     setting='gaussian')
@@ -77,7 +77,7 @@ def sweep_parameters(plot_dir, sweep_setting):
                                          gaussian_mean_prior_cov_scaling=spread),
                     anisotropy=False)
 
-                dataset_inference_algs_results, dataset_sampled_mix_of_gaussians_results = single_run.single_run(
+                dataset_inference_algs_results, dataset_sampled_mix_of_gaussians_results = single_run(
                     dataset_dir=dataset_dir, 
                     sampled_data=sampled_gaussian_data,
                     setting='gaussian')
@@ -108,7 +108,7 @@ def sweep_parameters(plot_dir, sweep_setting):
                                      gaussian_mean_prior_cov_scaling=6.),
                 anisotropy=True)
 
-            dataset_inference_algs_results, dataset_sampled_mix_of_gaussians_results = single_run.single_run(
+            dataset_inference_algs_results, dataset_sampled_mix_of_gaussians_results = single_run(
                 dataset_dir=dataset_dir, 
                 sampled_data=sampled_gaussian_data,
                 setting='gaussian')
