@@ -61,7 +61,7 @@ def main():
             assigned_table_seq=np.copy(omniglot_data['assigned_table_seq']),
             observations=np.copy(omniglot_data['image_features']))
 
-        dataset_inference_algs_results = single_run(
+        dataset_inference_algs_results = single_run.single_run(
             dataset_dir=plot_dir,
             sampled_data=omniglot_data,
             setting='omniglot')
