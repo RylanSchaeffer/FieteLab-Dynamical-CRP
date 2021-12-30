@@ -7,6 +7,93 @@ import seaborn as sns
 from typing import Dict, List
 
 
+def run_and_plot_inference_alg(sampled_data,
+                               inference_alg_str,
+                               concentration_params,
+                               plot_dir):
+
+    inference_alg_plot_dir = os.path.join(plot_dir, inference_alg_str)
+    os.makedirs(inference_alg_plot_dir, exist_ok=True)
+    num_clusters_by_concentration_param = {}
+    scores_by_concentration_param = {}
+    runtimes_by_concentration_param = {}
+
+    if setting == 'omniglot':
+        features = 'image_features'
+
+        # Choose appropriate likelihood form
+        likelihood = 'multivariate_normal'
+        # likelihood = 'dirichlet_multinomial'
+
+    elif setting == 'gaussian':
+        features = 'gaussian_samples_seq'
+        likelihood = 'multivariate_normal'
+
+    for concentration_param in concentration_params:
+
+        inference_alg_results_concentration_param_path = os.path.join(
+            inference_alg_plot_dir,
+            f'results_{np.round(concentration_param, 2)}.joblib')
+
+        # if results do not exist, generate
+        if not os.path.isfile(inference_alg_results_concentration_param_path):
+            print(f'Generating {inference_alg_results_concentration_param_path}')
+
+            # run inference algorithm
+            start_time = timer()
+            inference_alg_concentration_param_results = inference.run_inference_alg(
+                inference_alg_str=inference_alg_str,
+                observations=sampled_data[features],
+                concentration_param=concentration_param,
+                likelihood_model='multivariate_normal',
+                learning_rate=1e0)
+
+            # record elapsed time
+            stop_time = timer()
+            runtime = stop_time - start_time
+
+            # record scores
+            scores, pred_cluster_labels = utils.metrics.score_predicted_clusters(
+                true_cluster_labels=sampled_data['assigned_table_seq'],
+                table_assignment_posteriors=inference_alg_concentration_param_results['table_assignment_posteriors'])
+
+            # count number of clusters
+            num_clusters = len(np.unique(pred_cluster_labels))
+
+            # write to disk and delete
+            data_to_store = dict(
+                inference_alg_concentration_param_results=inference_alg_concentration_param_results,
+                num_clusters=num_clusters,
+                scores=scores,
+                runtime=runtime,
+            )
+
+            joblib.dump(data_to_store,
+                        filename=inference_alg_results_concentration_param_path)
+            del inference_alg_concentration_param_results
+            del data_to_store
+        else:
+            print(f'Loading {inference_alg_results_concentration_param_path} from disk...')
+
+        # read results from disk
+        stored_data = joblib.load(
+            inference_alg_results_concentration_param_path)
+
+        num_clusters_by_concentration_param[concentration_param] = stored_data['num_clusters']
+        scores_by_concentration_param[concentration_param] = stored_data['scores']
+        runtimes_by_concentration_param[concentration_param] = stored_data['runtime']
+
+        print('Finished {} concentration_param={:.2f}'.format(inference_alg_str, concentration_param))
+
+    inference_alg_concentration_param_results = dict(
+        num_clusters_by_param=num_clusters_by_concentration_param,
+        scores_by_param=pd.DataFrame(scores_by_concentration_param).T,
+        runtimes_by_param=runtimes_by_concentration_param,
+    )
+
+    return inference_alg_concentration_param_results
+
+
 def calculate_num_clusters_by_dataset_by_inference_alg(inference_algs_results_by_dataset_idx):
     # construct dictionary mapping from inference alg to dataframe
     # with dataset idx as rows and concentration parameters as columns

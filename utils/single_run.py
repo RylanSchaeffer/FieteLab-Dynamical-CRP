@@ -7,30 +7,36 @@ import os
 import torch
 from timeit import default_timer as timer
 
-import rncrp.helpers.numpy
-import rncrp.helpers.torch
-import rncrp.inference
-import rncrp.metrics
-import rncrp.plot
-import rncrp.data.real
-from rncrp.data.real import *
+import helpers.numpy
+import helpers.torch
+import utils.inference
+import utils.metrics
+import utils.plot
+import data.real
+from data.real import *
+from data.synthetic import *
+
 torch.set_default_tensor_type('torch.FloatTensor')
 
 
-def single_run(dataset_dir, omniglot_dataset_results):
+def single_run(dataset_dir, sampled_data, setting):
+    if setting == 'omniglot':
+        concentration_params = np.linspace(0.1 * np.log(sampled_data['assigned_table_seq'].shape[0]),
+                                           3 * np.log(sampled_data['assigned_table_seq'].shape[0]),
+                                           11)
 
-    concentration_params = np.linspace(0.1*np.log(omniglot_dataset_results['assigned_table_seq'].shape[0]),
-                                       3*np.log(omniglot_dataset_results['assigned_table_seq'].shape[0]),
-                                       11)
+    elif setting == 'gaussian':
+        concentration_params = 0.01 + np.arange(0., 6.01, 0.25)  # todo: select other values as needed
+
     inference_alg_strs = ['RN-CRP',
-                        'DP-Means (online)',
-                        'DP-Means (offline)',
-                        'DP-GMM (15 Init, 30 Iter)'] # todo: change DP-GMM parameters
+                          'DP-Means (online)',
+                          'DP-Means (offline)',
+                          'DP-GMM (15 Init, 30 Iter)']  # todo: change DP-GMM parameters
 
     inference_algs_results = {}
     for inference_alg_str in inference_alg_strs:
         inference_alg_results = run_and_plot_inference_alg(
-            omniglot_dataset_results=omniglot_dataset_results,
+            sampled_data=sampled_data,
             inference_alg_str=inference_alg_str,
             concentration_params=concentration_params,
             plot_dir=dataset_dir)
@@ -38,16 +44,24 @@ def single_run(dataset_dir, omniglot_dataset_results):
     return inference_algs_results, sampled_gaussian_data
 
 
-def run_and_plot_inference_alg(omniglot_dataset_results,
+def run_and_plot_inference_alg(sampled_data,
                                inference_alg_str,
                                concentration_params,
                                plot_dir):
-
     inference_alg_plot_dir = os.path.join(plot_dir, inference_alg_str)
     os.makedirs(inference_alg_plot_dir, exist_ok=True)
     num_clusters_by_concentration_param = {}
     scores_by_concentration_param = {}
     runtimes_by_concentration_param = {}
+
+    if setting == 'omniglot':
+        features = 'image_features'
+        likelihood = 'multivariate_normal'
+        # likelihood = 'dirichlet_multinomial'
+
+    elif setting == 'gaussian':
+        features = 'gaussian_samples_seq'
+        likelihood = 'multivariate_normal'
 
     for concentration_param in concentration_params:
 
@@ -60,13 +74,12 @@ def run_and_plot_inference_alg(omniglot_dataset_results,
             print(f'Generating {inference_alg_results_concentration_param_path}')
 
             # run inference algorithm
-            # time using timer because https://stackoverflow.com/a/25823885/4570472
             start_time = timer()
             inference_alg_concentration_param_results = utils.inference.run_inference_alg(
                 inference_alg_str=inference_alg_str,
-                observations=omniglot_dataset_results['image_features'],
+                observations=sampled_data[features],
                 concentration_param=concentration_param,
-                likelihood_model='multivariate_normal',
+                likelihood_model=likelihood,
                 learning_rate=1e0)
 
             # record elapsed time
@@ -75,7 +88,7 @@ def run_and_plot_inference_alg(omniglot_dataset_results,
 
             # record scores
             scores, pred_cluster_labels = utils.metrics.score_predicted_clusters(
-                true_cluster_labels=omniglot_dataset_results['assigned_table_seq'],
+                true_cluster_labels=sampled_data['assigned_table_seq'],
                 table_assignment_posteriors=inference_alg_concentration_param_results['table_assignment_posteriors'])
 
             # count number of clusters
@@ -113,61 +126,3 @@ def run_and_plot_inference_alg(omniglot_dataset_results,
     )
 
     return inference_alg_concentration_param_results
-
-def main():
-    num_data = None
-    feature_extractor_method = 'vae'
-    center_crop = True
-    avg_pool = False
-    plot_dir = 'omniglot_plots_numdata={}_dense'.format(num_data) # fix as needed
-    os.makedirs(plot_dir, exist_ok=True)
-    np.random.seed(1)
-    torch.manual_seed(0)
-
-    omniglot_dataset_results = real.load_omniglot_dataset(
-        data_dir='data',
-        num_data=num_data,
-        center_crop=center_crop,
-        avg_pool=avg_pool,
-        feature_extractor_method=feature_extractor_method)
-
-    # plot number of topics versus number of posts
-    plot.plot_num_clusters_by_num_obs(
-        true_cluster_labels=omniglot_dataset_results['assigned_table_seq'],
-        plot_dir=plot_dir)
-
-    num_obs = omniglot_dataset_results['assigned_table_seq'].shape[0]
-    # num_permutations = 3
-    num_permutations = 1
-    inference_algs_results_by_dataset_idx = {}
-    dataset_by_dataset_idx = {}
-
-    # Generate datasets and record performance for each
-    for dataset_idx in range(num_permutations):
-        # print(f'Dataset Index: {dataset_idx}')
-        # dataset_dir = os.path.join(plot_dir, f'dataset={dataset_idx}')
-        # os.makedirs(dataset_dir, exist_ok=True)
-
-        # generate permutation and reorder data
-        # index_permutation = np.random.permutation(np.arange(num_obs, dtype=np.int))
-        # omniglot_dataset_results['image_features'] = omniglot_dataset_results['image_features'][index_permutation]
-        # omniglot_dataset_results['assigned_table_seq'] = omniglot_dataset_results['assigned_table_seq'][index_permutation]
-        dataset_by_dataset_idx[dataset_idx] = dict(
-            assigned_table_seq=np.copy(omniglot_dataset_results['assigned_table_seq']),
-            observations=np.copy(omniglot_dataset_results['image_features']))
-
-        dataset_inference_algs_results = single_run(
-            dataset_dir=plot_dir,
-            omniglot_dataset_results=omniglot_dataset_results)
-        inference_algs_results_by_dataset_idx[dataset_idx] = dataset_inference_algs_results
-
-    plot.plot_inference_algs_comparison(
-        inference_algs_results_by_dataset_idx=inference_algs_results_by_dataset_idx,
-        dataset_by_dataset_idx=dataset_by_dataset_idx,
-        plot_dir=plot_dir)
-
-    print('Successfully completed Omniglot simulation')
-
-
-if __name__ == '__main__':
-    main()

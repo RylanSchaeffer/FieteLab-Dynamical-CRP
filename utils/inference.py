@@ -6,8 +6,7 @@ import sklearn.mixture
 import torch
 import torch.distributions
 import torch.optim
-import rncrp.prob_models
-from rncrp.helpers.torch import assert_no_nan_no_inf_is_real
+from helpers.torch import assert_no_nan_no_inf_is_real
 
 
 # torch.set_default_tensor_type('torch.DoubleTensor')

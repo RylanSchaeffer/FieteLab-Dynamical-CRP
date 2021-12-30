@@ -144,15 +144,17 @@ def vae_load(omniglot_dataset):
     # Train the VAE
     lr = 1e-1
     gamma = 1 
+
+    save_path = 'data/vae.pth'
     vae = ConvVAE(in_channels=1)
 
-    save_path = 'vae.pth'
-    vae = vae_train_and_save(vae=vae,
-                             omniglot_dataset=omniglot_dataset,
-                             vae_path=save_path,
-                             epochs=1000000,
-                             lr=lr,
-                             gamma=gamma)
+    if not os.path.isfile(save_path):
+        vae = vae_train_and_save(vae=vae,
+                                 omniglot_dataset=omniglot_dataset,
+                                 vae_path=save_path,
+                                 epochs=1000000,
+                                 lr=lr,
+                                 gamma=gamma)
     vae.load_state_dict(torch.load(save_path, map_location='cpu'))
     return vae
 
@@ -185,7 +187,6 @@ def vae_train_and_save(vae,
                        vae_path=vae_path)
         scheduler.step()
     return vae
-
 
 def vae_train_step(vae, device, train_loader, optimizer, epoch, log_interval,
                    vae_path):
