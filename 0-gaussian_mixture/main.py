@@ -6,14 +6,16 @@ import os
 import torch
 from timeit import default_timer as timer
 
-import helpers.numpy
-import helpers.torch
-import utils.inference
-import utils.metrics 
-import utils.plot
-from utils.single_run import *
-from data.synthetic import *
+import rncrp.helpers.numpy_helpers
+import rncrp.helpers.torch_helpers
+import rncrp.inference
+import rncrp.metrics
+import rncrp.plot
+from rncrp.single_run import *
+from rncrp.data.synthetic import *
+
 torch.set_default_tensor_type('torch.FloatTensor')
+
 
 def sweep_parameters(plot_dir, sweep_setting):
     assert sweep_setting in {'sweep_dimensions', 'sweep_means', 'sweep_means_anisotropy'}
@@ -50,7 +52,7 @@ def sweep_parameters(plot_dir, sweep_setting):
                 inference_algs_results_by_dataset_idx[dataset_idx] = dataset_inference_algs_results
                 sampled_gaussian_data_by_dataset_idx[dataset_idx] = dataset_sampled_mix_of_gaussians_results
 
-            utils.plot.plot_inference_algs_comparison(
+            rncrp.plot.plot_inference_algs_comparison(
                 plot_dir=plot_dir,
                 inference_algs_results_by_dataset_idx=inference_algs_results_by_dataset_idx,
                 dataset_by_dataset_idx=sampled_gaussian_data_by_dataset_idx)
@@ -85,7 +87,7 @@ def sweep_parameters(plot_dir, sweep_setting):
                 inference_algs_results_by_dataset_idx[dataset_idx] = dataset_inference_algs_results
                 sampled_gaussian_data_by_dataset_idx[dataset_idx] = dataset_sampled_mix_of_gaussians_results
 
-            utils.plot.plot_inference_algs_comparison(
+            rncrp.plot.plot_inference_algs_comparison(
                 plot_dir=plot_dir,
                 inference_algs_results_by_dataset_idx=inference_algs_results_by_dataset_idx,
                 dataset_by_dataset_idx=sampled_gaussian_data_by_dataset_idx)
@@ -116,7 +118,7 @@ def sweep_parameters(plot_dir, sweep_setting):
             inference_algs_results_by_dataset_idx[dataset_idx] = dataset_inference_algs_results
             sampled_gaussian_data_by_dataset_idx[dataset_idx] = dataset_sampled_mix_of_gaussians_results
 
-        utils.plot.plot_inference_algs_comparison(
+        rncrp.plot.plot_inference_algs_comparison(
             plot_dir=plot_dir,
             inference_algs_results_by_dataset_idx=inference_algs_results_by_dataset_idx,
             dataset_by_dataset_idx=sampled_gaussian_data_by_dataset_idx)
@@ -228,7 +230,7 @@ if __name__ == '__main__':
 #     optimizer = torch.optim.SGD(params=cluster_parameters.values(), lr=1.)
 #
 #     # create dynamics
-#     dynamics = utils.dynamics.dynamics_factory(
+#     dynamics = rncrp.dynamics.dynamics_factory(
 #         inference_dynamics_str=inference_dynamics_str)
 #
 #     # needed later for error checking
@@ -294,7 +296,7 @@ if __name__ == '__main__':
 #             table_assignment_prior[table_assignment_prior < 0.] = 0.
 #
 #             assert torch.allclose(torch.sum(table_assignment_prior), one_tensor)
-#             utils.helpers.assert_torch_no_nan_no_inf(table_assignment_prior)
+#             rncrp.helpers.assert_torch_no_nan_no_inf(table_assignment_prior)
 #
 #             # record latent prior
 #             table_assignment_priors[obs_idx, :len(table_assignment_prior)] = table_assignment_prior
@@ -411,7 +413,7 @@ if __name__ == '__main__':
 #                             reshaped_scaled_learning_rate,
 #                             param_tensor.grad)
 #                         param_tensor.data += scaled_param_tensor_grad
-#                         utils.helpers.assert_torch_no_nan_no_inf(param_tensor.data[:obs_idx + 1])
+#                         rncrp.helpers.assert_torch_no_nan_no_inf(param_tensor.data[:obs_idx + 1])
 #
 #             state = dynamics.update_state(
 #                 customer_assignment_probs=table_assignment_posteriors[obs_idx, :].numpy(),
