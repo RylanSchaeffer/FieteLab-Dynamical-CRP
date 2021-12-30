@@ -9,7 +9,7 @@ from timeit import default_timer as timer
 import helpers.numpy
 import helpers.torch
 import utils.inference
-import utils.metrics
+import utils.metrics 
 import utils.plot
 from utils.single_run import *
 from data.synthetic import *
@@ -50,7 +50,7 @@ def sweep_parameters(plot_dir, sweep_setting):
                 inference_algs_results_by_dataset_idx[dataset_idx] = dataset_inference_algs_results
                 sampled_gaussian_data_by_dataset_idx[dataset_idx] = dataset_sampled_mix_of_gaussians_results
 
-            plot.plot_inference_algs_comparison(
+            utils.plot.plot_inference_algs_comparison(
                 plot_dir=plot_dir,
                 inference_algs_results_by_dataset_idx=inference_algs_results_by_dataset_idx,
                 dataset_by_dataset_idx=sampled_gaussian_data_by_dataset_idx)
@@ -85,7 +85,7 @@ def sweep_parameters(plot_dir, sweep_setting):
                 inference_algs_results_by_dataset_idx[dataset_idx] = dataset_inference_algs_results
                 sampled_gaussian_data_by_dataset_idx[dataset_idx] = dataset_sampled_mix_of_gaussians_results
 
-            plot.plot_inference_algs_comparison(
+            utils.plot.plot_inference_algs_comparison(
                 plot_dir=plot_dir,
                 inference_algs_results_by_dataset_idx=inference_algs_results_by_dataset_idx,
                 dataset_by_dataset_idx=sampled_gaussian_data_by_dataset_idx)
@@ -116,7 +116,7 @@ def sweep_parameters(plot_dir, sweep_setting):
             inference_algs_results_by_dataset_idx[dataset_idx] = dataset_inference_algs_results
             sampled_gaussian_data_by_dataset_idx[dataset_idx] = dataset_sampled_mix_of_gaussians_results
 
-        plot.plot_inference_algs_comparison(
+        utils.plot.plot_inference_algs_comparison(
             plot_dir=plot_dir,
             inference_algs_results_by_dataset_idx=inference_algs_results_by_dataset_idx,
             dataset_by_dataset_idx=sampled_gaussian_data_by_dataset_idx)

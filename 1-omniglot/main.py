@@ -37,7 +37,7 @@ def main():
         feature_extractor_method=feature_extractor_method)
 
     # plot number of topics versus number of posts
-    plot.plot_num_clusters_by_num_obs(
+    utils.plot.plot_num_clusters_by_num_obs(
         true_cluster_labels=omniglot_data['assigned_table_seq'],
         plot_dir=plot_dir)
 
@@ -67,7 +67,7 @@ def main():
             setting='omniglot')
         inference_algs_results_by_dataset_idx[dataset_idx] = dataset_inference_algs_results
 
-    plot.plot_inference_algs_comparison(
+    utils.plot.plot_inference_algs_comparison(
         inference_algs_results_by_dataset_idx=inference_algs_results_by_dataset_idx,
         dataset_by_dataset_idx=dataset_by_dataset_idx,
         plot_dir=plot_dir)

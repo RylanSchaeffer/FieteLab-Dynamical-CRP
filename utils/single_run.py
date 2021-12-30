@@ -75,7 +75,7 @@ def run_and_plot_inference_alg(sampled_data,
 
             # run inference algorithm
             start_time = timer()
-            inference_alg_concentration_param_results = inference.run_inference_alg(
+            inference_alg_concentration_param_results = utils.inference.run_inference_alg(
                 inference_alg_str=inference_alg_str,
                 observations=sampled_data[features],
                 concentration_param=concentration_param,
