@@ -181,6 +181,80 @@ class HarmonicOscillator(Dynamics):
         N = np.round(N, decimals=12)
         self._state['N'] = N
 
+
+class Hyperbolic(Dynamics):
+
+    def __init__(self,
+                 params: Dict[str, float] = None):
+        """
+        Creates D(\Delta) = \frac{1}{1 + c\Delta}
+        """
+
+        if params is None:
+            params = {'c': 1., 'num_exponentials': 150}
+        assert 'c' in params
+        super().__init__(params=params)
+
+        # We approximate the integral with a Riemann sum.
+        width = 0.05
+        rates = np.linspace(start=0,
+                            stop=width*params['num_exponentials'],
+                            num=params['num_exponentials'])
+        self._exponentials = [
+            LinearFirstOrder(params={'a': 1, 'b': rate})
+            for rate in rates]
+        self._probabilities = width * np.exp(-rates/params['c']) / params['c']
+
+    def initialize_state(self,
+                         customer_assignment_probs: np.ndarray,
+                         time: float,
+                         ) -> Dict[str, np.ndarray]:
+
+        exponential_Ns = np.zeros(shape=(self._params['num_exponentials'],
+                                         customer_assignment_probs.shape[0]))
+        for idx, exponential in enumerate(self._exponentials):
+            exponential_Ns[idx, :] = exponential.initialize_state(
+                customer_assignment_probs=customer_assignment_probs,
+                time=time)['N']
+
+        N_weighted_avg = np.matmul(self._probabilities, exponential_Ns)
+        self._state = {
+            'N': N_weighted_avg}
+        return self._state
+
+    def run_dynamics(self,
+                     time_start: float,
+                     time_end: float) -> Dict[str, np.ndarray]:
+
+        exponential_Ns = np.zeros(shape=(self._params['num_exponentials'],
+                                         self._state['N'].shape[0]))
+        for idx, exponential in enumerate(self._exponentials):
+            exponential_Ns[idx, :] = exponential.run_dynamics(
+                time_start=time_start,
+                time_end=time_end)['N']
+
+        N_weighted_avg = np.matmul(self._probabilities, exponential_Ns)
+        self._state = {
+            'N': N_weighted_avg}
+        return self._state
+
+    def update_state(self,
+                     customer_assignment_probs: np.ndarray,
+                     time: float,
+                     ) -> Dict[str, np.ndarray]:
+
+        exponential_Ns = np.zeros(shape=(self._params['num_exponentials'],
+                                         self._state['N'].shape[0]))
+        for idx, exponential in enumerate(self._exponentials):
+            exponential_Ns[idx, :] = exponential.update_state(
+                customer_assignment_probs=customer_assignment_probs,
+                time=time)['N']
+
+        N_weighted_avg = np.matmul(self._probabilities, exponential_Ns)
+        self._state = {
+            'N': N_weighted_avg}
+        return self._state
+
 # class LinearSecondOrder(Dynamics):
 #     """
 #     Calculate N(t_1) from N(t_0), t_0, t_1.
@@ -355,7 +429,7 @@ def convert_dynamics_str_to_dynamics_obj(dynamics_str: str,
         dynamics = HarmonicOscillator(
             params={'omega': np.pi / 2})
     elif dynamics_str == 'hyperbolic':
-        raise NotImplementedError(dynamics_str)
+        dynamics = Hyperbolic()
     elif dynamics_str == 'statetransition':
         # dynamics = StateTransition(
         #     params={})
