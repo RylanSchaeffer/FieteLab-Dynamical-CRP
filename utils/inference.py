@@ -8,15 +8,17 @@ import torch.distributions
 import torch.optim
 from helpers.torch import assert_no_nan_no_inf_is_real
 
+
 # torch.set_default_tensor_type('torch.DoubleTensor')
 
 # Gaussian cluster parameters
 def setup_cluster_params_multivariate_normal(torch_observation,
-                                                  obs_idx,
-                                                  cluster_params):
+                                             obs_idx,
+                                             cluster_params):
     assert_no_nan_no_inf_is_real(torch_observation)
     cluster_params['means'].data[obs_idx, :] = torch_observation
     cluster_params['stddevs'].data[obs_idx, :, :] = torch.eye(torch_observation.shape[0])
+
 
 # Gaussian likelihood setup
 def likelihood_multivariate_normal(torch_observation,
@@ -24,7 +26,7 @@ def likelihood_multivariate_normal(torch_observation,
                                    cluster_params):
     obs_dim = torch_observation.shape[0]
     covs = torch.stack([torch.matmul(torch.eye(obs_dim), torch.eye(obs_dim).T)
-                               for stddev in cluster_params['stddevs']]).double()
+                        for stddev in cluster_params['stddevs']]).double()
 
     multivar_normal = torch.distributions.multivariate_normal.MultivariateNormal(
         loc=cluster_params['means'][:obs_idx + 1],
@@ -36,13 +38,15 @@ def likelihood_multivariate_normal(torch_observation,
 
     return likelihoods_per_latent, log_likelihoods_per_latent
 
+
 # Dirichlet multinomial cluster parameters
 def setup_cluster_params_dirichlet_multinomial(torch_observation,
-                                                obs_idx,
-                                                cluster_parameters):
+                                               obs_idx,
+                                               cluster_parameters):
     assert_no_nan_no_inf_is_real(torch_observation)
-    epsilon = 10. 									# May need to change
+    epsilon = 10.  # May need to change
     cluster_parameters['concentrations'].data[obs_idx, :] = torch_observation + epsilon
+
 
 # Dirichlet multinomial likelihood setup
 def likelihood_dirichlet_multinomial(torch_observation,
@@ -55,12 +59,12 @@ def likelihood_dirichlet_multinomial(torch_observation,
     # Intermediate computations
     log_numerator = torch.log(words_in_doc) + log_beta(a=total_concentrations_per_latent, b=words_in_doc)
     log_beta_terms = log_beta(a=cluster_parameters['concentrations'][:obs_idx + 1],
-        						b=torch_observation)
-    
+                              b=torch_observation)
+
     log_x_times_beta_terms = torch.add(log_beta_terms, torch.log(torch_observation))
     log_x_times_beta_terms[torch.isnan(log_x_times_beta_terms)] = 0.
     log_denominator = torch.sum(log_x_times_beta_terms, dim=1)
-    
+
     assert_no_nan_no_inf_is_real(log_denominator)
     log_likelihoods_per_latent = log_numerator - log_denominator
 
@@ -72,56 +76,56 @@ def likelihood_dirichlet_multinomial(torch_observation,
 
 # RN-CRP
 def rn_crp(observations,
-                  concentration_param: float,
-                  likelihood_model: str,
-                  learning_rate,
-                  num_em_steps: int = 3):
+           concentration_param: float,
+           likelihood_model: str,
+           learning_rate,
+           num_em_steps: int = 3):
     assert concentration_param > 0
-    assert likelihood_model in {'multivariate_normal','dirichlet_multinomial'} # todo: add more for other settings
-    
+    assert likelihood_model in {'multivariate_normal', 'dirichlet_multinomial'}  # todo: add more for other settings
+
     num_obs, obs_dim = observations.shape
     max_num_latents = num_obs
 
     cluster_assgt_priors = torch.zeros((num_obs, max_num_latents),
-                                        dtype=torch.float64,
-                                        requires_grad=False)
+                                       dtype=torch.float64,
+                                       requires_grad=False)
     cluster_assgt_priors[0, 0] = 1.
 
     cluster_assgt_posteriors = torch.zeros((num_obs, max_num_latents),
-                                            dtype=torch.float64,
-                                            requires_grad=False)
+                                           dtype=torch.float64,
+                                           requires_grad=False)
 
     cluster_assgt_posteriors_running_sum = torch.zeros((num_obs, max_num_latents),
-                                                        dtype=torch.float64,
-                                                        requires_grad=False)
+                                                       dtype=torch.float64,
+                                                       requires_grad=False)
 
     num_cluster_posteriors = torch.zeros((num_obs, max_num_latents),
-                                        dtype=torch.float64,
-                                        requires_grad=False)
+                                         dtype=torch.float64,
+                                         requires_grad=False)
 
     if likelihood_model == 'multivariate_normal':
         setup_cluster_params_fn = setup_cluster_params_multivariate_normal
         likelihood_fn = likelihood_multivariate_normal
 
         cluster_params = dict(means=torch.full(
-                                        size=(max_num_latents, obs_dim),
-                                        fill_value=0.,
-                                        dtype=torch.float64,
-                                        requires_grad=True),
-                                stddevs=torch.full(
-                                        size=(max_num_latents, obs_dim, obs_dim),
-                                        fill_value=0.,
-                                        dtype=torch.float64,
-                                        requires_grad=True))
-    
+            size=(max_num_latents, obs_dim),
+            fill_value=0.,
+            dtype=torch.float64,
+            requires_grad=True),
+            stddevs=torch.full(
+                size=(max_num_latents, obs_dim, obs_dim),
+                fill_value=0.,
+                dtype=torch.float64,
+                requires_grad=True))
+
     elif likelihood_model == 'dirichlet_multinomial':
         setup_cluster_params_fn = setup_cluster_params_dirichlet_multinomial
         likelihood_fn = likelihood_dirichlet_multinomial
 
         cluster_params = dict(concentrations=torch.full(size=(max_num_latents, obs_dim),
-                                    fill_value=np.nan,
-                                    dtype=torch.float64,
-                                    requires_grad=True))
+                                                        fill_value=np.nan,
+                                                        dtype=torch.float64,
+                                                        requires_grad=True))
 
     # todo: set up other likelihoods as needed
     else:
@@ -131,12 +135,11 @@ def rn_crp(observations,
     one = torch.Tensor([1.]).double()
     torch_observations = torch.from_numpy(observations)
 
-
     def time_kernel(n_prime, n):
-        return np.exp(n_prime - n) 
+        return np.exp(n_prime - n)
 
     def normalizing_constant(n):
-        return concentration_param + sum(map(time_kernel, range(1,n+1), n*np.ones(n)))
+        return concentration_param + sum(map(time_kernel, range(1, n + 1), n * np.ones(n)))
 
     for obs_idx, torch_observation in enumerate(torch_observations):
         # Create parameters for each potential new cluster
@@ -156,9 +159,11 @@ def rn_crp(observations,
             cluster_assgt_posteriors_running_sum[obs_idx, :] = torch.add(
                 torch.multiply(
                     cluster_assgt_posteriors_running_sum[obs_idx - 1, :],
-                    torch.from_numpy(np.array(map(time_kernel, range(obs_idx), obs_idx*np.ones(obs_idx))).reshape(-1,1)),
-                    ),
-                concentration_param * cluster_assgt_posteriors[obs_idx, :]) # todo: not sure if need concentration_param here?
+                    torch.from_numpy(
+                        np.array(map(time_kernel, range(obs_idx), obs_idx * np.ones(obs_idx))).reshape(-1, 1)),
+                ),
+                concentration_param * cluster_assgt_posteriors[obs_idx,
+                                      :])  # todo: not sure if need concentration_param here?
 
         # Address additional customers
         else:
@@ -166,13 +171,13 @@ def rn_crp(observations,
             cluster_assgt_prior = torch.multiply(
                 torch.clone(
                     cluster_assgt_posteriors_running_sum[obs_idx - 1, :obs_idx + 1]),
-                torch.from_numpy(np.array(map(time_kernel, range(obs_idx+1), obs_idx*np.ones(obs_idx+1))) ),
-                )
+                torch.from_numpy(np.array(map(time_kernel, range(obs_idx + 1), obs_idx * np.ones(obs_idx + 1)))),
+            )
 
             ## Add probability of new table
             cluster_assgt_prior[1:] += concentration_param * torch.clone(num_cluster_posteriors[obs_idx - 1, :obs_idx])
             cluster_assgt_prior /= normalizing_constant(obs_idx)  # renormalize
-            cluster_assgt_prior[cluster_assgt_prior < 0.] = 0.    # ensure no negative values present
+            cluster_assgt_prior[cluster_assgt_prior < 0.] = 0.  # ensure no negative values present
 
             assert torch.allclose(torch.sum(cluster_assgt_prior), one)
             assert_no_nan_no_inf_is_real(cluster_assgt_prior)
@@ -205,12 +210,12 @@ def rn_crp(observations,
 
                     exp_summed_diff_cluster_assgt_log_numerator = torch.sum(torch.exp(
                         diff_cluster_assgt_log_numerator))
-                    log_normalization = max_cluster_assgt_log_numerator\
+                    log_normalization = max_cluster_assgt_log_numerator \
                                         + torch.log(exp_summed_diff_cluster_assgt_log_numerator)
 
-                    cluster_assgt_log_posterior = log_likelihoods_per_latent.detach()\
-                                                     + cluster_assgt_log_prior\
-                                                     - log_normalization
+                    cluster_assgt_log_posterior = log_likelihoods_per_latent.detach() \
+                                                  + cluster_assgt_log_prior \
+                                                  - log_normalization
                     cluster_assgt_posterior = torch.exp(cluster_assgt_log_posterior)
                 else:
                     unnormalized_cluster_assgt_posterior = torch.multiply(
@@ -232,8 +237,9 @@ def rn_crp(observations,
                 cluster_assgt_posteriors_running_sum[obs_idx, :] = torch.add(
                     torch.multiply(
                         cluster_assgt_posteriors_running_sum[obs_idx - 1, :],
-                        torch.from_numpy(np.array(map(time_kernel, range(obs_idx), obs_idx*np.ones(obs_idx))).reshape(-1,1)),
-                        ),
+                        torch.from_numpy(
+                            np.array(map(time_kernel, range(obs_idx), obs_idx * np.ones(obs_idx))).reshape(-1, 1)),
+                    ),
                     concentration_param * cluster_assgt_posteriors[obs_idx, :])
                 assert torch.allclose(torch.sum(cluster_assgt_posteriors_running_sum[obs_idx, :]),
                                       torch.Tensor([obs_idx + 1]).double())
@@ -268,13 +274,13 @@ def rn_crp(observations,
             one_minus_cumul_cluster_assgt_posterior = 1. - cumul_cluster_assgt_posterior
 
             prev_cluster_posterior = num_cluster_posteriors[obs_idx - 1, :obs_idx]
-            
+
             num_cluster_posteriors[obs_idx, :obs_idx] += torch.multiply(
-                                                                cum_cluster_assgt_posterior[:-1],
-                                                                prev_cluster_posterior)
+                cum_cluster_assgt_posterior[:-1],
+                prev_cluster_posterior)
             num_cluster_posteriors[obs_idx, 1:obs_idx + 1] += torch.multiply(
-                                                                one_minus_cumul_cluster_assgt_posterior[:-1],
-                                                                prev_cluster_posterior)
+                one_minus_cumul_cluster_assgt_posterior[:-1],
+                prev_cluster_posterior)
             assert torch.allclose(torch.sum(num_cluster_posteriors[obs_idx, :]), one)
 
     bayesian_recursion_results = dict(
@@ -287,12 +293,13 @@ def rn_crp(observations,
 
     return bayesian_recursion_results
 
+
 # DP-Means
 def dp_means(observations,
              concentration_param: float,
              likelihood_model: str,
              learning_rate: float,
-             num_passes: int): # "online" if if num_passes = 1; "offline" if num_passes > 1
+             num_passes: int):  # "online" if if num_passes = 1; "offline" if num_passes > 1
     assert concentration_param > 0
     assert isinstance(num_passes, int)
     assert num_passes > 0
@@ -358,13 +365,14 @@ def dp_means(observations,
     )
     return dp_means_offline_results
 
+
 # DP-GMM
 def dp_gmm(observations,
-                      likelihood_model: str,
-                      learning_rate: float,
-                      concentration_param: float,
-                      max_iter: int = 8,  # same as DP-Means
-                      num_initializations: int = 1):
+           likelihood_model: str,
+           learning_rate: float,
+           concentration_param: float,
+           max_iter: int = 8,  # same as DP-Means
+           num_initializations: int = 1):
     # Variational Inference for Dirichlet Process Mixtures
     # Blei and Jordan (2006)
 
@@ -381,7 +389,7 @@ def dp_gmm(observations,
     var_dp_gmm.fit(observations)
     cluster_assgt_posteriors = var_dp_gmm.predict_proba(observations)
     cluster_assgt_posteriors_running_sum = np.cumsum(cluster_assgt_posteriors,
-                                                        axis=0)
+                                                     axis=0)
     params = dict(means=var_dp_gmm.means_,
                   covs=var_dp_gmm.covariances_)
 
@@ -399,21 +407,20 @@ def run_inference_alg(inference_alg_str,
                       concentration_param,
                       likelihood_model,
                       learning_rate):
-
     inference_alg_kwargs = dict()
 
     # RN-CRP
     if inference_alg_str == 'RN-CRP':
         inference_alg_fn = rn_crp
-    
+
     # DP-GMM
     elif inference_alg_str.startswith('DP-GMM'):
         inference_alg_fn = dp_gmm
 
-        substrs = inference_alg_str.split(' ') # Parse parameters from algorithm string as needed
+        substrs = inference_alg_str.split(' ')  # Parse parameters from algorithm string as needed
         num_initializations = int(substrs[2][1:])
         max_iters = int(substrs[4])
-        
+
         inference_alg_kwargs['num_initializations'] = num_initializations
         inference_alg_kwargs['max_iter'] = max_iters
 
@@ -423,12 +430,12 @@ def run_inference_alg(inference_alg_str,
 
         if inference_alg_str.endswith('(offline)'):
             inference_alg_kwargs['num_passes'] = 8  # same as Kulis and Jordan
-        
+
         elif inference_alg_str.endswith('(online)'):
             inference_alg_kwargs['num_passes'] = 1
         else:
             raise ValueError('Invalid DP Means')
-    
+
     else:
         raise ValueError(f'Unknown inference algorithm: {inference_alg_str}')
 
@@ -441,4 +448,3 @@ def run_inference_alg(inference_alg_str,
         **inference_alg_kwargs)
 
     return inference_alg_results
-

@@ -6,40 +6,8 @@ import torch
 import torchvision
 from typing import Dict, Union
 
+import rncrp.helpers.dynamics
 
-# def convert_binary_latent_features_to_left_order_form(
-#         indicators: np.ndarray) -> np.ndarray:
-#     """
-#     Reorder to "Left Ordered Form" i.e. permute columns such that column
-#     as binary integers are decreasing
-
-#     :param indicators: shape (num customers, num dishes) of binary values
-#     """
-#     #
-#     # def left_order_form_indices_recursion(indicators_matrix, indices, row_idx):
-#     #     # https://stackoverflow.com/a/67699595/4570472
-#     #     if indices.size <= 1 or row_idx >= indicators_matrix.shape[0]:
-#     #         return indices
-#     #     left_indices = indices[np.where(indicators_matrix[row_idx, indices] == 1)]
-#     #     right_indices = indices[np.where(indicators_matrix[row_idx, indices] == 0)]
-#     #     return np.concatenate(
-#     #         (left_order_form_indices_recursion(indicators_matrix, indices=left_indices, row_idx=row_idx + 1),
-#     #          left_order_form_indices_recursion(indicators_matrix, indices=right_indices, row_idx=row_idx + 1)))
-
-#     # sort columns via recursion
-#     # reordered_indices = left_order_form_indices_recursion(
-#     #     indicators_matrix=indicators,
-#     #     row_idx=0,
-#     #     indices=np.arange(indicators.shape[1]))
-#     # left_ordered_indicators = indicators[:, reordered_indices]
-
-#     # sort columns via lexicographic sorting
-#     left_ordered_indicators_2 = indicators[:, np.lexsort(-indicators[::-1])]
-
-#     # check equality of both approaches
-#     # assert np.all(left_ordered_indicators == left_ordered_indicators_2)
-
-#     return left_ordered_indicators_2
 
 # Generate mixture of gaussians
 def generate_mixture_of_gaussians(num_gaussians: int = 3,
@@ -70,6 +38,7 @@ def generate_mixture_of_gaussians(num_gaussians: int = 3,
 
     mixture_of_gaussians = dict(means=means, covs=covs)
     return mixture_of_gaussians
+
 
 # Sample from mixture
 def sample_from_mixture_of_gaussians(seq_len: int = 100,
@@ -278,180 +247,80 @@ def sample_from_mixture_of_gaussians(seq_len: int = 100,
 #     return sampled_data_result
 
 
-# def sample_from_griffiths_ghahramani_2005(num_obs: int = 100,
-#                                           indicator_sampling_params: Dict[str, Union[float, np.ndarray]] = None,
-#                                           gaussian_likelihood_params: Dict[str, float] = None):
-#     """
-#     Draw a sample from synthetic observations set used by Griffiths and Ghahramani 2005.
+def sample_rncrp(num_mc_samples: int,
+                 num_customer: int,
+                 alpha: float,
+                 beta: float,
+                 dynamics_str: str,
+                 ) -> Dict[str, np.ndarray]:
 
-#     Also used by Widjaja 2017 Stremaing VI for IBP.
-#     """
+    assert alpha > 0.
+    assert beta >= 0.
 
-#     if indicator_sampling_params is None:
-#         indicator_sampling_params = dict(probs=np.array([0.5, 0.5, 0.5, 0.5]))
+    dynamics = rncrp.helpers.dynamics.convert_dynamics_str_to_dynamics_obj(
+        dynamics_str=dynamics_str)
 
-#     if gaussian_likelihood_params is None:
-#         gaussian_likelihood_params = dict(sigma_x=0.5)
+    # time_sampling_fn = utils.helpers.convert_time_sampling_str_to_time_sampling_fn(
+    #     time_sampling_str=time_sampling_str)
 
-#     num_features = 4
-#     feature_dim = 36
-#     features = np.array([
-#         [
-#             [0, 1, 0, 0, 0, 0],
-#             [1, 1, 1, 0, 0, 0],
-#             [0, 1, 0, 0, 0, 0],
-#             [0, 0, 0, 0, 0, 0],
-#             [0, 0, 0, 0, 0, 0],
-#             [0, 0, 0, 0, 0, 0]
-#         ],
-#         [
-#             [0, 0, 0, 1, 1, 1],
-#             [0, 0, 0, 1, 0, 1],
-#             [0, 0, 0, 1, 1, 1],
-#             [0, 0, 0, 0, 0, 0],
-#             [0, 0, 0, 0, 0, 0],
-#             [0, 0, 0, 0, 0, 0]
-#         ],
-#         [
-#             [0, 0, 0, 0, 0, 0],
-#             [0, 0, 0, 0, 0, 0],
-#             [0, 0, 0, 0, 0, 0],
-#             [1, 0, 0, 0, 0, 0],
-#             [1, 1, 0, 0, 0, 0],
-#             [1, 1, 1, 0, 0, 0]
-#         ],
-#         [
-#             [0, 0, 0, 0, 0, 0],
-#             [0, 0, 0, 0, 0, 0],
-#             [0, 0, 0, 0, 0, 0],
-#             [0, 0, 0, 1, 1, 1],
-#             [0, 0, 0, 0, 1, 0],
-#             [0, 0, 0, 0, 1, 0]
-#         ]
-#     ], dtype='float64').reshape((num_features, feature_dim))
+    def time_sampling_fn(num_customer: int) -> np.ndarray:
+        return 1. + np.arange(num_customer)
 
-#     # shape: 100 by number of features
-#     sampled_indicators = np.random.binomial(
-#         n=1,
-#         p=indicator_sampling_params['probs'][np.newaxis, :],
-#         size=(num_obs, num_features))
-#     observations = np.matmul(sampled_indicators, features)
-#     observations += scipy.stats.norm.rvs(
-#         loc=0.0,
-#         scale=gaussian_likelihood_params['sigma_x'],
-#         size=observations.shape)
+    customer_times = time_sampling_fn(num_customer=num_customer)
 
-#     sampled_data_result = dict(
-#         sampled_indicators=sampled_indicators,
-#         observations=observations,
-#         features=features,
-#         indicator_sampling_params=indicator_sampling_params,
-#         gaussian_params={'means': features},
-#         original_features_shape=(num_features, 6, 6),  # sqrt(36)
-#     )
+    pseudo_table_occupancies_by_customer = np.zeros(
+        shape=(num_mc_samples, num_customer, num_customer))
+    one_hot_customer_assignments_by_customer = np.zeros(
+        shape=(num_mc_samples, num_customer, num_customer))
+    customer_assignments_by_customer = np.zeros(
+        shape=(num_mc_samples, num_customer,),
+        dtype=np.int)
+    num_tables_by_customer = np.zeros(
+        shape=(num_mc_samples, num_customer, num_customer))
 
-#     return sampled_data_result
+    # the first customer always goes at the first table
+    pseudo_table_occupancies_by_customer[:, 0, 0] = 1
+    one_hot_customer_assignments_by_customer[:, 0, 0] = 1.
+    num_tables_by_customer[:, 0, 0] = 1.
 
+    for mc_sample_idx in range(num_mc_samples):
+        new_table_idx = 1
+        dynamics.initialize_state(
+            customer_assignment_probs=one_hot_customer_assignments_by_customer[mc_sample_idx, 0, :],
+            time=customer_times[0])
+        for cstmr_idx in range(1, num_customer):
+            state = dynamics.run_dynamics(
+                time_start=customer_times[cstmr_idx - 1],
+                time_end=customer_times[cstmr_idx])
+            current_pseudo_table_occupancies = state['N']
+            pseudo_table_occupancies_by_customer[mc_sample_idx, cstmr_idx, :] = current_pseudo_table_occupancies.copy()
 
-# def sample_sequence_from_factor_analysis(seq_len: int,
-#                                          obs_dim: int = 25,
-#                                          max_num_features: int = 5000,
-#                                          beta_a: float = 1,  # copied from paper
-#                                          beta_b: float = 1,  # copied from paper
-#                                          weight_mean: float = 0.,
-#                                          weight_variance: float = 1.,
-#                                          obs_variance: float = 0.0675,  # copied from Paisely and Carin
-#                                          feature_covariance: np.ndarray = None):
-#     """Factor Analysis model from Paisley & Carin (2009) Equation 11.
+            # Add alpha, normalize and sample from that distribution.
+            current_pseudo_table_occupancies = current_pseudo_table_occupancies.copy()
+            current_pseudo_table_occupancies[new_table_idx] = alpha
+            probs = current_pseudo_table_occupancies / np.sum(current_pseudo_table_occupancies)
+            customer_assignment = np.random.choice(np.arange(new_table_idx + 1),
+                                                   p=probs[:new_table_idx + 1])
+            assert customer_assignment < cstmr_idx + 1
 
-#     We make one modification. Paisley and Carin sample pi_k from
-#     Beta(beta_a/num_features, beta_b*(num_features-1)/num_features), which
-#     is an alternative parameterization of the IBP that does not agree with the
-#     parameterization used by Griffiths and Ghahramani (2011). Theirs samples pi_i from
-#     Beta(beta_a*beta_b/num_features, beta_b*(num_features-1)/num_features), which
-#     we will use here. Either is fine. You just need to be careful about which is used
-#     because the parameterization dictates the expected number of dishes per customer
-#     and the expected number of total dishes.
+            # store sampled customer
+            one_hot_customer_assignments_by_customer[mc_sample_idx, cstmr_idx, customer_assignment] = 1.
+            new_table_idx = max(new_table_idx, customer_assignment + 1)
+            num_tables_by_customer[mc_sample_idx, cstmr_idx, new_table_idx - 1] = 1.
+            customer_assignments_by_customer[mc_sample_idx, cstmr_idx] = customer_assignment
 
-#     Technically, we should take limit of num_features->infinity. Instead we set
-#     max_num_features very large, and keep only the nonzero ones.
-#     """
+            # Increment psuedo-table occupancies
+            state = dynamics.update_state(
+                customer_assignment_probs=one_hot_customer_assignments_by_customer[mc_sample_idx, cstmr_idx, :],
+                time=customer_times[cstmr_idx])
+            pseudo_table_occupancies_by_customer[mc_sample_idx, cstmr_idx, :] = state['N'].copy()
 
-#     if feature_covariance is None:
-#         feature_covariance = np.eye(obs_dim)
+    monte_carlo_rncrp_results = {
+        'customer_times': customer_times,
+        'pseudo_table_occupancies_by_customer': pseudo_table_occupancies_by_customer,
+        'customer_assignments_by_customer': customer_assignments_by_customer,
+        'one_hot_customer_assignments_by_customer': one_hot_customer_assignments_by_customer,
+        'num_tables_by_customer': num_tables_by_customer,
+    }
 
-#     pi = np.random.beta(a=beta_a * beta_b / max_num_features,
-#                         b=beta_b * (max_num_features - 1) / max_num_features,
-#                         size=max_num_features)
-#     # draw Z from Bernoulli i.e. Binomial with n=1
-#     indicators = np.random.binomial(n=1, p=pi, size=(seq_len, max_num_features))
-
-#     # convert to Left Ordered Form
-#     indicators = convert_binary_latent_features_to_left_order_form(
-#         indicators=indicators)
-
-#     # Uncomment to check correctness of indicators
-#     # num_dishes_per_customer = np.sum(indicators, axis=1)
-#     # average_dishes_per_customer = np.mean(num_dishes_per_customer)
-#     # average_dishes_per_customer_expected = beta_a
-#     non_empty_dishes = np.sum(indicators, axis=0)
-#     # total_dishes = np.sum(non_empty_dishes != 0)
-#     # total_dishes_expected = beta_a * beta_b * np.log(beta_b + seq_len)
-
-#     # only keep columns with non-empty dishes
-#     indicators = indicators[:, non_empty_dishes != 0]
-#     num_features = indicators.shape[1]
-
-#     weight_covariance = weight_variance * np.eye(num_features)
-#     weights = np.random.multivariate_normal(
-#         mean=weight_mean * np.ones(num_features),
-#         cov=weight_covariance,
-#         size=(seq_len,))
-
-#     features = np.random.multivariate_normal(
-#         mean=np.zeros(obs_dim),
-#         cov=feature_covariance,
-#         size=(num_features,))
-
-#     obs_covariance = obs_variance * np.eye(obs_dim)
-#     noise = np.random.multivariate_normal(
-#         mean=np.zeros(obs_dim),
-#         cov=obs_covariance,
-#         size=(seq_len,))
-
-#     assert indicators.shape == (seq_len, num_features)
-#     assert weights.shape == (seq_len, num_features)
-#     assert features.shape == (num_features, obs_dim)
-#     assert noise.shape == (seq_len, obs_dim)
-
-#     observations = np.matmul(np.multiply(indicators, weights), features) + noise
-
-#     assert observations.shape == (seq_len, obs_dim)
-
-#     results = dict(
-#         observations=observations,
-#         indicators=indicators,
-#         features=features,
-#         feature_covariance=feature_covariance,
-#         weights=weights,
-#         weight_covariance=weight_covariance,
-#         noise=noise,
-#         obs_covariance=obs_covariance,
-#     )
-
-    # import matplotlib.pyplot as plt
-    # plt.scatter(observations[:, 0],
-    #             observations[:, 1],
-    #             s=2)
-    # # plot features
-    # for k in range(num_features):
-    #     plt.plot([0, pi[k]*features[k][0]],
-    #              [0, pi[k]*features[k][1]],
-    #              color='red',
-    #              label='Scaled Features' if k == 0 else None)
-    # plt.xlim(-1, 1)
-    # plt.ylim(-1, 1)
-    # plt.legend()
-    # plt.show()
-
-    # return results
+    return monte_carlo_rncrp_results

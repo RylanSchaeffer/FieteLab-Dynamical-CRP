@@ -1,17 +1,17 @@
 import numpy as np
 from sklearn.metrics import adjusted_rand_score, rand_score, adjusted_mutual_info_score, \
     normalized_mutual_info_score
-from typing import Dict
+from typing import Dict, Tuple
 
 
 def score_predicted_clusters(table_assignment_posteriors: np.ndarray,
                              true_cluster_labels: np.ndarray,
-                             ) -> Dict[str, float]:
-    # table assignment posteriors is square matrix
-    # first dimension is num obs, second dimension is number clusters
-    # (i, j) element is probability the ith observation belongs to jth cluster
-    # true_cluster_labels: integer classes with shape (num obs, )
+                             ) -> Tuple[Dict[str, float], np.ndarray]:
 
+    # cluster assignment posteriors has shape (number obs, num clusters)
+    # (r, c)th element is probability the rth observation belongs to cth cluster
+    # true_cluster_labels: integer classes with shape (num obs, )
+    
     pred_cluster_labels = np.argmax(table_assignment_posteriors,
                                     axis=1)
 

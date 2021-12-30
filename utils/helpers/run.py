@@ -1,6 +1,8 @@
 import logging
+import numpy as np
 import os
 import sys
+import torch
 
 
 def create_logger(run_dir):
@@ -18,3 +20,8 @@ def create_logger(run_dir):
 
     # disable matplotlib font warnings
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
+
+
+def set_seed(seed: int):
+    np.random.seed(seed)
+    torch.manual_seed(seed)

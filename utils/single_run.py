@@ -15,22 +15,23 @@ import utils.plot
 import data.real
 from data.real import *
 from data.synthetic import *
+
 torch.set_default_tensor_type('torch.FloatTensor')
 
-def single_run(dataset_dir, sampled_data, setting):
 
+def single_run(dataset_dir, sampled_data, setting):
     if setting == 'omniglot':
-        concentration_params = np.linspace(0.1*np.log(sampled_data['assigned_table_seq'].shape[0]),
-                                           3*np.log(sampled_data['assigned_table_seq'].shape[0]),
+        concentration_params = np.linspace(0.1 * np.log(sampled_data['assigned_table_seq'].shape[0]),
+                                           3 * np.log(sampled_data['assigned_table_seq'].shape[0]),
                                            11)
 
     elif setting == 'gaussian':
-        concentration_params = 0.01 + np.arange(0.,6.01,0.25) # todo: select other values as needed
+        concentration_params = 0.01 + np.arange(0., 6.01, 0.25)  # todo: select other values as needed
 
     inference_alg_strs = ['RN-CRP',
-                        'DP-Means (online)',
-                        'DP-Means (offline)',
-                        'DP-GMM (15 Init, 30 Iter)'] # todo: change DP-GMM parameters
+                          'DP-Means (online)',
+                          'DP-Means (offline)',
+                          'DP-GMM (15 Init, 30 Iter)']  # todo: change DP-GMM parameters
 
     inference_algs_results = {}
     for inference_alg_str in inference_alg_strs:
@@ -47,7 +48,6 @@ def run_and_plot_inference_alg(sampled_data,
                                inference_alg_str,
                                concentration_params,
                                plot_dir):
-
     inference_alg_plot_dir = os.path.join(plot_dir, inference_alg_str)
     os.makedirs(inference_alg_plot_dir, exist_ok=True)
     num_clusters_by_concentration_param = {}
