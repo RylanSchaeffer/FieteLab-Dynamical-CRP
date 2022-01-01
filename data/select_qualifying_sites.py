@@ -1,7 +1,4 @@
 import pandas as pd
-import numpy as np
-# import glob
-# import pickle
 
 #################################################################
 # Obtain list of sites with data from 1946 to 2020

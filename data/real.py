@@ -1,7 +1,6 @@
 import numpy as np
 import os
 import pandas as pd
-import sklearn
 import torch
 import torchvision
 from scipy import stats
@@ -56,7 +55,6 @@ def create_climate_data(qualifying_sites_path: str=None,
 
     dataset = np.array(datalist)
     dataset = stats.zscore(dataset, axis=0, nan_policy='raise')
-    print(duration,"data shape:",dataset.shape)
     return dataset
 
 def load_climate_dataset(qualifying_sites_path: str=None):
