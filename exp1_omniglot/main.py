@@ -7,15 +7,17 @@ import os
 import torch
 from timeit import default_timer as timer
 
-import helpers.numpy
-import helpers.torch
-import utils.inference
-import utils.metrics
-import utils.plot
-from utils.single_run import *
-import data.real
-from data.real import *
+import rncrp.helpers.numpy_helpers
+import rncrp.helpers.torch_helpers
+import rncrp.inference
+import rncrp.metrics
+import rncrp.plot
+from rncrp.single_run import *
+import rncrp.data.real
+from rncrp.data.real import *
+
 torch.set_default_tensor_type('torch.FloatTensor')
+
 
 def main():
     num_data = None
@@ -29,7 +31,7 @@ def main():
     np.random.seed(1)
     torch.manual_seed(0)
 
-    omniglot_data = real.load_omniglot_dataset(
+    omniglot_data = rncrp.data.real.load_omniglot_dataset(
         data_dir='data',
         num_data=num_data,
         center_crop=center_crop,
@@ -37,7 +39,7 @@ def main():
         feature_extractor_method=feature_extractor_method)
 
     # plot number of topics versus number of posts
-    utils.plot.plot_num_clusters_by_num_obs(
+    rncrp.plot.plot_num_clusters_by_num_obs(
         true_cluster_labels=omniglot_data['assigned_table_seq'],
         plot_dir=plot_dir)
 
@@ -67,7 +69,7 @@ def main():
             setting='omniglot')
         inference_algs_results_by_dataset_idx[dataset_idx] = dataset_inference_algs_results
 
-    utils.plot.plot_inference_algs_comparison(
+    rncrp.plot.plot_inference_algs_comparison(
         inference_algs_results_by_dataset_idx=inference_algs_results_by_dataset_idx,
         dataset_by_dataset_idx=dataset_by_dataset_idx,
         plot_dir=plot_dir)
