@@ -1,9 +1,71 @@
 import numpy as np
 import os
 import pandas as pd
-import sklearn
 import torch
 import torchvision
+from scipy import stats
+
+
+def transform_csv_to_array(site_df,
+                           duration = 'annual'):
+    df = site_df.copy()
+    df["year"] = df.DATE.apply(lambda x: int(x[:4]))
+    df = df[(df.year>=1946) & (df.year<=2020)]
+
+    if duration == 'annual':
+        iterable = list(range(1946,2021))
+        index = pd.Index(iterable, name="year")
+        outdf = pd.DataFrame(columns=index).T
+
+        outdf.loc[:,"TMAX"] = df.groupby(["year"]).TMAX.mean().reset_index().set_index(["year"])
+        outdf.loc[:,"TMIN"] = df.groupby(["year"]).TMIN.mean().reset_index().set_index(["year"])
+        outdf.loc[:,"PRCP"] = df.groupby(["year"]).PRCP.mean().reset_index().set_index(["year"])
+
+    elif duration == 'monthly':
+        df["month"] = df.DATE.apply(lambda x: int(x[5:7]))
+
+        iterables = [ list(range(1946,2021)), list(range(1,13))]
+        index = pd.MultiIndex.from_product(iterables, names=["year", "month"])
+        outdf = pd.DataFrame(columns=index).T
+
+        outdf.loc[:,"TMAX"] = df.groupby(["year","month"]).TMAX.mean().reset_index().set_index(["year","month"])
+        outdf.loc[:,"TMIN"] = df.groupby(["year","month"]).TMIN.mean().reset_index().set_index(["year","month"])
+        outdf.loc[:,"PRCP"] = df.groupby(["year","month"]).PRCP.mean().reset_index().set_index(["year","month"])
+
+    else:
+        raise ValueError('Impermissible computation interval:', duration)
+
+    site_array = np.hstack((outdf.TMAX.to_numpy(),
+                            outdf.TMAX.to_numpy(),
+                            outdf.PRCP.to_numpy()))
+    return site_array
+
+def create_climate_data(qualifying_sites_path: str=None,
+                        duration: str='annual'):
+    datalist = list()
+    with open(qualifying_sites_path) as file:
+        for site_csv_path in file:
+            if '.csv' in site_csv_path:
+                try:
+                    df = pd.read_csv(site_csv_path.strip(),low_memory=False)
+                    site_array = transform_csv_to_array(df, duration)
+                    datalist.append(site_array)
+                except:
+                    print("Invalid File: ",site_csv_path)
+
+    dataset = np.array(datalist)
+    dataset = stats.zscore(dataset, axis=0, nan_policy='raise')
+    return dataset
+
+def load_climate_dataset(qualifying_sites_path: str=None):
+    annual_data = create_climate_data(qualifying_sites_path, 'annual')
+    monthly_data = create_climate_data(qualifying_sites_path, 'monthly')
+
+    climate_data_results = dict(
+        monthly_data=monthly_data,
+        annual_data=annual_data)
+    return climate_data_results
+
 
 def load_omniglot_dataset(data_dir: str = 'data',
                           num_data: int = None,
