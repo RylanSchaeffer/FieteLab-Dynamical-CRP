@@ -210,6 +210,7 @@ class Hyperbolic(Dynamics):
                          customer_assignment_probs: np.ndarray,
                          time: float,
                          ) -> Dict[str, np.ndarray]:
+
         exponential_Ns = np.repeat(customer_assignment_probs[np.newaxis, :],
                                    repeats=self._params['num_exponentials'],
                                    axis=0)
@@ -224,26 +225,20 @@ class Hyperbolic(Dynamics):
                      time_start: float,
                      time_end: float) -> Dict[str, np.ndarray]:
         assert time_start < time_end
-        time_delta = time_end - time_start
-        exp_change = np.exp(- self._exponential_rates * time_delta)
-        exponential_Ns = exp_change * self._state['exponential_Ns']
-        N_weighted_avg = np.matmul(self._probabilities, exponential_Ns)
-        self._state = {
-            'N': N_weighted_avg,
-            'exponential_Ns': exponential_Ns
-        }
+        exp_change = np.exp(- self._exponential_rates * (time_end - time_start))
+        self._state['exponential_Ns'] *= exp_change
+        self._state['N'] = np.matmul(self._probabilities,
+                                     self._state['exponential_Ns'])
         return self._state
 
     def update_state(self,
                      customer_assignment_probs: np.ndarray,
                      time: float,
                      ) -> Dict[str, np.ndarray]:
-        exponential_Ns = self._state['exponential_Ns']
-        exponential_Ns += customer_assignment_probs[np.newaxis, :]
-        N_weighted_avg = np.matmul(self._probabilities, self._state['exponential_Ns'])
-        self._state = {
-            'N': N_weighted_avg,
-            'exponential_Ns': exponential_Ns}
+
+        self._state['exponential_Ns'] += customer_assignment_probs[np.newaxis, :]
+        self._state['N'] = np.matmul(self._probabilities,
+                                     self._state['exponential_Ns'])
         return self._state
 
 
