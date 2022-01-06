@@ -6,23 +6,17 @@
 #SBATCH --mail-user=rylansch
 #SBATCH --mail-type=FAIL
 
-run_one_results_dir=${1}
-inference_alg_str=${2}
-alpha=${3}
-beta=${4}
-dynamics_str=${5}
+id=${1}
 
-# don't remember what this does
+# update
 export PYTHONPATH=.
+export WANDB_CONFIG_DIR=/om2/user/rylansch
+export WANDB_API_KEY=51a0a43a1b4ba9981701d60c5f6887cd5bf9e03e
+
+source dpmeanspp_venv/bin/activate
 
 # write the executed command to the slurm output file for easy reproduction
 # https://stackoverflow.com/questions/5750450/how-can-i-print-each-command-before-executing
 set -x
 
-# -u flushes output buffer immediately
-python -u 01_mixture_of_gaussians/run_one.py \
---run_one_results_dir="${run_one_results_dir}" \
---inference_alg_str="${inference_alg_str}" \
---alpha="${alpha}" \
---beta="${beta}" \
---dynamics_str="${dynamics_str}"
+wandb agent rylan/rncrp-mixture-of-gaussians/${id}
