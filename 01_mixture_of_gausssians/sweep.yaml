@@ -1,0 +1,32 @@
+program: 01_mixture_of_gaussians/run_one.py
+project: rncrp-mixture-of-gaussians
+method: grid
+metric:
+  goal: minimize
+  name: Loss
+parameters:
+  inference_alg:
+    values: ['RNCRP', ]
+  dynamics_str:
+    values: [
+        'perfectintegrator',
+        'leakyintegrator',
+        'harmonicoscillator',
+        'hyperbolic']
+  n_samples:
+    values: [1000]
+  n_features:
+    values: [3, 10]
+  n_clusters:
+    values: [5, 25, 40]
+  max_distance_param:
+    values: [0.1, 0.5,
+             1., 5.,
+             10., 50.,
+             100., 500.]
+  centroids_prior_cov_prefactor:
+    values: [5., 10.]
+  likelihood_cov_prefactor:
+    values: [1., 5., 10., 50.]
+  repeat_idx:
+    values: [0, 1, 2]

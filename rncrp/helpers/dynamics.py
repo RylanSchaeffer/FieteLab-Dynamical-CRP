@@ -6,6 +6,7 @@ dynamics_strs = [
     'perfectintegrator',
     'leakyintegrator',
     'harmonicoscillator',
+    'hyperbolic',
     'statetransition']
 
 
