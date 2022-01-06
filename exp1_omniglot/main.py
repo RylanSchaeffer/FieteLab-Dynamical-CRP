@@ -31,7 +31,7 @@ def main():
     np.random.seed(1)
     torch.manual_seed(0)
 
-    omniglot_data = rncrp.data.real.load_omniglot_dataset(
+    omniglot_data = rncrp.data.real.load_dataset_omniglot(
         data_dir='data',
         num_data=num_data,
         center_crop=center_crop,

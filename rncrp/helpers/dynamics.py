@@ -190,69 +190,60 @@ class Hyperbolic(Dynamics):
         """
 
         if params is None:
-            params = {'c': 1., 'num_exponentials': 100}
+            params = {'c': 1., 'num_exponentials': 250}
         assert 'c' in params
         super().__init__(params=params)
 
         # We approximate the integral with a Riemann sum.
         # Shift by a half-width to use the midpoint.
         width = 0.05
-        rates = np.linspace(start=0,
-                            stop=width * params['num_exponentials'],
-                            num=params['num_exponentials']) + width / 2
-        self._exponentials = [
-            LinearFirstOrder(params={'a': 1, 'b': rate})
-            for rate in rates]
-        self._probabilities = width * np.exp(-rates / params['c']) / params['c']
+        self._exponential_rates = np.linspace(start=0,
+                                              stop=width * params['num_exponentials'],
+                                              num=params['num_exponentials']) + width / 2
+
+        self._probabilities = width * np.exp(-self._exponential_rates / params['c']) / params['c']
+
+        # Add a trailing dimension to make addition / multiplication easy
+        self._exponential_rates = self._exponential_rates[:, np.newaxis]
 
     def initialize_state(self,
                          customer_assignment_probs: np.ndarray,
                          time: float,
                          ) -> Dict[str, np.ndarray]:
-
-        exponential_Ns = np.zeros(shape=(self._params['num_exponentials'],
-                                         customer_assignment_probs.shape[0]))
-        for idx, exponential in enumerate(self._exponentials):
-            exponential_Ns[idx, :] = exponential.initialize_state(
-                customer_assignment_probs=customer_assignment_probs,
-                time=time)['N']
+        exponential_Ns = np.repeat(customer_assignment_probs[np.newaxis, :],
+                                   repeats=self._params['num_exponentials'],
+                                   axis=0)
 
         N_weighted_avg = np.matmul(self._probabilities, exponential_Ns)
         self._state = {
-            'N': N_weighted_avg}
+            'N': N_weighted_avg,
+            'exponential_Ns': exponential_Ns}
         return self._state
 
     def run_dynamics(self,
                      time_start: float,
                      time_end: float) -> Dict[str, np.ndarray]:
-
-        exponential_Ns = np.zeros(shape=(self._params['num_exponentials'],
-                                         self._state['N'].shape[0]))
-        for idx, exponential in enumerate(self._exponentials):
-            exponential_Ns[idx, :] = exponential.run_dynamics(
-                time_start=time_start,
-                time_end=time_end)['N']
-
+        assert time_start < time_end
+        time_delta = time_end - time_start
+        exp_change = np.exp(- self._exponential_rates * time_delta)
+        exponential_Ns = exp_change * self._state['exponential_Ns']
         N_weighted_avg = np.matmul(self._probabilities, exponential_Ns)
         self._state = {
-            'N': N_weighted_avg}
+            'N': N_weighted_avg,
+            'exponential_Ns': exponential_Ns
+        }
         return self._state
 
     def update_state(self,
                      customer_assignment_probs: np.ndarray,
                      time: float,
                      ) -> Dict[str, np.ndarray]:
-
-        exponential_Ns = np.zeros(shape=(self._params['num_exponentials'],
-                                         self._state['N'].shape[0]))
-        for idx, exponential in enumerate(self._exponentials):
-            exponential_Ns[idx, :] = exponential.update_state(
-                customer_assignment_probs=customer_assignment_probs,
-                time=time)['N']
-
-        N_weighted_avg = np.matmul(self._probabilities, exponential_Ns)
+        exponential_Ns = self._state['exponential_Ns']
+        exponential_Ns += customer_assignment_probs[np.newaxis, :]
+        N_weighted_avg = np.matmul(self._probabilities, self._state['exponential_Ns'])
         self._state = {
-            'N': N_weighted_avg}
+            'N': N_weighted_avg,
+            'exponential_Ns': exponential_Ns}
         return self._state
 
 

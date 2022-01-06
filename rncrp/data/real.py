@@ -6,42 +6,46 @@ import torch
 import torchvision
 import scipy as sp
 from scipy import stats
+<<<<<<< HEAD
 import sklearn as sk
 import itertools
 import umap
 import umap.plot
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+=======
+from typing import Dict, List, Tuple
+>>>>>>> 8e12cdd (Refactored hyperbolic dynamics to be vectorized)
 
 import rncrp.helpers.morph_envir_preprocessing as pp
 import rncrp.helpers.morph_envir_utilities as u
 import rncrp.helpers.PlaceCellAnalysis as pc
 
 def transform_csv_to_array(site_df,
-                           duration = 'annual'):
+                           duration='annual'):
     df = site_df.copy()
     df["year"] = df.DATE.apply(lambda x: int(x[:4]))
-    df = df[(df.year>=1946) & (df.year<=2020)]
+    df = df[(df.year >= 1946) & (df.year <= 2020)]
 
     if duration == 'annual':
-        iterable = list(range(1946,2021))
+        iterable = list(range(1946, 2021))
         index = pd.Index(iterable, name="year")
         outdf = pd.DataFrame(columns=index).T
 
-        outdf.loc[:,"TMAX"] = df.groupby(["year"]).TMAX.mean().reset_index().set_index(["year"])
-        outdf.loc[:,"TMIN"] = df.groupby(["year"]).TMIN.mean().reset_index().set_index(["year"])
-        outdf.loc[:,"PRCP"] = df.groupby(["year"]).PRCP.mean().reset_index().set_index(["year"])
+        outdf.loc[:, "TMAX"] = df.groupby(["year"]).TMAX.mean().reset_index().set_index(["year"])
+        outdf.loc[:, "TMIN"] = df.groupby(["year"]).TMIN.mean().reset_index().set_index(["year"])
+        outdf.loc[:, "PRCP"] = df.groupby(["year"]).PRCP.mean().reset_index().set_index(["year"])
 
     elif duration == 'monthly':
         df["month"] = df.DATE.apply(lambda x: int(x[5:7]))
 
-        iterables = [ list(range(1946,2021)), list(range(1,13))]
+        iterables = [list(range(1946, 2021)), list(range(1, 13))]
         index = pd.MultiIndex.from_product(iterables, names=["year", "month"])
         outdf = pd.DataFrame(columns=index).T
 
-        outdf.loc[:,"TMAX"] = df.groupby(["year","month"]).TMAX.mean().reset_index().set_index(["year","month"])
-        outdf.loc[:,"TMIN"] = df.groupby(["year","month"]).TMIN.mean().reset_index().set_index(["year","month"])
-        outdf.loc[:,"PRCP"] = df.groupby(["year","month"]).PRCP.mean().reset_index().set_index(["year","month"])
+        outdf.loc[:, "TMAX"] = df.groupby(["year", "month"]).TMAX.mean().reset_index().set_index(["year", "month"])
+        outdf.loc[:, "TMIN"] = df.groupby(["year", "month"]).TMIN.mean().reset_index().set_index(["year", "month"])
+        outdf.loc[:, "PRCP"] = df.groupby(["year", "month"]).PRCP.mean().reset_index().set_index(["year", "month"])
 
     else:
         raise ValueError('Impermissible computation interval:', duration)
@@ -51,24 +55,26 @@ def transform_csv_to_array(site_df,
                             outdf.PRCP.to_numpy()))
     return site_array
 
-def create_climate_data(qualifying_sites_path: str=None,
-                        duration: str='annual'):
+
+def create_climate_data(qualifying_sites_path: str = None,
+                        duration: str = 'annual'):
     datalist = list()
     with open(qualifying_sites_path) as file:
         for site_csv_path in file:
             if '.csv' in site_csv_path:
                 try:
-                    df = pd.read_csv(site_csv_path.strip(),low_memory=False)
+                    df = pd.read_csv(site_csv_path.strip(), low_memory=False)
                     site_array = transform_csv_to_array(df, duration)
                     datalist.append(site_array)
                 except:
-                    print("Invalid File: ",site_csv_path)
+                    print("Invalid File: ", site_csv_path)
 
     dataset = np.array(datalist)
     dataset = stats.zscore(dataset, axis=0, nan_policy='raise')
     return dataset
 
-def load_climate_dataset(qualifying_sites_path: str=None):
+
+def load_climate_dataset(qualifying_sites_path: str = None):
     annual_data = create_climate_data(qualifying_sites_path, 'annual')
     monthly_data = create_climate_data(qualifying_sites_path, 'monthly')
 
@@ -78,6 +84,7 @@ def load_climate_dataset(qualifying_sites_path: str=None):
     return climate_data_results
 
 
+<<<<<<< HEAD
 def load_morph_environment_dataset():
     ### Initialize helper variables -- TO-DO: CHECK IF NEED THESE
     # getf = lambda s : s*2.5 + (1-s)*3.5
@@ -196,12 +203,143 @@ def load_morph_environment_dataset():
 
 
 def load_omniglot_dataset(data_dir: str = 'data',
+=======
+def load_dataset(dataset_name: str,
+                 dataset_kwargs: Dict = None,
+                 data_dir: str = 'data',
+                 ) -> Dict[str, np.ndarray]:
+    if dataset_kwargs is None:
+        dataset_kwargs = dict()
+
+    if dataset_name == 'boston_housing_1993':
+        load_dataset_fn = load_boston_housing_1993
+    elif dataset_name == 'cancer_gene_expression_2016':
+        load_dataset_fn = load_cancer_gene_expression_2016
+    elif dataset_name == 'climate':
+        load_dataset_fn = load_dataset_omniglot
+    elif dataset_name == 'covid_tracking_2021':
+        load_dataset_fn = load_dataset_covid_tracking_2021
+    elif dataset_name == 'omniglot':
+        load_dataset_fn = load_dataset_omniglot
+    else:
+        raise NotImplementedError
+
+    dataset_dict = load_dataset_fn(
+        data_dir=data_dir,
+        **dataset_kwargs)
+
+    return dataset_dict
+
+
+def load_dataset_covid_tracking_2021(data_dir: str = 'data',
+                                     **kwargs,
+                                     ) -> Dict[str, np.ndarray]:
+    dataset_dir = os.path.join(data_dir, 'covid_tracking_2021')
+    data_path = os.path.join(
+        dataset_dir, 'time_series_covid19_confirmed_global_iso3_regions.csv')
+
+    raw_data = pd.read_csv(data_path,
+                           header=[0, 1],  # first two lines are both headers
+                           )
+    # array of e.g. ('1/22/20', 'Unnamed: 4_level_1')
+    date_columns = raw_data.columns.values[4:]
+
+    # I don't know how to access MultiIndexes
+    # TODO: Figure out a more elegant way of doing this
+    unmelted_data = pd.DataFrame({
+        'Latitude': raw_data['Lat']['#geo+lat'].values,
+        'Longitude': raw_data['Long']['#geo+lon'].values,
+        'Country': raw_data['Country/Region']['#country+name'].values,
+        'Province': raw_data['Province/State']['#adm1+name'].values,
+    })
+    for date_column in date_columns:
+        # Take only the first element of the tuple
+        # e.g. ('1/22/20', 'Unnamed: 4_level_1') becomes '1/22/20'
+        unmelted_data[date_column[0]] = raw_data[date_column]
+
+    nondate_columns = unmelted_data.columns.values[:4]
+    data = unmelted_data.melt(id_vars=nondate_columns,
+                              var_name='Date',
+                              value_name='Num Cases')
+
+    observations = unmelted_data.loc[:, ~unmelted_data.columns.isin(['id', 'diagnosis'])]
+    labels = unmelted_data['diagnosis'].astype('category').cat.codes
+
+    dataset_dict = dict(
+        observations=observations.values,
+        labels=labels.values,
+    )
+
+    return dataset_dict
+
+
+def load_dataset_moseq(data_dir: str = 'data',
+                       **kwargs,
+                       ) -> Dict[str, np.ndarray]:
+    """
+    Load MoSeq data from https://github.com/dattalab/moseq-drugs.
+
+    Note: You need to download the data from https://doi.org/10.5281/zenodo.3951698.
+    Unfortunately, the data appears to have been pickled using Python2.7 and now
+    NumPy and joblib can't read it. I used Python2.7 and Joblib to dump the data
+    to disk using the following code:
+
+
+    moseq_dir = os.path.join('data/moseq_drugs')
+    file_names = [
+        'dataset',
+        'fingerprints',
+        'syllablelabels'
+    ]
+    data = dict()
+    for file_name in file_names:
+        data[file_name] = np.load(os.path.join(moseq_dir, file_name + '.pkl'),
+                                  allow_pickle=True)
+    joblib.dump(value=data,
+                filename=os.path.join(moseq_dir, 'moseq_drugs_data.joblib'))
+    """
+
+    moseq_dir = os.path.join(data_dir, 'moseq_drugs')
+    data = joblib.load(filename=os.path.join(moseq_dir, 'moseq_drugs_data.joblib'))
+    dataset = data['dataset']
+    fingerprints = data['fingerprints']
+    syllablelabels = data['syllablelabels']
+
+    moseq_dataset_results = dict(
+        dataset=dataset,
+        fingerprints=fingerprints,
+        syllablelabels=syllablelabels)
+
+    return moseq_dataset_results
+
+
+def load_dataset_template(data_dir: str = 'data',
+                          **kwargs,
+                          ) -> Dict[str, np.ndarray]:
+    dataset_dir = os.path.join(data_dir,
+                               'wisconsin_breast_cancer_1995')
+    data_path = os.path.join(dataset_dir, 'data.csv')
+
+    data = pd.read_csv(data_path, index_col=False)
+    observations = data.loc[:, ~data.columns.isin(['id', 'diagnosis'])]
+    labels = data['diagnosis'].astype('category').cat.codes
+
+    dataset_dict = dict(
+        observations=observations.values,
+        labels=labels.values,
+    )
+
+    return dataset_dict
+
+
+def load_dataset_omniglot(data_dir: str = 'data',
+>>>>>>> 8e12cdd (Refactored hyperbolic dynamics to be vectorized)
                           num_data: int = None,
                           center_crop: bool = True,
                           avg_pool: bool = False,
                           feature_extractor_method: str = 'vae',
-                          shuffle=False):
-
+                          shuffle=False,
+                          **kwargs):
     assert feature_extractor_method in {'vae', None}
 
     # Prepare tools to preprocess data
@@ -220,10 +358,11 @@ def load_omniglot_dataset(data_dir: str = 'data',
 
     # Obtain samples from 5 alphabets, in sequential order
     alphabets = omniglot_dataset._alphabets.copy()
-    omniglot_dataset._alphabets = random.sample(alphabets, 5) # randomly sample 5 alphabets
+    omniglot_dataset._alphabets = random.sample(alphabets, 5)  # randomly sample 5 alphabets
 
     omniglot_dataset._characters: List[str] = sum(
-            ([join(a, c) for c in list_dir(join(omniglot_dataset.target_folder, a))] for a in omniglot_dataset._alphabets), [])
+        ([join(a, c) for c in list_dir(join(omniglot_dataset.target_folder, a))] for a in omniglot_dataset._alphabets),
+        [])
     omniglot_dataset._character_images = [
         [(image, idx) for image in list_files(join(omniglot_dataset.target_folder, character), ".png")]
         for idx, character in enumerate(omniglot_dataset._characters)]
@@ -237,8 +376,8 @@ def load_omniglot_dataset(data_dir: str = 'data',
 
     # Prepare data for use
     omniglot_dataloader = torch.utils.data.DataLoader(dataset=omniglot_dataset,
-                                                        batch_size=1,
-                                                        shuffle=False)
+                                                      batch_size=1,
+                                                      shuffle=False)
     images, labels = [], []
     for image, label in omniglot_dataloader:
         labels.append(label)
@@ -288,11 +427,11 @@ def load_omniglot_dataset(data_dir: str = 'data',
         image_features = torch_image_features.detach().numpy()
 
         feature_extractor = vae
-    
+
     elif feature_extractor_method is None:
         image_features = np.reshape(images, newshape=(dataset_size, image_height * image_width))
         feature_extractor = None
-    
+
     else:
         raise ValueError(f'Impermissible feature method: {feature_extractor_method}')
 
@@ -310,44 +449,6 @@ def load_omniglot_dataset(data_dir: str = 'data',
         image_features=image_features)
 
     return omniglot_dataset_results
-
-
-def load_moseq_dataset(data_dir: str = 'data'):
-    """
-    Load MoSeq data from https://github.com/dattalab/moseq-drugs.
-
-    Note: You need to download the data from https://doi.org/10.5281/zenodo.3951698.
-    Unfortunately, the data appears to have been pickled using Python2.7 and now
-    NumPy and joblib can't read it. I used Python2.7 and Joblib to dump the data
-    to disk using the following code:
-
-
-    moseq_dir = os.path.join('data/moseq_drugs')
-    file_names = [
-        'dataset',
-        'fingerprints',
-        'syllablelabels'
-    ]
-    data = dict()
-    for file_name in file_names:
-        data[file_name] = np.load(os.path.join(moseq_dir, file_name + '.pkl'),
-                                  allow_pickle=True)
-    joblib.dump(value=data,
-                filename=os.path.join(moseq_dir, 'moseq_drugs_data.joblib'))
-    """
-
-    moseq_dir = os.path.join(data_dir, 'moseq_drugs')
-    data = joblib.load(filename=os.path.join(moseq_dir, 'moseq_drugs_data.joblib'))
-    dataset = data['dataset']
-    fingerprints = data['fingerprints']
-    syllablelabels = data['syllablelabels']
-
-    moseq_dataset_results = dict(
-        dataset=dataset,
-        fingerprints=fingerprints,
-        syllablelabels=syllablelabels)
-
-    return moseq_dataset_results
 
 
 # def load_newsgroup_dataset(data_dir: str = 'data',
@@ -485,7 +586,6 @@ def load_moseq_dataset(data_dir: str = 'data'):
 #     return mnist_dataset_results
 
 
-
 # def load_reddit_dataset(num_data: int,
 #                         num_features: int,
 #                         tf_or_tfidf_or_counts='tfidf',
@@ -567,3 +667,7 @@ def load_moseq_dataset(data_dir: str = 'data'):
 #         test_mask=test_mask)
 
 #     return yale_dataset_results
+
+
+if __name__ == '__main__':
+    load_dataset(dataset_name='covid_tracking_2021')
