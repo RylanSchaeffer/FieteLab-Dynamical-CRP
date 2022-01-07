@@ -26,11 +26,11 @@ import rncrp.metrics
 
 config_defaults = {
     'inference_alg_str': 'VI-GMM',
-    'dynamics_str': 'step',
+    'dynamics_str': 'sinusoid',
     'n_samples': 1000,
     'n_features': 10,
     'n_clusters': 25,
-    'alpha': 1.,
+    'alpha': 5.9,
     'beta': 0.,
     'centroids_prior_cov_prefactor': 5.,
     'likelihood_cov_prefactor': 1.,
