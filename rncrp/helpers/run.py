@@ -65,6 +65,55 @@ def download_wandb_project_runs_results(wandb_project_path: str,
     return sweep_results_df
 
 
+def run_inference_alg(inference_alg_str: str,
+                      observations: np.ndarray,
+                      observations_times: np.ndarray,
+                      concentration_param,
+                      likelihood_model,
+                      learning_rate):
+    inference_alg_kwargs = dict()
+
+    # RN-CRP
+    if inference_alg_str == 'RN-CRP':
+        inference_alg_fn = rn_crp
+
+    # DP-GMM
+    elif inference_alg_str.startswith('DP-GMM'):
+        inference_alg_fn = dp_gmm
+
+        substrs = inference_alg_str.split(' ')  # Parse parameters from algorithm string as needed
+        num_initializations = int(substrs[2][1:])
+        max_iters = int(substrs[4])
+
+        inference_alg_kwargs['num_initializations'] = num_initializations
+        inference_alg_kwargs['max_iter'] = max_iters
+
+    # DP-Means
+    elif inference_alg_str.startswith('DP-Means'):
+        inference_alg_fn = dp_means
+
+        if inference_alg_str.endswith('(offline)'):
+            inference_alg_kwargs['num_passes'] = 8  # same as Kulis and Jordan
+
+        elif inference_alg_str.endswith('(online)'):
+            inference_alg_kwargs['num_passes'] = 1
+        else:
+            raise ValueError('Invalid DP Means')
+
+    else:
+        raise ValueError(f'Unknown inference algorithm: {inference_alg_str}')
+
+    # Run inference algorithm
+    inference_alg_results = inference_alg_fn(
+        observations=observations,
+        concentration_param=concentration_param,
+        likelihood_model=likelihood_model,
+        learning_rate=learning_rate,
+        **inference_alg_kwargs)
+
+    return inference_alg_results
+
+
 def set_seed(seed: int):
     np.random.seed(seed)
     torch.manual_seed(seed)

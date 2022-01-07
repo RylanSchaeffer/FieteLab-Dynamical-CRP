@@ -35,7 +35,7 @@ config_defaults = {
     'alpha': 1.,
     'beta': 0.,
     'centroids_prior_cov_prefactor': 5.,
-    'likelihood_cov_prefactor': 1.,
+    'likelihood_icov_prefactor': 1.,
     'repeat_idx': 0,
 }
 wandb.init(project='rncrp-mixture-of-gaussians',
