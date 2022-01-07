@@ -5,8 +5,12 @@ metric:
   goal: minimize
   name: Loss
 parameters:
-  inference_alg:
-    values: ['RNCRP']
+  inference_alg_str:
+    values: [
+        'RNCRP',
+        'VI-GMM',
+        'DP-Means',
+    ]
   dynamics_str:
     values: [
         'step',

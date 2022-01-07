@@ -14,7 +14,6 @@ import joblib
 import logging
 import numpy as np
 import os
-from timeit import default_timer as timer
 import torch
 import wandb
 
@@ -22,12 +21,11 @@ import wandb
 import rncrp.data.synthetic
 import rncrp.helpers.dynamics
 import rncrp.helpers.run
-# import rncrp.inference
 import rncrp.metrics
 
 
 config_defaults = {
-    'inference_alg': 'RNCRP',
+    'inference_alg_str': 'VI-GMM',
     'dynamics_str': 'step',
     'n_samples': 1000,
     'n_features': 10,
@@ -35,7 +33,7 @@ config_defaults = {
     'alpha': 1.,
     'beta': 0.,
     'centroids_prior_cov_prefactor': 5.,
-    'likelihood_icov_prefactor': 1.,
+    'likelihood_cov_prefactor': 1.,
     'repeat_idx': 0,
 }
 wandb.init(project='rncrp-mixture-of-gaussians',
@@ -46,10 +44,12 @@ print(f'Running:')
 for key, value in config.items():
     print(key, ' : ', value)
 
-
+# determine paths
 exp_dir = '01_mixture_of_gaussians'
 results_dir_path = os.path.join(exp_dir, 'results')
-
+os.makedirs(results_dir_path, exist_ok=True)
+inference_alg_results_path = os.path.join(results_dir_path,
+                                          f'id={wandb.run.id}.joblib')
 
 # set seeds
 rncrp.helpers.run.set_seed(config['repeat_idx'])
@@ -66,56 +66,51 @@ mixture_model_results = rncrp.data.synthetic.sample_mixture_model(
     component_prior_params={'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor'],
                             'likelihood_cov_prefactor': config['likelihood_cov_prefactor']})
 
-# time using timer because https://stackoverflow.com/a/25823885/4570472
-start_time = timer()
-dpmeans.fit(X=mixture_model_results['obs'])
-stop_time = timer()
-runtime = stop_time - start_time
 
-results = {
-    'Runtime': runtime,
-    'Num Iter Till Convergence': dpmeans.n_iter_,
-    'Num Initial Clusters': dpmeans.num_init_clusters_,
-    'Num Inferred Clusters': dpmeans.num_clusters_,
-    'Loss': dpmeans.loss_,
+gen_model_params = {
+    'mixing_params': {
+        'alpha': config['alpha'],
+               'beta': config['beta'],
+               'dynamics_str': config['dynamics_str']},
+    'feature_prior_params': {
+        'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor']
+    },
+    'likelihood_params': {
+        'likelihood_cov_prefactor': config['likelihood_cov_prefactor']
+    }
 }
 
-scores, pred_cluster_assignments = compute_predicted_clusters_scores(
-    cluster_assignment_posteriors=dpmeans.labels_,
+inference_alg_results = rncrp.helpers.run.run_inference_alg(
+    inference_alg_str=config['inference_alg_str'],
+    observations=mixture_model_results['observations'],
+    observations_times=mixture_model_results['observations_times'],
+    gen_model_params=gen_model_params,
+)
+
+scores, map_cluster_assignments = rncrp.metrics.compute_predicted_clusters_scores(
+    cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
     true_cluster_assignments=mixture_model_results['cluster_assignments'],
 )
-results.update(scores)
 
-wandb.log(results, step=0)
+inference_alg_results.update(scores)
+inference_alg_results['map_cluster_assignments'] = map_cluster_assignments
+
+wandb.log(scores, step=0)
 
 data_to_store = dict(
-    inference_alg_str=inference_alg_str,
-    inference_dynamics_str=inference_dynamics_str,
-    inference_alg_params=inference_alg_params,
-    inference_results=inference_results,
-    num_clusters=num_clusters,
-    scores=scores,
-    runtime=runtime)
+    config=dict(config),  # Need to convert WandB config to proper dict
+    inference_alg_results=inference_alg_results,
+    scores=scores)
 
 joblib.dump(data_to_store,
-            filename=inference_results_path)
+            filename=inference_alg_results_path)
 
-# read results from disk
-stored_data = joblib.load(inference_results_path)
-
-plot.plot_inference_results(
-    sampled_mog_data=sampled_mog_data,
-    inference_results=stored_data['inference_results'],
-    inference_alg_str=stored_data['inference_alg_str'],
-    inference_alg_param=stored_data['inference_alg_params'],
-    plot_dir=inference_results_dir)
-
-run_and_plot_inference_alg(
-    sampled_mog_data=setup_results['sampled_mog_data'],
-    inference_alg_str=setup_results['inference_alg_str'],
-    inference_alg_params=setup_results['inference_alg_params'],
-    inference_dynamics_str=setup_results['dynamics_str'],
-    inference_results_dir=setup_results['inference_results_dir'])
+# rncrp.plot.plot_inference_results(
+#     sampled_mog_data=sampled_mog_data,
+#     inference_results=stored_data['inference_results'],
+#     inference_alg_str=stored_data['inference_alg_str'],
+#     inference_alg_param=stored_data['inference_alg_params'],
+#     plot_dir=inference_results_dir)
 
 
 print('Finished run.')
