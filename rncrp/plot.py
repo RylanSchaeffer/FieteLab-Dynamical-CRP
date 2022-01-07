@@ -44,7 +44,7 @@ def run_and_plot_inference_alg(sampled_data,
             inference_alg_concentration_param_results = inference.run_inference_alg(
                 inference_alg_str=inference_alg_str,
                 observations=sampled_data[features],
-                concentration_param=concentration_param,
+                gen_model_params=concentration_param,
                 likelihood_model='multivariate_normal',
                 learning_rate=1e0)
 
@@ -53,7 +53,7 @@ def run_and_plot_inference_alg(sampled_data,
             runtime = stop_time - start_time
 
             # record scores
-            scores, pred_cluster_labels = utils.metrics.score_predicted_clusters(
+            scores, pred_cluster_labels = utils.metrics.compute_predicted_clusters_scores(
                 true_cluster_labels=sampled_data['assigned_table_seq'],
                 table_assignment_posteriors=inference_alg_concentration_param_results['table_assignment_posteriors'])
 
