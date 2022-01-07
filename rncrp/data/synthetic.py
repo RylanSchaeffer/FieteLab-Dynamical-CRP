@@ -111,6 +111,7 @@ def sample_rncrp(num_mc_samples: int,
                  beta: float,
                  dynamics_str: str,
                  ) -> Dict[str, np.ndarray]:
+
     assert alpha > 0.
     assert beta >= 0.
 
