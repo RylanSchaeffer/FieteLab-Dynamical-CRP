@@ -36,12 +36,12 @@ def sweep_parameters(plot_dir, sweep_setting):
                 dataset_dir = os.path.join(plot_dir, f'dataset={dataset_idx}')
                 os.makedirs(dataset_dir, exist_ok=True)
 
-                sampled_gaussian_data = sample_from_mixture_of_gaussians(
+                sampled_gaussian_data = sample_mixture_model(
                     seq_len=100,
                     num_gaussians=3,
                     gaussian_dim=dim,
-                    gaussian_params=dict(gaussian_cov_scaling=0.3,
-                                         gaussian_mean_prior_cov_scaling=6.),
+                    component_prior_params=dict(gaussian_cov_scaling=0.3,
+                                                gaussian_mean_prior_cov_scaling=6.),
                     anisotropy=False)
 
                 dataset_inference_algs_results, dataset_sampled_mix_of_gaussians_results = single_run(
@@ -71,12 +71,12 @@ def sweep_parameters(plot_dir, sweep_setting):
                 dataset_dir = os.path.join(plot_dir, f'dataset={dataset_idx}')
                 os.makedirs(dataset_dir, exist_ok=True)
                 
-                sampled_gaussian_data = sample_from_mixture_of_gaussians(
+                sampled_gaussian_data = sample_mixture_model(
                     seq_len=100,
                     num_gaussians=3,
                     gaussian_dim=2,
-                    gaussian_params=dict(gaussian_cov_scaling=0.3,
-                                         gaussian_mean_prior_cov_scaling=spread),
+                    component_prior_params=dict(gaussian_cov_scaling=0.3,
+                                                gaussian_mean_prior_cov_scaling=spread),
                     anisotropy=False)
 
                 dataset_inference_algs_results, dataset_sampled_mix_of_gaussians_results = single_run(
@@ -102,12 +102,12 @@ def sweep_parameters(plot_dir, sweep_setting):
             dataset_dir = os.path.join(plot_dir, f'dataset={dataset_idx}')
             os.makedirs(dataset_dir, exist_ok=True)
             
-            sampled_gaussian_data = sample_from_mixture_of_gaussians(
+            sampled_gaussian_data = sample_mixture_model(
                 seq_len=100,
                 num_gaussians=3,
                 gaussian_dim=2,
-                gaussian_params=dict(gaussian_cov_scaling=0.3,
-                                     gaussian_mean_prior_cov_scaling=6.),
+                component_prior_params=dict(gaussian_cov_scaling=0.3,
+                                            gaussian_mean_prior_cov_scaling=6.),
                 anisotropy=True)
 
             dataset_inference_algs_results, dataset_sampled_mix_of_gaussians_results = single_run(

@@ -2,8 +2,8 @@ import numpy as np
 import os
 import pandas as pd
 
-from src.helpers.run import download_wandb_project_runs_results
-from src.plot import plot_all
+from rncrp.helpers.run import download_wandb_project_runs_results
+from rncrp.plot import plot_all
 
 exp_dir = '01_mixture_of_gaussians'
 results_dir = os.path.join(exp_dir, 'results')
@@ -15,6 +15,7 @@ os.makedirs(sweep_dir, exist_ok=True)
 sweep_results_df_path = os.path.join(sweep_dir, f'sweep={sweep_name}_results.csv')
 
 if not os.path.isfile(sweep_results_df_path):
+
     sweep_results_df = download_wandb_project_runs_results(
         wandb_project_path=wandb_sweep_path,
         sweep_name=sweep_name)

@@ -15,6 +15,7 @@ import utils.data
 
 
 def run_all():
+
     # create directory
     exp_dir_path = '01_mixture_of_gaussians'
     results_dir_path = os.path.join(exp_dir_path, 'results')
@@ -45,13 +46,13 @@ def run_all():
             itertools.product(cluster_assignment_samplings, range(num_datasets)):
 
         logging.info(f'Sampling: {cluster_assignment_sampling}, Dataset Index: {dataset_idx}')
-        sampled_mog_data = utils.data.sample_from_mixture_of_gaussians(
+        sampled_mog_data = utils.data.sample_mixture_model(
             num_obs=num_customers,
             cluster_assignment_sampling=cluster_assignment_sampling,
             cluster_assignment_sampling_parameters=cluster_assignment_sampling_params,
             num_gaussians=num_gaussians,
-            gaussian_params=dict(gaussian_cov_scaling=gaussian_cov_scaling,
-                                 gaussian_mean_prior_cov_scaling=gaussian_mean_prior_cov_scaling))
+            component_prior_params=dict(gaussian_cov_scaling=gaussian_cov_scaling,
+                                        gaussian_mean_prior_cov_scaling=gaussian_mean_prior_cov_scaling))
 
         # save dataset
         dataset_dir = os.path.join(

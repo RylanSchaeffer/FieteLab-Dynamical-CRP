@@ -18,21 +18,24 @@ from timeit import default_timer as timer
 import torch
 import wandb
 
-import plot
-import rncrp.data
+# import plot
+import rncrp.data.synthetic
 import rncrp.helpers.dynamics
-import rncrp.inference
+import rncrp.helpers.run
+# import rncrp.inference
 import rncrp.metrics
 
 
 config_defaults = {
-    'n_samples': 10000,
+    'inference_alg': 'RNCRP',
+    'dynamics_str': 'step',
+    'n_samples': 1000,
     'n_features': 10,
     'n_clusters': 25,
-    'max_distance_param': 1.,
+    'alpha': 1.,
+    'beta': 0.,
     'centroids_prior_cov_prefactor': 5.,
     'likelihood_cov_prefactor': 1.,
-    'init_method': 'dp-means++',  # either 'dp-means' or 'dp-means++'
     'repeat_idx': 0,
 }
 wandb.init(project='rncrp-mixture-of-gaussians',
@@ -49,16 +52,19 @@ results_dir_path = os.path.join(exp_dir, 'results')
 
 
 # set seeds
-np.random.seed(config['repeat_idx'])
-torch.manual_seed(config['repeat_idx'])
+rncrp.helpers.run.set_seed(config['repeat_idx'])
 
 
-mixture_model_results = sample_mixture_model(
+mixture_model_results = rncrp.data.synthetic.sample_mixture_model(
     num_obs=config['n_samples'],
     obs_dim=config['n_features'],
-    mixing_probabilities=np.ones(config['n_clusters']) / config['n_clusters'],
-    centroids_prior_cov_prefactor=config['centroids_prior_cov_prefactor'],
-    likelihood_cov_prefactor=config['likelihood_cov_prefactor'])
+    mixing_prior_str='rncrp',
+    mixing_distribution_params={'alpha': config['alpha'],
+                                'beta': config['beta'],
+                                'dynamics_str': config['dynamics_str']},
+    component_prior_str='gaussian',
+    component_prior_params={'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor'],
+                            'likelihood_cov_prefactor': config['likelihood_cov_prefactor']})
 
 # time using timer because https://stackoverflow.com/a/25823885/4570472
 start_time = timer()
