@@ -7,9 +7,7 @@ metric:
 parameters:
   inference_alg_str:
     values: [
-        'RNCRP',
         'VI-GMM',
-        'DP-Means',
     ]
   dynamics_str:
     values: [
@@ -19,9 +17,8 @@ parameters:
         'hyperbolic']
   alpha:
     values: [ 0.1, 0.5,
-              1., 5.,
-              10., 50.,
-              100., 500. ]
+              1., 2.5, 5., 7.5,
+              10., 25., 50., 75.,]
   n_samples:
     values: [1000]
   n_features:
