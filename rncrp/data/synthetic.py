@@ -16,6 +16,7 @@ def sample_mixture_model(num_obs: int = 100,
                          component_prior_str: str = 'gaussian',
                          component_prior_params: dict = None,
                          **kwargs):
+
     # Ensure we have parameters to sample cluster assignments.
     if mixing_distribution_params is None:
         if mixing_prior_str == 'rncrp':
@@ -31,15 +32,20 @@ def sample_mixture_model(num_obs: int = 100,
 
     # Sample cluster assignments.
     if mixing_prior_str == 'rncrp':
-        cluster_assignments = sample_rncrp(num_mc_samples=1,
-                                           num_customer=num_obs,
-                                           **mixing_distribution_params)
+        monte_carlo_rncrp_results = sample_rncrp(num_mc_samples=1,
+                                                 num_customer=num_obs,
+                                                 **mixing_distribution_params)
+        cluster_assignments = monte_carlo_rncrp_results[
+            'customer_assignments_by_customer'][0]  # take first MC sample, arbitrarily
+        observations_times = monte_carlo_rncrp_results['customer_times']
+
     elif mixing_prior_str == 'discrete':
         cluster_assignments = np.random.choice(
             len(mixing_distribution_params['probs']),
             p=mixing_distribution_params['probs'],
             replace=True,
             size=num_obs)
+        observations_times = np.arange(len(cluster_assignments))
     else:
         raise NotImplementedError
 
@@ -54,8 +60,6 @@ def sample_mixture_model(num_obs: int = 100,
             }
         else:
             raise NotImplementedError
-    else:
-        raise NotImplementedError
 
     # Sample components.
     if component_prior_str == 'gaussian':
@@ -94,6 +98,7 @@ def sample_mixture_model(num_obs: int = 100,
         cluster_assignments=cluster_assignments,
         cluster_assignments_one_hot=cluster_assignments_one_hot,
         observations=observations,
+        observations_times=observations_times,
         components=components,
     )
 
