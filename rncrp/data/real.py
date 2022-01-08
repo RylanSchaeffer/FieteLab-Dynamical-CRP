@@ -6,16 +6,13 @@ import torch
 import torchvision
 import scipy as sp
 from scipy import stats
-<<<<<<< HEAD
 import sklearn as sk
 import itertools
 import umap
 import umap.plot
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-=======
 from typing import Dict, List, Tuple
->>>>>>> 8e12cdd (Refactored hyperbolic dynamics to be vectorized)
 
 import rncrp.helpers.morph_envir_preprocessing as pp
 import rncrp.helpers.morph_envir_utilities as u
@@ -83,8 +80,6 @@ def load_climate_dataset(qualifying_sites_path: str = None):
         annual_data=annual_data)
     return climate_data_results
 
-
-<<<<<<< HEAD
 def load_morph_environment_dataset():
     ### Initialize helper variables -- TO-DO: CHECK IF NEED THESE
     # getf = lambda s : s*2.5 + (1-s)*3.5
@@ -202,8 +197,6 @@ def load_morph_environment_dataset():
     return morph_environment_results
 
 
-def load_omniglot_dataset(data_dir: str = 'data',
-=======
 def load_dataset(dataset_name: str,
                  dataset_kwargs: Dict = None,
                  data_dir: str = 'data',
@@ -333,7 +326,6 @@ def load_dataset_template(data_dir: str = 'data',
 
 
 def load_dataset_omniglot(data_dir: str = 'data',
->>>>>>> 8e12cdd (Refactored hyperbolic dynamics to be vectorized)
                           num_data: int = None,
                           center_crop: bool = True,
                           avg_pool: bool = False,
