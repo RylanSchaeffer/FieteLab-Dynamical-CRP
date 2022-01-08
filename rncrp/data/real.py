@@ -419,6 +419,7 @@ def load_dataset_morph_environment(data_dir: str = 'data',
     mapper = umap.UMAP(metric="correlation",n_neighbors=100,min_dist=.01,n_components=3).fit(sm)
     # umap.plot.points(mapper) # visualize if desired
 
+    ## POTENTIAL TODO: GENERATE DATASET HERE INSTEAD
     clust_labels = sk.cluster.DBSCAN(min_samples=200).fit_predict(mapper.embedding_)
     print(np.unique(clust_labels))
     print((clust_labels==-1).sum())
