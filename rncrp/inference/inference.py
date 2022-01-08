@@ -103,34 +103,6 @@ def rn_crp(observations,
                                          dtype=torch.float64,
                                          requires_grad=False)
 
-    if likelihood_model == 'multivariate_normal':
-        setup_cluster_params_fn = setup_cluster_params_multivariate_normal
-        likelihood_fn = likelihood_multivariate_normal
-
-        cluster_params = dict(means=torch.full(
-            size=(max_num_latents, obs_dim),
-            fill_value=0.,
-            dtype=torch.float64,
-            requires_grad=True),
-            stddevs=torch.full(
-                size=(max_num_latents, obs_dim, obs_dim),
-                fill_value=0.,
-                dtype=torch.float64,
-                requires_grad=True))
-
-    elif likelihood_model == 'dirichlet_multinomial':
-        setup_cluster_params_fn = setup_cluster_params_dirichlet_multinomial
-        likelihood_fn = likelihood_dirichlet_multinomial
-
-        cluster_params = dict(concentrations=torch.full(size=(max_num_latents, obs_dim),
-                                                        fill_value=np.nan,
-                                                        dtype=torch.float64,
-                                                        requires_grad=True))
-
-    # todo: set up other likelihoods as needed
-    else:
-        raise NotImplementedError
-
     optimizer = torch.optim.SGD(params=cluster_params.values(), lr=1.)
     one = torch.Tensor([1.]).double()
     torch_observations = torch.from_numpy(observations)

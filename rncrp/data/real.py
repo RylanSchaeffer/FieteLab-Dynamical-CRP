@@ -62,12 +62,12 @@ def load_dataset_template(data_dir: str = 'data',
         observations=observations.values,
         labels=labels.values,
     )
-
     return dataset_dict
 
 
 def transform_site_csv_to_array(site_df,
                                 duration='annual'):
+
     df = site_df.copy()
     df["year"] = df.DATE.apply(lambda x: int(x[:4]))
     df = df[(df.year >= 1946) & (df.year <= 2020)]
@@ -100,6 +100,7 @@ def transform_site_csv_to_array(site_df,
                             outdf.PRCP.to_numpy()))
     return site_array
 
+
 def create_climate_data(qualifying_sites_path: str = None,
                         duration: str = 'annual'):
     datalist = list()
@@ -118,6 +119,7 @@ def create_climate_data(qualifying_sites_path: str = None,
     return dataset
 
 def load_dataset_climate(qualifying_sites_path: str = None):
+
     annual_data = create_climate_data(qualifying_sites_path, 'annual')
     monthly_data = create_climate_data(qualifying_sites_path, 'monthly')
 
