@@ -413,9 +413,8 @@ def load_dataset_morph_environment(data_dir: str = 'data',
     print(_sm.shape)
 
     ### POTENTIAL TO-DO: Flatten morph by position maps & stacked to form a cellsx(position bins*morph bins) matrix
-    pass
 
-    ### UMAP dimensionality reduction to obtain 2 manifolds, corresponding to S=0 and S=1
+    ### UMAP dimensionality reduction & DBSCAN clustering to obtain 2 manifolds, corresponding to S=0 and S=1
     mapper = umap.UMAP(metric="correlation",n_neighbors=100,min_dist=.01,n_components=3).fit(sm)
     # umap.plot.points(mapper) # visualize if desired
 
