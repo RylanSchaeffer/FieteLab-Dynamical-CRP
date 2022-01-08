@@ -36,6 +36,7 @@ class VariationalInferenceGMM(BaseModel):
     def fit(self,
             observations: np.ndarray,
             observations_times: np.ndarray):
+
         num_obs, obs_dim = observations.shape
         var_dp_gmm = sklearn.mixture.BayesianGaussianMixture(
             n_components=num_obs,
@@ -46,8 +47,9 @@ class VariationalInferenceGMM(BaseModel):
             weight_concentration_prior=self.mixing_params['alpha'])
         var_dp_gmm.fit(observations)
         cluster_assignment_posteriors = var_dp_gmm.predict_proba(observations)
-        cluster_assignment_posteriors_running_sum = np.cumsum(cluster_assignment_posteriors,
-                                                              axis=0)
+        cluster_assignment_posteriors_running_sum = np.cumsum(
+            cluster_assignment_posteriors,
+            axis=0)
         params = dict(means=var_dp_gmm.means_,
                       covs=var_dp_gmm.covariances_)
 
