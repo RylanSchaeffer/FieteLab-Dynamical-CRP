@@ -65,61 +65,97 @@ def load_dataset_template(data_dir: str = 'data',
 
     return dataset_dict
 
-
 def transform_site_csv_to_array(site_df,
-                                duration='annual'):
+                                duration: str = 'annual',
+                                end_year: int = 2020,
+                                use_zscores: bool = False):
     df = site_df.copy()
     df["year"] = df.DATE.apply(lambda x: int(x[:4]))
-    df = df[(df.year >= 1946) & (df.year <= 2020)]
+    df = df[(df.year >= 1946) & (df.year <= end_year)]
 
     if duration == 'annual':
-        iterable = list(range(1946, 2021))
+        iterable = list(range(1946, end_year+1))
         index = pd.Index(iterable, name="year")
         outdf = pd.DataFrame(columns=index).T
 
+        outdf.loc[:, "YEAR"] = iterable
+        outdf.loc[:, "LATITUDE"] = np.ones(len(outdf.index)) * df.LATITUDE.iloc[0]
+        outdf.loc[:, "LONGITUDE"] = np.ones(len(outdf.index)) * df.LONGITUDE.iloc[0]
+        outdf.loc[:, "ELEVATION"] = np.ones(len(outdf.index)) * df.ELEVATION.iloc[0]
         outdf.loc[:, "TMAX"] = df.groupby(["year"]).TMAX.mean().reset_index().set_index(["year"])
         outdf.loc[:, "TMIN"] = df.groupby(["year"]).TMIN.mean().reset_index().set_index(["year"])
         outdf.loc[:, "PRCP"] = df.groupby(["year"]).PRCP.mean().reset_index().set_index(["year"])
 
+        site_metadata = outdf.YEAR.to_numpy()
+
     elif duration == 'monthly':
         df["month"] = df.DATE.apply(lambda x: int(x[5:7]))
 
-        iterables = [list(range(1946, 2021)), list(range(1, 13))]
-        index = pd.MultiIndex.from_product(iterables, names=["year", "month"])
+        year_iterable = list(range(1946, end_year+1))
+        month_iterable = list(range(1, 13))
+        index = pd.MultiIndex.from_product([year_iterable, month_iterable], names=["year", "month"])
         outdf = pd.DataFrame(columns=index).T
 
+        outdf.loc[:, "YEAR"] = np.repeat(year_iterable, 12)
+        outdf.loc[:, "MONTH"] = month_iterable * len(year_iterable)
+        outdf.loc[:, "LATITUDE"] = np.ones(len(outdf.index)) * df.LATITUDE.iloc[0]
+        outdf.loc[:, "LONGITUDE"] = np.ones(len(outdf.index)) * df.LONGITUDE.iloc[0]
+        outdf.loc[:, "ELEVATION"] = np.ones(len(outdf.index)) * df.ELEVATION.iloc[0]
         outdf.loc[:, "TMAX"] = df.groupby(["year", "month"]).TMAX.mean().reset_index().set_index(["year", "month"])
         outdf.loc[:, "TMIN"] = df.groupby(["year", "month"]).TMIN.mean().reset_index().set_index(["year", "month"])
         outdf.loc[:, "PRCP"] = df.groupby(["year", "month"]).PRCP.mean().reset_index().set_index(["year", "month"])
 
+        site_metadata = np.vstack((outdf.YEAR.to_numpy(),
+                                   outdf.MONTH.to_numpy()))
     else:
         raise ValueError('Impermissible computation interval:', duration)
 
-    site_array = np.hstack((outdf.TMAX.to_numpy(),
-                            outdf.TMAX.to_numpy(),
-                            outdf.PRCP.to_numpy()))
-    return site_array
+    # Finish concatenating site metadata
+    site_metadata = np.vstack((site_metadata,
+                               outdf.LATITUDE.to_numpy(),
+                               outdf.LONGITUDE.to_numpy(),
+                               outdf.ELEVATION.to_numpy()))
 
-def create_climate_data(qualifying_sites_path: str = None,
-                        duration: str = 'annual'):
-    datalist = list()
+    # Concatenate climate metrics into 3 x (# years or # months) array
+    site_metrics = np.vstack((outdf.TMAX.to_numpy(),
+                              outdf.TMIN.to_numpy(),
+                              outdf.PRCP.to_numpy()))
+
+    # Convert climate metrics to z-scores if want to look more specifically at climate variability of each site
+    if use_zscores:
+        site_zscores = stats.zscore(site_metrics, axis=1, nan_policy='raise')
+        site_array = np.vstack((site_metadata, site_zscores))
+
+    # Otherwise, study overall climate by using raw data values
+    else:
+        site_array = np.vstack((site_metadata, site_metrics))
+
+    return site_array.T
+
+def create_climate_data(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_2020.txt',
+                        duration: str = 'annual',
+                        end_year: int = 2020):
+    dataset = None
     with open(qualifying_sites_path) as file:
         for site_csv_path in file:
             if '.csv' in site_csv_path:
                 try:
                     df = pd.read_csv(site_csv_path.strip(), low_memory=False)
-                    site_array = transform_site_csv_to_array(df, duration)
-                    datalist.append(site_array)
+                    site_array = transform_site_csv_to_array(df, duration, end_year)
+                    if type(dataset) is not np.ndarray:
+                        dataset = site_array
+                    else:
+                        dataset = np.vstack((dataset,site_array))
                 except:
                     print("Invalid File: ", site_csv_path)
 
-    dataset = np.array(datalist)
-    dataset = stats.zscore(dataset, axis=0, nan_policy='raise')
     return dataset
 
-def load_dataset_climate(qualifying_sites_path: str = None):
-    annual_data = create_climate_data(qualifying_sites_path, 'annual')
-    monthly_data = create_climate_data(qualifying_sites_path, 'monthly')
+def load_dataset_climate(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_',
+                         end_year: int = 2020):
+    qualifying_sites_dir = qualifying_sites_path + str(end_year) + '.txt'
+    annual_data = create_climate_data(qualifying_sites_dir, 'annual', end_year)
+    monthly_data = create_climate_data(qualifying_sites_dir, 'monthly', end_year)
 
     climate_data_results = dict(
         monthly_data=monthly_data,
@@ -409,38 +445,37 @@ def load_dataset_morph_environment(data_dir: str = 'data',
     print(rfl.sum(),rfl.shape[0]-rfl.sum())
     print(np.unique(ml))
 
-    _sm = np.reshape(sm,(10,45,-1))
-    print(_sm.shape)
+    ### TODO: GENERATE DATASET FOR CLUSTERING HERE
 
-    ### POTENTIAL TO-DO: Flatten morph by position maps & stacked to form a cellsx(position bins*morph bins) matrix
+    # _sm = np.reshape(sm,(10,45,-1))
+    # print(_sm.shape)
 
     ### UMAP dimensionality reduction & DBSCAN clustering to obtain 2 manifolds, corresponding to S=0 and S=1
     mapper = umap.UMAP(metric="correlation",n_neighbors=100,min_dist=.01,n_components=3).fit(sm)
     # umap.plot.points(mapper) # visualize if desired
 
-    ## POTENTIAL TODO: GENERATE DATASET HERE INSTEAD
-    clust_labels = sk.cluster.DBSCAN(min_samples=200).fit_predict(mapper.embedding_)
-    print(np.unique(clust_labels))
-    print((clust_labels==-1).sum())
-    c=1
+    # clust_labels = sk.cluster.DBSCAN(min_samples=200).fit_predict(mapper.embedding_)
+    # print(np.unique(clust_labels))
+    # print((clust_labels==-1).sum())
+    # c=1
+    #
+    # morphpref = np.argmax(sm.reshape(sm.shape[0],10,-1).mean(axis=-1),axis=-1)/10.
+    # morphpref_clustlabels = 0*morphpref
+    # morphpref_clustlabels[clust_labels==0]=np.mean(morphpref[clust_labels==0])
+    # morphpref_clustlabels[clust_labels==1]=np.mean(morphpref[clust_labels==1])
+    # f = plt.figure()
+    # ax = f.add_subplot(111,projection='3d')
+    # ax.scatter(mapper.embedding_[clust_labels>-1,0],mapper.embedding_[clust_labels>-1,1],mapper.embedding_[clust_labels>-1,2],c=1-morphpref_clustlabels[clust_labels>-1],cmap='cool',s=100/rfl.shape[0]**.5)
 
-    morphpref = np.argmax(sm.reshape(sm.shape[0],10,-1).mean(axis=-1),axis=-1)/10.
-    morphpref_clustlabels = 0*morphpref
-    morphpref_clustlabels[clust_labels==0]=np.mean(morphpref[clust_labels==0])
-    morphpref_clustlabels[clust_labels==1]=np.mean(morphpref[clust_labels==1])
-    f = plt.figure()
-    ax = f.add_subplot(111,projection='3d')
-    ax.scatter(mapper.embedding_[clust_labels>-1,0],mapper.embedding_[clust_labels>-1,1],mapper.embedding_[clust_labels>-1,2],c=1-morphpref_clustlabels[clust_labels>-1],cmap='cool',s=100/rfl.shape[0]**.5)
-
-    ### Generate dataset dictionary
-    morph_environment_dataset_results = {}
-    for c in [0,1]:
-        clustmask = clust_labels==c
-        clust_rfl = rfl[clustmask]
-        clust_sm = sm[clustmask]
-
-        clust_embedding = mapper.embedding_[clustmask,:]
-        morph_environment_dataset_results['subclust_labels_unsorted_c'+str(c)] = clust_embedding
+    # ### Generate dataset dictionary
+    # morph_environment_dataset_results = {}
+    # for c in [0,1]:
+    #     clustmask = clust_labels==c
+    #     clust_rfl = rfl[clustmask]
+    #     clust_sm = sm[clustmask]
+    #
+    #     clust_embedding = mapper.embedding_[clustmask,:]
+    #     morph_environment_dataset_results['subclust_labels_unsorted_c'+str(c)] = clust_embedding
 
     return morph_environment_dataset_results
 
