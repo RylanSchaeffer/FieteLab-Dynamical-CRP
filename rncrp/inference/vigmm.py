@@ -31,6 +31,7 @@ class VariationalInferenceGMM(BaseModel):
         self.num_initializations = num_initializations
         self.model_str = model_str
         self.plot_dir = plot_dir
+        self.fit_results = None
 
     def fit(self,
             observations: np.ndarray,
@@ -46,15 +47,15 @@ class VariationalInferenceGMM(BaseModel):
             weight_concentration_prior=self.mixing_params['alpha'])
         var_dp_gmm.fit(observations)
         cluster_assignment_posteriors = var_dp_gmm.predict_proba(observations)
-        cluster_assignment_posteriors_running_sum = np.cumsum(cluster_assignment_posteriors,
-                                                         axis=0)
+        cluster_assignment_posteriors_running_sum = np.cumsum(
+            cluster_assignment_posteriors,
+            axis=0)
         params = dict(means=var_dp_gmm.means_,
                       covs=var_dp_gmm.covariances_)
 
-        # returns classes assigned and centroids of corresponding classes
-        variational_results = dict(
+        self.fit_results = dict(
             cluster_assignment_posteriors=cluster_assignment_posteriors,
             cluster_assignment_posteriors_running_sum=cluster_assignment_posteriors_running_sum,
             parameters=params,
         )
-        return variational_results
+        return self.fit_results

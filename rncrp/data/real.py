@@ -62,7 +62,6 @@ def load_dataset_template(data_dir: str = 'data',
         observations=observations.values,
         labels=labels.values,
     )
-
     return dataset_dict
 
 def transform_site_csv_to_array(site_df,
@@ -136,6 +135,7 @@ def create_climate_data(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Re
                         duration: str = 'annual',
                         end_year: int = 2020):
     dataset = None
+
     with open(qualifying_sites_path) as file:
         for site_csv_path in file:
             if '.csv' in site_csv_path:
