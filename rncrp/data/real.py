@@ -18,6 +18,7 @@ import rncrp.helpers.morph_envir_preprocessing as pp
 import rncrp.helpers.morph_envir_utilities as u
 import rncrp.helpers.PlaceCellAnalysis as pc
 
+
 def load_dataset(dataset_name: str,
                  dataset_kwargs: Dict = None,
                  data_dir: str = 'data',
@@ -67,7 +68,6 @@ def load_dataset_template(data_dir: str = 'data',
 
 def transform_site_csv_to_array(site_df,
                                 duration='annual'):
-
     df = site_df.copy()
     df["year"] = df.DATE.apply(lambda x: int(x[:4]))
     df = df[(df.year >= 1946) & (df.year <= 2020)]
@@ -118,8 +118,8 @@ def create_climate_data(qualifying_sites_path: str = None,
     dataset = stats.zscore(dataset, axis=0, nan_policy='raise')
     return dataset
 
-def load_dataset_climate(qualifying_sites_path: str = None):
 
+def load_dataset_climate(qualifying_sites_path: str = None):
     annual_data = create_climate_data(qualifying_sites_path, 'annual')
     monthly_data = create_climate_data(qualifying_sites_path, 'monthly')
 
@@ -345,23 +345,23 @@ def load_dataset_morph_environment(data_dir: str = 'data',
     ### Load data
     df = pp.load_session_db(dir=data_dir)
     # df = pp.load_session_db()
-    df = df[df['RewardCount']>40]
-    df = df[df['Imaging']==1]
-    df = df[(df['ImagingRegion']=='CA1' )|(df['ImagingRegion']=='')]
-    df = df.sort_values(['MouseName','DateTime','SessionNumber'])
-    df = df[df["Track"]=="TwoTower_foraging"]
+    df = df[df['RewardCount'] > 40]
+    df = df[df['Imaging'] == 1]
+    df = df[(df['ImagingRegion'] == 'CA1') | (df['ImagingRegion'] == '')]
+    df = df.sort_values(['MouseName', 'DateTime', 'SessionNumber'])
+    df = df[df["Track"] == "TwoTower_foraging"]
 
-    mice = ['4139265.3','4139265.4','4139265.5','4222168.1','4343703.1','4343706','4222153.1','4222153.2',
-            '4222153.3','4222174.1','4222154.1','4343702.1']
-    first_sess = [5,5,5,3,5,2,4,4,4,4,4,4]
-    rare = [i<6 for i in range(len(mice))]
-    freq = [(1-r)>0 for r in rare]
-    print(rare,freq)
+    mice = ['4139265.3', '4139265.4', '4139265.5', '4222168.1', '4343703.1', '4343706', '4222153.1', '4222153.2',
+            '4222153.3', '4222174.1', '4222154.1', '4343702.1']
+    first_sess = [5, 5, 5, 3, 5, 2, 4, 4, 4, 4, 4, 4]
+    rare = [i < 6 for i in range(len(mice))]
+    freq = [(1 - r) > 0 for r in rare]
+    print(rare, freq)
 
     ### Morph binning
-    morphbin = np.linspace(-.11,1.11,num=11)
-    SM=[]
-    DIST_REG=[]
+    morphbin = np.linspace(-.11, 1.11, num=11)
+    SM = []
+    DIST_REG = []
     COSDIST_REG = []
     mouselabel = []
     rf_label = []
@@ -370,79 +370,81 @@ def load_dataset_morph_environment(data_dir: str = 'data',
 
     for m, mouse in enumerate(mice):
         print(mouse)
-        df_mouse = df[df["MouseName"]==mouse]
-        SIG_CELLS[mouse]={}
-        for ind in range(first_sess[m],df_mouse.shape[0]):
+        df_mouse = df[df["MouseName"] == mouse]
+        SIG_CELLS[mouse] = {}
+        for ind in range(first_sess[m], df_mouse.shape[0]):
             sess = df_mouse.iloc[ind]
 
-            dist, centroid_diff, S_trial_mat, trial_info= pp.single_sess_dist(sess,metric='cosine')
-            pval = pp.centroid_diff_perm_test(centroid_diff,S_trial_mat,trial_info,nperms=1000)
+            dist, centroid_diff, S_trial_mat, trial_info = pp.single_sess_dist(sess, metric='cosine')
+            pval = pp.centroid_diff_perm_test(centroid_diff, S_trial_mat, trial_info, nperms=1000)
 
-            morphs = trial_info['morphs']+trial_info['wallJitter']
+            morphs = trial_info['morphs'] + trial_info['wallJitter']
             morphOrder = np.argsort(morphs)
-            sig_cells = pval<=.001
-            S_tm_sig = S_trial_mat[:,:,sig_cells]
+            sig_cells = pval <= .001
+            S_tm_sig = S_trial_mat[:, :, sig_cells]
 
-            dist_sig = dist[sig_cells,:]
+            dist_sig = dist[sig_cells, :]
             cd_sig = centroid_diff[sig_cells]
 
-            dist_reg = pp.regress_distance(dist_sig,morphs)
+            dist_reg = pp.regress_distance(dist_sig, morphs)
             DIST_REG.append(dist_reg)
 
-            morphdig = np.digitize(morphs,morphbin)
-            S_tm_bin = np.zeros([10,S_tm_sig.shape[1],S_tm_sig.shape[2]])
+            morphdig = np.digitize(morphs, morphbin)
+            S_tm_bin = np.zeros([10, S_tm_sig.shape[1], S_tm_sig.shape[2]])
             for i in range(10):
-                if (morphdig==i).sum()>0:
-                    S_tm_bin[i,:,:] = S_tm_sig[morphdig==i,:,:].mean(axis=0)
+                if (morphdig == i).sum() > 0:
+                    S_tm_bin[i, :, :] = S_tm_sig[morphdig == i, :, :].mean(axis=0)
 
-            SM.append(S_tm_bin.reshape(-1,S_tm_bin.shape[-1]).T)
-            mouselabel.append(m*np.ones((S_tm_bin.shape[-1],)))
-            rf_label.append(1*rare[m]*np.ones((S_tm_bin.shape[-1],)))
-            sess_ind.append(ind*np.ones((S_tm_bin.shape[-1],)))
-            SIG_CELLS[mouse][ind]=sig_cells
+            SM.append(S_tm_bin.reshape(-1, S_tm_bin.shape[-1]).T)
+            mouselabel.append(m * np.ones((S_tm_bin.shape[-1],)))
+            rf_label.append(1 * rare[m] * np.ones((S_tm_bin.shape[-1],)))
+            sess_ind.append(ind * np.ones((S_tm_bin.shape[-1],)))
+            SIG_CELLS[mouse][ind] = sig_cells
 
     ### Concatenate and reshape matrices
-    sm = np.concatenate(SM,axis=0)
-    dr = np.concatenate(DIST_REG,axis=0)
+    sm = np.concatenate(SM, axis=0)
+    dr = np.concatenate(DIST_REG, axis=0)
     ml = np.concatenate(mouselabel)
     rfl = np.concatenate(rf_label)
     # sess_ind = np.concatenate(sess_ind)
-    print(sm.shape,ml.shape,rfl.shape)
-    print(rfl.sum(),rfl.shape[0]-rfl.sum())
+    print(sm.shape, ml.shape, rfl.shape)
+    print(rfl.sum(), rfl.shape[0] - rfl.sum())
     print(np.unique(ml))
 
-    _sm = np.reshape(sm,(10,45,-1))
+    _sm = np.reshape(sm, (10, 45, -1))
     print(_sm.shape)
 
     ### POTENTIAL TO-DO: Flatten morph by position maps & stacked to form a cellsx(position bins*morph bins) matrix
 
     ### UMAP dimensionality reduction & DBSCAN clustering to obtain 2 manifolds, corresponding to S=0 and S=1
-    mapper = umap.UMAP(metric="correlation",n_neighbors=100,min_dist=.01,n_components=3).fit(sm)
+    mapper = umap.UMAP(metric="correlation", n_neighbors=100, min_dist=.01, n_components=3).fit(sm)
     # umap.plot.points(mapper) # visualize if desired
 
     ## POTENTIAL TODO: GENERATE DATASET HERE INSTEAD
     clust_labels = sk.cluster.DBSCAN(min_samples=200).fit_predict(mapper.embedding_)
     print(np.unique(clust_labels))
-    print((clust_labels==-1).sum())
-    c=1
+    print((clust_labels == -1).sum())
+    c = 1
 
-    morphpref = np.argmax(sm.reshape(sm.shape[0],10,-1).mean(axis=-1),axis=-1)/10.
-    morphpref_clustlabels = 0*morphpref
-    morphpref_clustlabels[clust_labels==0]=np.mean(morphpref[clust_labels==0])
-    morphpref_clustlabels[clust_labels==1]=np.mean(morphpref[clust_labels==1])
+    morphpref = np.argmax(sm.reshape(sm.shape[0], 10, -1).mean(axis=-1), axis=-1) / 10.
+    morphpref_clustlabels = 0 * morphpref
+    morphpref_clustlabels[clust_labels == 0] = np.mean(morphpref[clust_labels == 0])
+    morphpref_clustlabels[clust_labels == 1] = np.mean(morphpref[clust_labels == 1])
     f = plt.figure()
-    ax = f.add_subplot(111,projection='3d')
-    ax.scatter(mapper.embedding_[clust_labels>-1,0],mapper.embedding_[clust_labels>-1,1],mapper.embedding_[clust_labels>-1,2],c=1-morphpref_clustlabels[clust_labels>-1],cmap='cool',s=100/rfl.shape[0]**.5)
+    ax = f.add_subplot(111, projection='3d')
+    ax.scatter(mapper.embedding_[clust_labels > -1, 0], mapper.embedding_[clust_labels > -1, 1],
+               mapper.embedding_[clust_labels > -1, 2], c=1 - morphpref_clustlabels[clust_labels > -1], cmap='cool',
+               s=100 / rfl.shape[0] ** .5)
 
     ### Generate dataset dictionary
     morph_environment_dataset_results = {}
-    for c in [0,1]:
-        clustmask = clust_labels==c
+    for c in [0, 1]:
+        clustmask = clust_labels == c
         clust_rfl = rfl[clustmask]
         clust_sm = sm[clustmask]
 
-        clust_embedding = mapper.embedding_[clustmask,:]
-        morph_environment_dataset_results['subclust_labels_unsorted_c'+str(c)] = clust_embedding
+        clust_embedding = mapper.embedding_[clustmask, :]
+        morph_environment_dataset_results['subclust_labels_unsorted_c' + str(c)] = clust_embedding
 
     return morph_environment_dataset_results
 

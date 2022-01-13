@@ -13,8 +13,8 @@
 # source rncrp_venv/bin/activate
 # wandb sweep 01_mixture_of_gaussians/sweep.yaml
 
-for i in {1..3}
+for i in {1..5}
 do
-  sbatch 01_mixture_of_gaussians/run_one.sh 6tubujme
-  sleep 10
+  sbatch 01_mixture_of_gaussians/run_one.sh 0flwonho
+  sleep 5
 done

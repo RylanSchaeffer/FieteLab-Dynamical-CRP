@@ -8,7 +8,7 @@ from timeit import default_timer as timer
 from typing import Dict, List, Tuple
 import wandb
 
-from rncrp.inference import VariationalInferenceGMM
+from rncrp.inference import DPMeans, VariationalInferenceGMM
 
 
 def create_logger(run_dir):
@@ -79,25 +79,31 @@ def run_inference_alg(inference_alg_str: str,
         if inference_alg_kwargs is None:
             inference_alg_kwargs = dict()
 
-        inference_alg = RNCRP()
+        # inference_alg = RNCRP()
+        raise NotImplementedError
     elif inference_alg_str.startswith('DP-Means'):
         if inference_alg_kwargs is None:
             inference_alg_kwargs = dict()
-
-        inference_alg = DPMeans()
-        if inference_alg_str.endswith('(offline)'):
-            inference_alg_kwargs['num_passes'] = 8  # same as Kulis and Jordan
-        elif inference_alg_str.endswith('(online)'):
-            inference_alg_kwargs['num_passes'] = 1
+        if inference_alg_str.endswith('(Offline)'):
+            inference_alg_kwargs['max_iter'] = 8  # same as Kulis and Jordan
+        elif inference_alg_str.endswith('(Online)'):
+            inference_alg_kwargs['max_iter'] = 1
         else:
             raise ValueError('Invalid DP Means')
+
+        if 'lambda' not in gen_model_params['mixing_params']:
+            gen_model_params['mixing_params']['lambda'] = 1. / gen_model_params['mixing_params']['alpha']
+
+        inference_alg = DPMeans(
+            gen_model_params=gen_model_params,
+            **inference_alg_kwargs)
     elif inference_alg_str == 'VI-GMM':
         if inference_alg_kwargs is None:
             inference_alg_kwargs = dict()
 
         inference_alg = VariationalInferenceGMM(
             gen_model_params=gen_model_params,
-            inference_alg_kwargs=inference_alg_kwargs)
+            **inference_alg_kwargs)
     else:
         raise ValueError(f'Unknown inference algorithm: {inference_alg_str}')
 

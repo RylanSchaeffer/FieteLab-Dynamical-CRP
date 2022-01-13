@@ -25,7 +25,8 @@ import rncrp.metrics
 
 
 config_defaults = {
-    'inference_alg_str': 'VI-GMM',
+    # 'inference_alg_str': 'VI-GMM',
+    'inference_alg_str': 'DP-Means (Offline)',
     'dynamics_str': 'sinusoid',
     'n_samples': 1000,
     'n_features': 10,
