@@ -2,13 +2,14 @@ import logging
 import numpy as np
 import os
 import pandas as pd
+from sklearn.cluster import KMeans
 import sys
 import torch
 from timeit import default_timer as timer
 from typing import Dict, List, Tuple
 import wandb
 
-from rncrp.inference import DPMeans, VariationalInferenceGMM
+from rncrp.inference import DPMeans, RecursiveNonstationaryCRP, VariationalInferenceGMM
 
 
 def create_logger(run_dir):
@@ -78,9 +79,9 @@ def run_inference_alg(inference_alg_str: str,
     if inference_alg_str == 'RN-CRP':
         if inference_alg_kwargs is None:
             inference_alg_kwargs = dict()
-
-        # inference_alg = RNCRP()
-        raise NotImplementedError
+        inference_alg = RecursiveNonstationaryCRP(
+            gen_model_params=gen_model_params,
+            **inference_alg_kwargs)
     elif inference_alg_str.startswith('DP-Means'):
         if inference_alg_kwargs is None:
             inference_alg_kwargs = dict()

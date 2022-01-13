@@ -1,8 +1,9 @@
 import numpy as np
 import sklearn.mixture
-from typing import Dict
+from typing import Callable, Dict
 
 from rncrp.inference.base import BaseModel
+from rncrp.helpers.numpy_helpers import assert_no_nan_no_inf_is_real
 
 
 class RecursiveNonstationaryCRP(BaseModel):
@@ -49,8 +50,8 @@ class RecursiveNonstationaryCRP(BaseModel):
         num_cluster_posteriors = np.zeros((num_obs, max_num_latents),
                                           dtype=np.float32)
 
-        if likelihood_model == 'multivariate_normal':
-            setup_cluster_params_fn = setup_cluster_params_multivariate_normal
+        if self.likelihood_params['distribution'] == 'multivariate_normal':
+            initialize_cluster_params_fn = initialize_cluster_params_multivariate_normal
             likelihood_fn = likelihood_multivariate_normal
 
             cluster_params = dict(
@@ -63,22 +64,30 @@ class RecursiveNonstationaryCRP(BaseModel):
                     fill_value=0.,
                     dtype=np.float32))
 
-        elif likelihood_model == 'dirichlet_multinomial':
-            setup_cluster_params_fn = setup_cluster_params_dirichlet_multinomial
+            likelihood_fit_fn = self.fit_likelihood_normal
+
+        elif self.likelihood_params['distribution'] == 'dirichlet_multinomial':
+            initialize_cluster_params_fn = setup_cluster_params_dirichlet_multinomial
             likelihood_fn = likelihood_dirichlet_multinomial
 
-            cluster_params = dict(concentrations=torch.full(size=(max_num_latents, obs_dim),
-                                                            fill_value=np.nan,
-                                                            dtype=torch.float64,
-                                                            requires_grad=True))
+            # cluster_params = dict(concentrations=torch.full(size=(max_num_latents, obs_dim),
+            #                                                 fill_value=np.nan,
+            #                                                 dtype=torch.float64,
+            #                                                 requires_grad=True))
 
-        # todo: set up other likelihoods as needed
+            # fit_fn = self.fit_dirichlet_multinomial
+
+            raise NotImplementedError
+
         else:
             raise NotImplementedError
 
-        self.fit_results = self.fit_likelihood_normal(
+        self.fit_results = likelihood_fit_fn(
             observations=observations,
             observations_times=observations_times,
+            cluster_params=cluster_params,
+            initialize_cluster_params_fn=initialize_cluster_params_fn,
+            likelihood_fn=likelihood_fn,
             cluster_assignment_priors=cluster_assignment_priors,
             cluster_assignment_posteriors=cluster_assignment_posteriors,
             cluster_assignment_posteriors_running_sum=cluster_assignment_posteriors_running_sum,
@@ -90,6 +99,9 @@ class RecursiveNonstationaryCRP(BaseModel):
     def fit_likelihood_normal(self,
                               observations: np.ndarray,
                               observations_times: np.ndarray,
+                              cluster_params: np.ndarray,
+                              initialize_cluster_params_fn: Callable,
+                              likelihood_fn: Callable,
                               cluster_assignment_priors: np.ndarray,
                               cluster_assignment_posteriors: np.ndarray,
                               cluster_assignment_posteriors_running_sum: np.ndarray,
@@ -100,9 +112,9 @@ class RecursiveNonstationaryCRP(BaseModel):
                                                                   observations_times):
 
             # Create parameters for each potential new cluster
-            setup_cluster_params_fn(torch_observation=observation,
-                                    obs_idx=obs_idx,
-                                    cluster_params=cluster_params)
+            initialize_cluster_params_fn(observation=observation,
+                                         obs_idx=obs_idx,
+                                         cluster_params=cluster_params)
 
             if obs_idx == 0:
                 # first customer has to go at first table
@@ -117,10 +129,8 @@ class RecursiveNonstationaryCRP(BaseModel):
             else:
 
                 # construct prior
-                table_assignment_prior = torch.clone(
-                    table_assignment_posteriors_running_sum[obs_idx - 1, :obs_idx + 1])
+                table_assignment_prior = cluster_assignment_posteriors_running_sum[obs_idx - 1, :obs_idx + 1].copy()
                 # we don't subtract 1 because Python uses 0-based indexing
-                assert torch.allclose(torch.sum(table_assignment_prior), torch.Tensor([obs_idx]).double())
                 # add new table probability
                 table_assignment_prior[1:] += concentration_param * torch.clone(
                     num_table_posteriors[obs_idx - 1, :obs_idx])
@@ -194,10 +204,10 @@ class RecursiveNonstationaryCRP(BaseModel):
                         table_assignment_posterior.detach().clone()
 
                     # update running sum of posteriors
-                    table_assignment_posteriors_running_sum[obs_idx, :] = torch.add(
-                        table_assignment_posteriors_running_sum[obs_idx - 1, :],
+                    cluster_assignment_posteriors_running_sum[obs_idx, :] = torch.add(
+                        cluster_assignment_posteriors_running_sum[obs_idx - 1, :],
                         table_assignment_posteriors[obs_idx, :])
-                    assert torch.allclose(torch.sum(table_assignment_posteriors_running_sum[obs_idx, :]),
+                    assert torch.allclose(torch.sum(cluster_assignment_posteriors_running_sum[obs_idx, :]),
                                           torch.Tensor([obs_idx + 1]).double())
 
                     # M step: update parameters
@@ -214,7 +224,7 @@ class RecursiveNonstationaryCRP(BaseModel):
                     # that effectively means the learning rate should be this scaled_prefactor
                     scaled_learning_rate = learning_rate * torch.divide(
                         table_assignment_posteriors[obs_idx, :],
-                        table_assignment_posteriors_running_sum[obs_idx, :]) / num_em_steps
+                        cluster_assignment_posteriors_running_sum[obs_idx, :]) / num_em_steps
                     scaled_learning_rate[torch.isnan(scaled_learning_rate)] = 0.
                     scaled_learning_rate[torch.isinf(scaled_learning_rate)] = 0.
 
@@ -268,7 +278,6 @@ class RecursiveNonstationaryCRP(BaseModel):
                 num_table_posteriors[obs_idx, 1:obs_idx + 1] += torch.multiply(
                     one_minus_cum_table_assignment_posterior[:-1],
                     prev_table_posterior)
-                assert torch.allclose(torch.sum(num_table_posteriors[obs_idx, :]), one_tensor)
 
         # TODO: investigate how cluster parameters fall below initialization
         # is gradient descent not correct?
@@ -277,9 +286,71 @@ class RecursiveNonstationaryCRP(BaseModel):
         bayesian_recursion_results = dict(
             table_assignment_priors=table_assignment_priors.numpy(),
             table_assignment_posteriors=table_assignment_posteriors.numpy(),
-            table_assignment_posteriors_running_sum=table_assignment_posteriors_running_sum.numpy(),
+            cluster_assignment_posteriors_running_sum=cluster_assignment_posteriors_running_sum.numpy(),
             num_table_posteriors=num_table_posteriors.numpy(),
             parameters={k: v.detach().numpy() for k, v in cluster_parameters.items()},
         )
 
         return bayesian_recursion_results
+
+
+def initialize_cluster_params_multivariate_normal(observation: np.ndarray,
+                                                  obs_idx: int,
+                                                  cluster_params: Dict[str, np.ndarray]):
+    assert_no_nan_no_inf_is_real(observation)
+    cluster_params['means'][obs_idx, :] = observation
+    cluster_params['stddevs'][obs_idx, :, :] = np.eye(observation.shape[0])
+
+
+# Gaussian likelihood setup
+def likelihood_multivariate_normal(torch_observation,
+                                   obs_idx,
+                                   cluster_params):
+    obs_dim = torch_observation.shape[0]
+    covs = torch.stack([torch.matmul(torch.eye(obs_dim), torch.eye(obs_dim).T)
+                        for stddev in cluster_params['stddevs']]).double()
+
+    multivar_normal = torch.distributions.multivariate_normal.MultivariateNormal(
+        loc=cluster_params['means'][:obs_idx + 1],
+        covariance_matrix=covs[:obs_idx + 1],
+    )
+
+    log_likelihoods_per_latent = multivar_normal.log_prob(value=torch_observation)
+    likelihoods_per_latent = torch.exp(log_likelihoods_per_latent)
+
+    return likelihoods_per_latent, log_likelihoods_per_latent
+
+
+# Dirichlet multinomial cluster parameters
+def setup_cluster_params_dirichlet_multinomial(observation: np.ndarray,
+                                               obs_idx: int,
+                                               cluster_parameters: Dict[str, np.ndarray],
+                                               epsilon: float = 10.):
+    assert_no_nan_no_inf_is_real(observation)
+    cluster_parameters['concentrations'][obs_idx, :] = observation + epsilon
+
+
+# Dirichlet multinomial likelihood setup
+def likelihood_dirichlet_multinomial(torch_observation,
+                                     obs_idx,
+                                     cluster_parameters):
+    words_in_doc = torch.sum(torch_observation)
+    total_concentrations_per_latent = torch.sum(
+        cluster_parameters['concentrations'][:obs_idx + 1], dim=1)
+
+    # Intermediate computations
+    log_numerator = torch.log(words_in_doc) + log_beta(a=total_concentrations_per_latent, b=words_in_doc)
+    log_beta_terms = log_beta(a=cluster_parameters['concentrations'][:obs_idx + 1],
+                              b=torch_observation)
+
+    log_x_times_beta_terms = torch.add(log_beta_terms, torch.log(torch_observation))
+    log_x_times_beta_terms[torch.isnan(log_x_times_beta_terms)] = 0.
+    log_denominator = torch.sum(log_x_times_beta_terms, dim=1)
+
+    assert_no_nan_no_inf_is_real(log_denominator)
+    log_likelihoods_per_latent = log_numerator - log_denominator
+
+    assert_no_nan_no_inf_is_real(log_likelihoods_per_latent)
+    likelihoods_per_latent = torch.exp(log_likelihoods_per_latent)
+
+    return likelihoods_per_latent, log_likelihoods_per_latent

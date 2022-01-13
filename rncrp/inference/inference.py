@@ -12,66 +12,6 @@ from helpers.torch_helpers import assert_no_nan_no_inf_is_real
 # torch.set_default_tensor_type('torch.DoubleTensor')
 
 # Gaussian cluster parameters
-def setup_cluster_params_multivariate_normal(torch_observation,
-                                             obs_idx,
-                                             cluster_params):
-    assert_no_nan_no_inf_is_real(torch_observation)
-    cluster_params['means'].data[obs_idx, :] = torch_observation
-    cluster_params['stddevs'].data[obs_idx, :, :] = torch.eye(torch_observation.shape[0])
-
-
-# Gaussian likelihood setup
-def likelihood_multivariate_normal(torch_observation,
-                                   obs_idx,
-                                   cluster_params):
-    obs_dim = torch_observation.shape[0]
-    covs = torch.stack([torch.matmul(torch.eye(obs_dim), torch.eye(obs_dim).T)
-                        for stddev in cluster_params['stddevs']]).double()
-
-    multivar_normal = torch.distributions.multivariate_normal.MultivariateNormal(
-        loc=cluster_params['means'][:obs_idx + 1],
-        covariance_matrix=covs[:obs_idx + 1],
-    )
-
-    log_likelihoods_per_latent = multivar_normal.log_prob(value=torch_observation)
-    likelihoods_per_latent = torch.exp(log_likelihoods_per_latent)
-
-    return likelihoods_per_latent, log_likelihoods_per_latent
-
-
-# Dirichlet multinomial cluster parameters
-def setup_cluster_params_dirichlet_multinomial(torch_observation,
-                                               obs_idx,
-                                               cluster_parameters):
-    assert_no_nan_no_inf_is_real(torch_observation)
-    epsilon = 10.  # May need to change
-    cluster_parameters['concentrations'].data[obs_idx, :] = torch_observation + epsilon
-
-
-# Dirichlet multinomial likelihood setup
-def likelihood_dirichlet_multinomial(torch_observation,
-                                     obs_idx,
-                                     cluster_parameters):
-    words_in_doc = torch.sum(torch_observation)
-    total_concentrations_per_latent = torch.sum(
-        cluster_parameters['concentrations'][:obs_idx + 1], dim=1)
-
-    # Intermediate computations
-    log_numerator = torch.log(words_in_doc) + log_beta(a=total_concentrations_per_latent, b=words_in_doc)
-    log_beta_terms = log_beta(a=cluster_parameters['concentrations'][:obs_idx + 1],
-                              b=torch_observation)
-
-    log_x_times_beta_terms = torch.add(log_beta_terms, torch.log(torch_observation))
-    log_x_times_beta_terms[torch.isnan(log_x_times_beta_terms)] = 0.
-    log_denominator = torch.sum(log_x_times_beta_terms, dim=1)
-
-    assert_no_nan_no_inf_is_real(log_denominator)
-    log_likelihoods_per_latent = log_numerator - log_denominator
-
-    assert_no_nan_no_inf_is_real(log_likelihoods_per_latent)
-    likelihoods_per_latent = torch.exp(log_likelihoods_per_latent)
-
-    return likelihoods_per_latent, log_likelihoods_per_latent
 
 
 # RN-CRP
@@ -80,6 +20,7 @@ def rn_crp(observations,
            likelihood_model: str,
            learning_rate,
            num_em_steps: int = 3):
+
     assert concentration_param > 0
     assert likelihood_model in {'multivariate_normal', 'dirichlet_multinomial'}  # todo: add more for other settings
 

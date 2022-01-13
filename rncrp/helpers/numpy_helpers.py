@@ -1,9 +1,22 @@
 import numpy as np
 
 
-def assert_no_nan_no_inf(x):
-    assert np.all(~np.isnan(x))
-    assert np.all(~np.isinf(x))
+def assert_no_nan_no_inf_is_real(x):
+    try:
+        assert np.all(~np.isnan(x))
+    except AssertionError:
+        print(x)
+        raise ValueError('Contains NaNS')
+    try:
+        assert np.all(~np.isinf(x))
+    except AssertionError:
+        print(x)
+        raise ValueError('Contains Infs')
+    try:
+        assert np.all(np.isreal(x))
+    except AssertionError:
+        print(x)
+        raise ValueError('Contains imaginary values')
 
 
 def compute_largest_dish_idx(observations: np.ndarray,
@@ -53,7 +66,7 @@ def convert_half_cov_to_cov(half_cov: np.ndarray) -> np.ndarray:
     if not has_batch_dim:
         cov = np.squeeze(cov, dim=0)
 
-    assert_no_nan_no_inf(cov)
+    assert_no_nan_no_inf_is_real(cov)
     return cov
 
 

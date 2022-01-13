@@ -23,10 +23,10 @@ import rncrp.helpers.dynamics
 import rncrp.helpers.run
 import rncrp.metrics
 
-
 config_defaults = {
     # 'inference_alg_str': 'VI-GMM',
-    'inference_alg_str': 'DP-Means (Offline)',
+    # 'inference_alg_str': 'DP-Means (Offline)',
+    'inference_alg_str': 'RN-CRP',
     'dynamics_str': 'sinusoid',
     'n_samples': 1000,
     'n_features': 10,
@@ -55,7 +55,6 @@ inference_alg_results_path = os.path.join(results_dir_path,
 # set seeds
 rncrp.helpers.run.set_seed(config['repeat_idx'])
 
-
 mixture_model_results = rncrp.data.synthetic.sample_mixture_model(
     num_obs=config['n_samples'],
     obs_dim=config['n_features'],
@@ -67,16 +66,16 @@ mixture_model_results = rncrp.data.synthetic.sample_mixture_model(
     component_prior_params={'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor'],
                             'likelihood_cov_prefactor': config['likelihood_cov_prefactor']})
 
-
 gen_model_params = {
     'mixing_params': {
         'alpha': config['alpha'],
-               'beta': config['beta'],
-               'dynamics_str': config['dynamics_str']},
+        'beta': config['beta'],
+        'dynamics_str': config['dynamics_str']},
     'feature_prior_params': {
         'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor']
     },
     'likelihood_params': {
+        'distribution': 'multivariate_normal',
         'likelihood_cov_prefactor': config['likelihood_cov_prefactor']
     }
 }
@@ -115,5 +114,3 @@ joblib.dump(data_to_store,
 
 
 print('Finished run.')
-
-
