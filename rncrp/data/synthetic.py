@@ -38,7 +38,7 @@ def sample_mixture_model(num_obs: int = 100,
         cluster_assignments = monte_carlo_rncrp_results[
             'customer_assignments_by_customer'][0]  # take first MC sample, arbitrarily
         observations_times = monte_carlo_rncrp_results['customer_times']
-
+        dynamics_params = monte_carlo_rncrp_results['dynamics'].params
     elif mixing_prior_str == 'discrete':
         cluster_assignments = np.random.choice(
             len(mixing_distribution_params['probs']),
@@ -46,6 +46,7 @@ def sample_mixture_model(num_obs: int = 100,
             replace=True,
             size=num_obs)
         observations_times = np.arange(len(cluster_assignments))
+        dynamics_params = None
     else:
         raise NotImplementedError
 
@@ -100,6 +101,7 @@ def sample_mixture_model(num_obs: int = 100,
         observations=observations,
         observations_times=observations_times,
         components=components,
+        dynamics_params=dynamics_params,
     )
 
     return result
@@ -110,13 +112,15 @@ def sample_rncrp(num_mc_samples: int,
                  alpha: float,
                  beta: float,
                  dynamics_str: str,
+                 dynamics_params: Dict[str, float] = None
                  ) -> Dict[str, np.ndarray]:
 
     assert alpha > 0.
     assert beta >= 0.
 
     dynamics = rncrp.helpers.dynamics.convert_dynamics_str_to_dynamics_obj(
-        dynamics_str=dynamics_str)
+        dynamics_str=dynamics_str,
+        dynamics_params=dynamics_params)
 
     # time_sampling_fn = utils.helpers.convert_time_sampling_str_to_time_sampling_fn(
     #     time_sampling_str=time_sampling_str)
@@ -174,6 +178,7 @@ def sample_rncrp(num_mc_samples: int,
             pseudo_table_occupancies_by_customer[mc_sample_idx, cstmr_idx, :] = state['N'].copy()
 
     monte_carlo_rncrp_results = {
+        'dynamics': dynamics,
         'customer_times': customer_times,
         'pseudo_table_occupancies_by_customer': pseudo_table_occupancies_by_customer,
         'customer_assignments_by_customer': customer_assignments_by_customer,

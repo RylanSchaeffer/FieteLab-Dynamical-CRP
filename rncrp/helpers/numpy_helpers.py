@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def assert_no_nan_no_inf_is_real(x):
+def assert_np_no_nan_no_inf_is_real(x):
     try:
         assert np.all(~np.isnan(x))
     except AssertionError:
@@ -66,7 +66,7 @@ def convert_half_cov_to_cov(half_cov: np.ndarray) -> np.ndarray:
     if not has_batch_dim:
         cov = np.squeeze(cov, dim=0)
 
-    assert_no_nan_no_inf_is_real(cov)
+    assert_np_no_nan_no_inf_is_real(cov)
     return cov
 
 

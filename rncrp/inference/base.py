@@ -38,14 +38,14 @@ class BaseModel(abc.ABC):
     # def sample_variables_for_predictive_posterior(self,
     #                                               num_samples: int):
     #     pass
-    #
-    # @abc.abstractmethod
-    # def features_after_last_obs(self) -> np.ndarray:
-    #     """
-    #     Returns array of shape (num features, feature dimension)
-    #     """
-    #     pass
-    #
+
+    @abc.abstractmethod
+    def features_after_last_obs(self) -> np.ndarray:
+        """
+        Returns array of shape (num features, feature dimension)
+        """
+        pass
+
     # @abc.abstractmethod
     # def features_by_obs(self) -> np.ndarray:
     #     """

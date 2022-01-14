@@ -28,6 +28,10 @@ config_defaults = {
     # 'inference_alg_str': 'DP-Means (Offline)',
     'inference_alg_str': 'RN-CRP',
     'dynamics_str': 'sinusoid',
+    'dynamics_a': 1.,
+    'dynamics_b': 1.,
+    'dynamics_c': 1.,
+    'dynamics_omega': np.pi / 2.,
     'n_samples': 1000,
     'n_features': 10,
     'n_clusters': 25,
@@ -37,6 +41,7 @@ config_defaults = {
     'likelihood_cov_prefactor': 1.,
     'repeat_idx': 0,
 }
+
 wandb.init(project='rncrp-mixture-of-gaussians',
            config=config_defaults)
 config = wandb.config
@@ -70,7 +75,9 @@ gen_model_params = {
     'mixing_params': {
         'alpha': config['alpha'],
         'beta': config['beta'],
-        'dynamics_str': config['dynamics_str']},
+        'dynamics_str': config['dynamics_str'],
+        'dynamics_params': mixture_model_results['dynamics_params']
+    },
     'feature_prior_params': {
         'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor']
     },

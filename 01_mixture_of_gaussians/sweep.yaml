@@ -17,6 +17,14 @@ parameters:
         'exp',
         'sinusoid',
         'hyperbolic']
+  dynamics_a:
+    values: [1.]
+  dynamics_b:
+    values: [ 1. ]
+  dynamics_c:
+    values: [ 1. ]
+  dynamics_omega:
+    values: [ 1. ]
   alpha:
     values: [ 0.1, 0.5,
               1., 2.5, 5., 7.5,
