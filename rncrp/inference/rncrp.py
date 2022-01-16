@@ -1,12 +1,13 @@
 import numpy as np
+import scipy
 import sklearn.mixture
-from typing import Callable, Dict
-
 import torch
+import torch.nn.functional
+from typing import Callable, Dict
 
 from rncrp.inference.base import BaseModel
 from rncrp.helpers.dynamics import convert_dynamics_str_to_dynamics_obj
-from rncrp.helpers.torch_helpers import assert_torch_no_nan_no_inf_is_real
+from rncrp.helpers.torch_helpers import assert_torch_no_nan_no_inf_is_real, convert_stddev_to_cov
 
 
 class RecursiveNonstationaryCRP(BaseModel):
@@ -61,46 +62,53 @@ class RecursiveNonstationaryCRP(BaseModel):
         num_obs, obs_dim = observations.shape
         max_num_latents = num_obs
 
-        torch_observations = torch.from_numpy(observations)
-        torch_observations_times = torch.from_numpy(observations_times)
+        torch_observations = torch.from_numpy(observations).float()
+        torch_observations_times = torch.from_numpy(observations_times).float()
 
         cluster_assignment_priors = torch.zeros(size=(num_obs, max_num_latents),
                                                 dtype=torch.float32)
-        cluster_assignment_priors[0, 0] = 1.
-
-        cluster_assignment_posteriors = torch.zeros(size=(num_obs, max_num_latents),
-                                                    dtype=torch.float32)
-
-        cluster_assignment_posteriors_running_sum = torch.zeros(size=(num_obs, max_num_latents),
-                                                                dtype=torch.float32)
 
         num_clusters_posteriors = torch.zeros(size=(num_obs, max_num_latents),
-                                             dtype=torch.float32)
+                                              dtype=torch.float32)
 
         if self.likelihood_params['distribution'] == 'multivariate_normal':
 
             initialize_cluster_params_fn = self.initialize_cluster_params_multivariate_normal
-            rncrp_optimize_cluster_params = self.compute_likelihood_multivariate_normal
+            optimize_cluster_assignments_fn = self.optimize_cluster_assignments_multivariate_normal
+            optimize_cluster_params_fn = self.optimize_cluster_params_multivariate_normal
 
-            cluster_variational_params = dict(
-                means=torch.full(
-                    size=(max_num_latents, obs_dim),
-                    fill_value=0.,
-                    dtype=torch.float32),
-                stddevs=torch.full(
-                    size=(max_num_latents, obs_dim, obs_dim),
-                    fill_value=0.,
-                    dtype=torch.float32))
+            variational_params = dict(
+                assignments=dict(
+                    probs=torch.full(
+                        size=(num_obs, max_num_latents),
+                        fill_value=0.,
+                        dtype=torch.float32)),
+                means=dict(
+                    means=torch.full(
+                        size=(num_obs, max_num_latents, obs_dim),
+                        fill_value=0.,
+                        dtype=torch.float32),
+                    stddevs=torch.full(
+                        size=(num_obs, max_num_latents, obs_dim, obs_dim),
+                        fill_value=0.,
+                        dtype=torch.float32)))
 
         elif self.likelihood_params['distribution'] == 'dirichlet_multinomial':
-            initialize_cluster_params_fn = self.initialize_cluster_params_dirichlet_multinomial
-            rncrp_optimize_cluster_params = self.compute_likelihood_dirichlet_multinomial
 
-            cluster_variational_params = dict(
-                concentrations=torch.full(size=(max_num_latents, obs_dim),
-                                          fill_value=np.nan,
-                                          dtype=torch.float32,
-                                          requires_grad=True))
+            # initialize_cluster_params_fn = self.initialize_cluster_params_dirichlet_multinomial
+            # optimize_cluster_assignments_fn = self.optimize_cluster_assignments_dirichlet_multinomial
+            # optimize_cluster_params_fn = self.optimize_cluster_params_dirichlet_multinomial
+            #
+            # variational_params = dict(
+            #     assignments=torch.full(
+            #         size=(max_num_latents, obs_dim),
+            #         fill_value=0.,
+            #         dtype=torch.float32),
+            #     concentrations=torch.full(size=(max_num_latents, obs_dim),
+            #                               fill_value=np.nan,
+            #                               dtype=torch.float32,
+            #                               requires_grad=True))
+
             raise NotImplementedError
         else:
             raise NotImplementedError
@@ -110,17 +118,17 @@ class RecursiveNonstationaryCRP(BaseModel):
             # Create parameters for each potential new cluster
             initialize_cluster_params_fn(torch_observation=torch_observation,
                                          obs_idx=obs_idx,
-                                         cluster_variational_params=cluster_variational_params)
+                                         variational_params=variational_params)
 
             if obs_idx == 0:
 
                 # first customer has to go at first table
                 cluster_assignment_priors[obs_idx, 0] = 1.
-                cluster_assignment_posteriors[obs_idx, 0] = 1.
+                variational_params['assignments']['probs'][obs_idx, 0] = 1.
                 num_clusters_posteriors[obs_idx, 0] = 1.
 
                 self.dynamics.initialize_state(
-                    customer_assignment_probs=cluster_assignment_posteriors[obs_idx, :],
+                    customer_assignment_probs=variational_params['assignments']['probs'][obs_idx, :],
                     time=torch_observations_times[obs_idx])
 
             else:
@@ -141,38 +149,40 @@ class RecursiveNonstationaryCRP(BaseModel):
                 # record latent prior
                 cluster_assignment_priors[obs_idx, :len(cluster_assignment_prior)] = cluster_assignment_prior
 
-                # Step 2: Initialize clusters' variational parameters using previous time step's parameters.
-                for param_name, param_tensor in cluster_variational_params.items():
-                    param_tensor.data[obs_idx, :] = param_tensor.data[obs_idx - 1, :]
+                # Step 2: Initialize variational parameters using previous time step's parameters.
+                for variable_name, variable_dict in variational_params.items():
+                    for param_name, param_tensor in variable_dict.items():
+                        param_tensor.data[obs_idx, :] = param_tensor.data[obs_idx - 1, :]
 
                 # Step 3: Perform coordinate ascent on variational parameters.
                 approx_lower_bounds = []
                 for vi_idx in range(self.num_coord_ascent_steps_per_obs):
 
+                    print(f'Obs Idx: {obs_idx}, VI idx: {vi_idx}')
+
                     if self.numerically_optimize:
                         raise NotImplementedError
                     else:
                         with torch.no_grad():
-                            print(f'Obs Idx: {obs_idx}, VI idx: {vi_idx}')
 
-                            rncrp_optimize_cluster_params(
+                            optimize_cluster_params_fn(
                                 torch_observation=torch_observation,
-                                obs_idx=obs_idx)
+                                obs_idx=obs_idx,
+                                vi_idx=vi_idx,
+                                variational_params=variational_params,
+                                cluster_assignment_prior=cluster_assignment_prior,
+                                simultaneous_or_sequential=self.coord_ascent_update_type,
+                                sigma_obs_squared=self.gen_model_params['likelihood_params']['likelihood_cov_prefactor'])
 
-                            rncrp_optimize_cluster_assignments(
+                            optimize_cluster_assignments_fn(
                                 torch_observation=torch_observation,
-                                obs_idx=obs_idx)
+                                obs_idx=obs_idx,
+                                vi_idx=vi_idx,
+                                cluster_assignment_prior=cluster_assignment_prior,
+                                variational_params=variational_params,
+                                sigma_obs_squared=self.gen_model_params['likelihood_params']['likelihood_cov_prefactor'])
 
-                    # record latent posterior
-                    cluster_assignment_posteriors[obs_idx, :len(table_assignment_posterior)] = \
-                        table_assignment_posterior.detach().clone()
-
-                # Step 4: Update dynamics state using new cluster assignment posterior.
-                self.dynamics.update_state(
-                    customer_assignment_probs=cluster_assignment_posteriors[obs_idx, :],
-                    time=torch_observations_times[obs_idx])
-
-                # Step 5: Update posterior over number of clusters using posterior over cluster assignment.
+                # Step 4: Update posterior over number of clusters using posterior over cluster assignment.
                 # Use new approach with time complexity O(t).
                 cum_table_assignment_posterior = torch.cumsum(
                     cluster_assignment_posteriors[obs_idx, :obs_idx + 1],
@@ -186,29 +196,19 @@ class RecursiveNonstationaryCRP(BaseModel):
                     one_minus_cum_table_assignment_posterior[:-1],
                     prev_table_posterior)
 
+                # Step 5: Update dynamics state using new cluster assignment posterior.
+                self.dynamics.update_state(
+                    customer_assignment_probs=variational_params['assignments']['probs'][obs_idx, :].clone(),
+                    time=torch_observations_times[obs_idx])
+
         self._fit_results = dict(
             cluster_assignment_priors=cluster_assignment_priors.numpy(),
-            cluster_assignment_posteriors=cluster_assignment_posteriors.numpy(),
-            cluster_assignment_posteriors_running_sum=cluster_assignment_posteriors_running_sum.numpy(),
+            cluster_assignment_posteriors=variational_params['assignments']['probs'].detach().numpy(),
             num_clusters_posteriors=num_clusters_posteriors.numpy(),
-            parameters={k: v.detach().numpy() for k, v in cluster_variational_params.items()},
+            parameters={k: v.detach().numpy() for k, v in variational_params['means'].items()},
         )
 
         return self.fit_results
-
-    def fit_likelihood_normal(self,
-                              torch_observations: torch.Tensor,
-                              torch_observations_times: torch.Tensor,
-                              cluster_variational_params: Dict[str, torch.Tensor],
-                              initialize_cluster_params_fn: Callable,
-                              likelihood_fn: Callable,
-                              cluster_assignment_priors: torch.Tensor,
-                              cluster_assignment_posteriors: torch.Tensor,
-                              cluster_assignment_posteriors_running_sum: torch.Tensor,
-                              num_clusters_posteriors: torch.Tensor,
-                              ):
-
-        raise NotImplementedError
 
     def features_after_last_obs(self) -> np.ndarray:
         """
@@ -216,33 +216,33 @@ class RecursiveNonstationaryCRP(BaseModel):
         """
         raise NotImplementedError
 
-    def initialize_cluster_params_multivariate_normal(self,
-                                                      torch_observation: np.ndarray,
+    @staticmethod
+    def initialize_cluster_params_multivariate_normal(torch_observation: np.ndarray,
                                                       obs_idx: int,
-                                                      cluster_variational_params: Dict[str, np.ndarray]):
-        assert_torch_no_nan_no_inf_is_real(torch_observation)
-        cluster_variational_params['means'].data[obs_idx, :] = torch_observation
-        cluster_variational_params['stddevs'].data[obs_idx, :, :] = torch.eye(torch_observation.shape[0])
+                                                      variational_params: Dict[str, np.ndarray]):
 
-    def initialize_cluster_params_dirichlet_multinomial(self,
-                                                        torch_observation: torch.Tensor,
+        variational_params['means']['means'].data[obs_idx, :] = torch_observation
+        variational_params['means']['stddevs'].data[obs_idx, :, :] = torch.eye(torch_observation.shape[0])
+
+    @staticmethod
+    def initialize_cluster_params_dirichlet_multinomial(torch_observation: torch.Tensor,
                                                         obs_idx: int,
-                                                        cluster_variational_params: Dict[str, torch.Tensor],
+                                                        variational_params: Dict[str, torch.Tensor],
                                                         epsilon: float = 10.):
         assert_torch_no_nan_no_inf_is_real(torch_observation)
-        cluster_variational_params['concentrations'][obs_idx, :] = torch_observation + epsilon
+        variational_params['concentrations'][obs_idx, :] = torch_observation + epsilon
 
     def compute_likelihood_dirichlet_multinomial(self,
                                                  torch_observation: torch.Tensor,
                                                  obs_idx: int,
-                                                 cluster_variational_params: Dict[str, torch.Tensor], ):
+                                                 variational_params: Dict[str, torch.Tensor], ):
         words_in_doc = torch.sum(torch_observation)
         total_concentrations_per_latent = torch.sum(
-            cluster_variational_params['concentrations'][:obs_idx + 1], dim=1)
+            variational_params['concentrations'][:obs_idx + 1], dim=1)
 
         # Intermediate computations
         log_numerator = torch.log(words_in_doc) + log_beta(a=total_concentrations_per_latent, b=words_in_doc)
-        log_beta_terms = log_beta(a=cluster_variational_params['concentrations'][:obs_idx + 1],
+        log_beta_terms = log_beta(a=variational_params['concentrations'][:obs_idx + 1],
                                   b=torch_observation)
 
         log_x_times_beta_terms = torch.add(log_beta_terms, torch.log(torch_observation))
@@ -257,21 +257,114 @@ class RecursiveNonstationaryCRP(BaseModel):
 
         return likelihoods_per_latent, log_likelihoods_per_latent
 
-    def compute_likelihood_multivariate_normal(self,
-                                               torch_observation: torch.Tensor,
-                                               obs_idx: int,
-                                               cluster_variational_params: Dict[str, torch.Tensor], ):
+    def optimize_cluster_params_dirichlet_multinomial(self,
+                                                      ) -> None:
+        raise NotImplementedError
+
+    def optimize_cluster_assignments_multivariate_normal(self,
+                                                         torch_observation: torch.Tensor,
+                                                         obs_idx: int,
+                                                         vi_idx: int,
+                                                         cluster_assignment_prior: torch.Tensor,
+                                                         variational_params: Dict[str, dict],
+                                                         sigma_obs_squared: int = 1e-0,
+                                                         ) -> None:
+
+        # TODO: replace sigma obs with likelihood params
+
+        means_cov = convert_stddev_to_cov(
+            stddevs=variational_params['means']['stddevs'][obs_idx, :])
+
+        # Term 1: log q(c_n = l | o_{<n})
+        term_one = torch.log(cluster_assignment_prior)
+
+        # Term 2: mu_{nk}^T o_n / sigma_obs^2
+        term_two = torch.einsum(
+            'kd,d->k',
+            variational_params['means']['means'][obs_idx, :],
+            torch_observation) / sigma_obs_squared
+
+        # Term 3:
+        term_three = - 0.5 * torch.einsum(
+            'kii->k',
+            torch.add(means_cov,
+                      torch.einsum('ki,kj->kij',
+                                   variational_params['means']['means'][obs_idx, :, :],
+                                   variational_params['means']['means'][obs_idx, :, :])))
+
+        term_to_softmax = term_one + term_two + term_three
+        cluster_assignment_posterior_params = torch.nn.functional.softmax(term_to_softmax)
+
+        # check that Bernoulli probs are all valid
+        assert_torch_no_nan_no_inf_is_real(cluster_assignment_posterior_params)
+        assert torch.all(0. <= cluster_assignment_posterior_params)
+        assert torch.all(cluster_assignment_posterior_params <= 1.)
+
+        return cluster_assignment_posterior_params
+
+    def optimize_cluster_assignments_dirichlet_multinomial(self):
+        raise NotImplementedError
+
+    def optimize_cluster_params_multivariate_normal(self,
+                                                    torch_observation: torch.Tensor,
+                                                    obs_idx: int,
+                                                    vi_idx: int,
+                                                    variational_params: Dict[str, dict],
+                                                    cluster_assignment_prior,
+                                                    sigma_obs_squared: int = 1e-0,
+                                                    simultaneous_or_sequential: str = 'sequential',
+                                                    ) -> None:
+
+        # TODO: replace sigma obs with likelihood params
+
+        assert sigma_obs_squared > 0
+        assert simultaneous_or_sequential in {'sequential', 'simultaneous'}
+
+        prev_means = variational_params['means']['means'][obs_idx - 1, :]
+        prev_covs = convert_stddev_to_cov(
+            stddevs=variational_params['means']['stddevs'][obs_idx - 1, :])
+        prev_precisions = torch.linalg.inv(prev_covs)
 
         obs_dim = torch_observation.shape[0]
-        covs = torch.stack([torch.matmul(torch.eye(obs_dim), torch.eye(obs_dim).T)
-                            for stddev in cluster_variational_params['stddevs']]).double()
+        max_num_clusters = prev_means.shape[0]
 
-        multivar_normal = torch.distributions.multivariate_normal.MultivariateNormal(
-            loc=cluster_variational_params['means'][:obs_idx + 1],
-            covariance_matrix=covs[:obs_idx + 1],
+        # Step 1: Compute updated covariances
+        # Take I_{D \times D} and repeat to add a batch dimension
+        # Resulting object has shape (num_features, obs_dim, obs_dim)
+        repeated_eyes = torch.eye(obs_dim).reshape(1, obs_dim, obs_dim).repeat(max_num_clusters, 1, 1)
+        weighted_eyes = torch.multiply(
+            variational_params['assignments']['probs'][obs_idx, :, None, None],  # shape (num features, 1, 1)
+            repeated_eyes) / sigma_obs_squared
+        mean_precisions = torch.add(prev_precisions, weighted_eyes)
+        mean_covs = torch.linalg.inv(mean_precisions)
+
+        # No update on pytorch matrix square root
+        # https://github.com/pytorch/pytorch/issues/9983#issuecomment-907530049
+        # https://github.com/pytorch/pytorch/issues/25481
+        new_means_stddevs = torch.stack([
+            torch.from_numpy(scipy.linalg.sqrtm(gaussian_cov.detach().numpy()))
+            for gaussian_cov in mean_covs])
+
+        # Step 2: Use updated covariances to compute updated means
+        # Sigma_{n-1,l}^{-1} \mu_{n-1, l}
+        term_one = torch.einsum(
+            'aij,aj->ai',
+            prev_precisions,
+            prev_means)
+
+        term_two = torch.einsum(
+            'b, bd->bd',
+            variational_params['assignments']['probs'][obs_idx, :],
+            torch_observation.reshape(1, obs_dim).repeat(max_num_clusters, 1),
+        ) / sigma_obs_squared
+
+        new_means_means = torch.einsum(
+            'bij, bj->bi',
+            mean_covs,  # shape: (max num clusters, obs dim, obs dim)
+            torch.add(term_one, term_two),  # shape: (max num clusters, obs dim)
         )
 
-        log_likelihoods_per_latent = multivar_normal.log_prob(value=torch_observation)
-        likelihoods_per_latent = torch.exp(log_likelihoods_per_latent)
-
-        return likelihoods_per_latent, log_likelihoods_per_latent
+        assert_torch_no_nan_no_inf_is_real(new_means_stddevs)
+        variational_params['means']['stddevs'][obs_idx, :, :] = new_means_stddevs
+        assert_torch_no_nan_no_inf_is_real(new_means_means)
+        variational_params['means']['means'][obs_idx, :] = new_means_means
