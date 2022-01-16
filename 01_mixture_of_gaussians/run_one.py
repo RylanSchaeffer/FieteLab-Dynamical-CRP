@@ -27,7 +27,7 @@ config_defaults = {
     # 'inference_alg_str': 'VI-GMM',
     # 'inference_alg_str': 'DP-Means (Offline)',
     'inference_alg_str': 'RN-CRP',
-    'dynamics_str': 'sinusoid',
+    'dynamics_str': 'step',
     'dynamics_a': 1.,
     'dynamics_b': 1.,
     'dynamics_c': 1.,

@@ -208,7 +208,7 @@ if __name__ == '__main__':
 #                 requires_grad=True),
 #         )
 #         create_new_cluster_params_fn = create_new_cluster_params_dirichlet_multinomial
-#         likelihood_fn = likelihood_dirichlet_multinomial
+#         likelihood_fn = compute_likelihood_dirichlet_multinomial
 #     elif likelihood_model == 'multivariate_normal':
 #         cluster_parameters = dict(
 #             means=torch.full(
@@ -223,7 +223,7 @@ if __name__ == '__main__':
 #                 requires_grad=True),
 #         )
 #         create_new_cluster_params_fn = create_new_cluster_params_multivariate_normal
-#         likelihood_fn = likelihood_multivariate_normal
+#         likelihood_fn = compute_likelihood_multivariate_normal
 #     else:
 #         raise NotImplementedError
 #
