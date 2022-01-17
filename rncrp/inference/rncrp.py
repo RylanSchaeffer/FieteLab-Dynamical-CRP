@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 import scipy
 import sklearn.mixture
@@ -164,7 +166,7 @@ class RecursiveNonstationaryCRP(BaseModel):
                         raise NotImplementedError
                     else:
                         with torch.no_grad():
-
+                            # time_1 = time.time()
                             optimize_cluster_params_fn(
                                 torch_observation=torch_observation,
                                 obs_idx=obs_idx,
@@ -173,7 +175,8 @@ class RecursiveNonstationaryCRP(BaseModel):
                                 cluster_assignment_prior=cluster_assignment_prior,
                                 simultaneous_or_sequential=self.coord_ascent_update_type,
                                 sigma_obs_squared=self.gen_model_params['likelihood_params']['likelihood_cov_prefactor'])
-
+                            # time_2 = time.time()
+                            # print(f'Time2 - Time 1: {time_2 - time_1}')
                             optimize_cluster_assignments_fn(
                                 torch_observation=torch_observation,
                                 obs_idx=obs_idx,
@@ -181,11 +184,15 @@ class RecursiveNonstationaryCRP(BaseModel):
                                 cluster_assignment_prior=cluster_assignment_prior,
                                 variational_params=variational_params,
                                 sigma_obs_squared=self.gen_model_params['likelihood_params']['likelihood_cov_prefactor'])
+                            # time_3 = time.time()
+                            # print(f'Time3 - Time 2: {time_3 - time_2}')
 
-                # Step 4: Update posterior over number of clusters using posterior over cluster assignment.
+                cluster_assignment_posterior = variational_params['assignments']['probs'][obs_idx, :].clone()
+
+                # Step 4: Update posterior over number of clusters.
                 # Use new approach with time complexity O(t).
                 cum_table_assignment_posterior = torch.cumsum(
-                    cluster_assignment_posteriors[obs_idx, :obs_idx + 1],
+                    cluster_assignment_posterior[:obs_idx + 1],
                     dim=0)
                 one_minus_cum_table_assignment_posterior = 1. - cum_table_assignment_posterior
                 prev_table_posterior = num_clusters_posteriors[obs_idx - 1, :obs_idx]
@@ -196,10 +203,16 @@ class RecursiveNonstationaryCRP(BaseModel):
                     one_minus_cum_table_assignment_posterior[:-1],
                     prev_table_posterior)
 
+                # time_4 = time.time()
+                # print(f'Time4 - Time 3: {time_4 - time_3}')
+
                 # Step 5: Update dynamics state using new cluster assignment posterior.
                 self.dynamics.update_state(
-                    customer_assignment_probs=variational_params['assignments']['probs'][obs_idx, :].clone(),
+                    customer_assignment_probs=cluster_assignment_posterior,
                     time=torch_observations_times[obs_idx])
+
+                # time_5 = time.time()
+                # print(f'Time5 - Time 4: {time_5 - time_4}')
 
         self._fit_results = dict(
             cluster_assignment_priors=cluster_assignment_priors.numpy(),
@@ -293,7 +306,9 @@ class RecursiveNonstationaryCRP(BaseModel):
                                    variational_params['means']['means'][obs_idx, :, :])))
 
         term_to_softmax = term_one + term_two + term_three
-        cluster_assignment_posterior_params = torch.nn.functional.softmax(term_to_softmax)
+        cluster_assignment_posterior_params = torch.nn.functional.softmax(
+            term_to_softmax,  # shape: (max num clusters, )
+            dim=0)
 
         # check that Bernoulli probs are all valid
         assert_torch_no_nan_no_inf_is_real(cluster_assignment_posterior_params)
@@ -321,9 +336,13 @@ class RecursiveNonstationaryCRP(BaseModel):
         assert simultaneous_or_sequential in {'sequential', 'simultaneous'}
 
         prev_means = variational_params['means']['means'][obs_idx - 1, :]
+
+        # time_2_1 = time.time()
         prev_covs = convert_stddev_to_cov(
             stddevs=variational_params['means']['stddevs'][obs_idx - 1, :])
         prev_precisions = torch.linalg.inv(prev_covs)
+        # time_2_2 = time.time()
+        # print(f'Time2.2 - Time2.1: {time_2_2 - time_2_1}')
 
         obs_dim = torch_observation.shape[0]
         max_num_clusters = prev_means.shape[0]
@@ -336,14 +355,28 @@ class RecursiveNonstationaryCRP(BaseModel):
             variational_params['assignments']['probs'][obs_idx, :, None, None],  # shape (num features, 1, 1)
             repeated_eyes) / sigma_obs_squared
         mean_precisions = torch.add(prev_precisions, weighted_eyes)
-        mean_covs = torch.linalg.inv(mean_precisions)
+        means_covs = torch.linalg.inv(mean_precisions)
+
+        # time_2_3 = time.time()
+        # print(f'Time2.3 - Time2.2: {time_2_3 - time_2_2}')
 
         # No update on pytorch matrix square root
         # https://github.com/pytorch/pytorch/issues/9983#issuecomment-907530049
         # https://github.com/pytorch/pytorch/issues/25481
-        new_means_stddevs = torch.stack([
-            torch.from_numpy(scipy.linalg.sqrtm(gaussian_cov.detach().numpy()))
-            for gaussian_cov in mean_covs])
+        # This matrix square root is the slowest part
+        # new_means_stddevs = torch.stack([
+        #     torch.from_numpy(scipy.linalg.sqrtm(gaussian_cov.detach().numpy()))
+        #     for gaussian_cov in mean_covs])
+
+        for mean_idx, mean_cov in enumerate(means_covs):
+            mean_stddev = scipy.linalg.sqrtm(mean_cov.detach().numpy())
+            variational_params['means']['stddevs'][obs_idx, mean_idx, :] = torch.from_numpy(mean_stddev)
+
+        assert_torch_no_nan_no_inf_is_real(
+            variational_params['means']['stddevs'][obs_idx, :, :])
+
+        # time_2_4 = time.time()
+        # print(f'Time2.4 - Time2.3: {time_2_4 - time_2_3}')
 
         # Step 2: Use updated covariances to compute updated means
         # Sigma_{n-1,l}^{-1} \mu_{n-1, l}
@@ -360,11 +393,12 @@ class RecursiveNonstationaryCRP(BaseModel):
 
         new_means_means = torch.einsum(
             'bij, bj->bi',
-            mean_covs,  # shape: (max num clusters, obs dim, obs dim)
+            means_covs,  # shape: (max num clusters, obs dim, obs dim)
             torch.add(term_one, term_two),  # shape: (max num clusters, obs dim)
         )
 
-        assert_torch_no_nan_no_inf_is_real(new_means_stddevs)
-        variational_params['means']['stddevs'][obs_idx, :, :] = new_means_stddevs
+        # time_2_5 = time.time()
+        # print(f'Time2.5 - Time2.4: {time_2_5 - time_2_4}')
+
         assert_torch_no_nan_no_inf_is_real(new_means_means)
         variational_params['means']['means'][obs_idx, :] = new_means_means

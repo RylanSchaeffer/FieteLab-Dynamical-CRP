@@ -33,7 +33,7 @@ config_defaults = {
     'dynamics_c': 1.,
     'dynamics_omega': np.pi / 2.,
     'n_samples': 1000,
-    'n_features': 17,
+    'n_features': 2,
     'n_clusters': 25,
     'alpha': 5.9,
     'beta': 0.,
