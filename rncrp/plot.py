@@ -121,6 +121,7 @@ def calculate_num_clusters_by_dataset_by_inference_alg(inference_algs_results_by
 
     return num_clusters_by_dataset_by_inference_alg
 
+
 def calculate_runtimes_by_dataset_by_inference_alg(inference_algs_results_by_dataset_idx):
     # construct dictionary mapping from inference alg to dataframe
     # with dataset idx as rows and concentration parameters as columns

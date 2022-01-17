@@ -5,7 +5,7 @@ import pandas as pd
 import seaborn as sns
 
 # common plotting functions
-from utils.plot import *
+from rncrp.plot import *
 
 
 def plot_inference_results(sampled_mog_data: dict,

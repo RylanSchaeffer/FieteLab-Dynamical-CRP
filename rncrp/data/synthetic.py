@@ -16,14 +16,30 @@ def generate_heald_exp1a() -> Dict[str, np.ndarray]:
     Shown in Figure 1b.
     """
 
-    num_trials_per_phase = [
+    phases_and_num_trials = [
         ('null', 50),
         ('exposure', 125),
         ('counter-exposure', 15),
         ('channel', 150),
     ]
 
-    raise NotImplementedError
+    total_num_trials = sum([phase_and_num_trial[1]
+                            for phase_and_num_trial in phases_and_num_trials])
+    obs = np.zeros(shape=(total_num_trials, 2))
+    phase_start_trial_idx = 0
+    for phase, phase_num_trials in phases_and_num_trials:
+        phase_end_trial_idx = phase_start_trial_idx + phase_num_trials
+        if phase == 'null':
+            pass
+        elif phase == 'exposure':
+            obs[phase_start_trial_idx:phase_end_trial_idx, 0] = 1.
+        elif phase == 'counter_exposure':
+            obs[phase_start_trial_idx:phase_end_trial_idx, 1] = 1.
+        elif phase == 'channel':
+            obs[phase_start_trial_idx:phase_end_trial_idx, :] = 1.
+        else:
+            raise NotImplementedError
+    return obs
 
 
 def generate_heald_exp1b() -> Dict[str, np.ndarray]:
@@ -33,14 +49,30 @@ def generate_heald_exp1b() -> Dict[str, np.ndarray]:
     Shown in Figure 1d.
     """
 
-    num_trials_per_phase = [
+    phases_and_num_trials = [
         ('null', 50),
         ('exposure', 125),
         ('counter-exposure', 15),
         ('channel', 150),
     ]
 
-    raise NotImplementedError
+    total_num_trials = sum([phase_and_num_trial[1]
+                            for phase_and_num_trial in phases_and_num_trials])
+    obs = np.zeros(shape=(total_num_trials, 2))
+    phase_start_trial_idx = 0
+    for phase, phase_num_trials in phases_and_num_trials:
+        phase_end_trial_idx = phase_start_trial_idx + phase_num_trials
+        if phase == 'null':
+            pass
+        elif phase == 'exposure':
+            obs[phase_start_trial_idx:phase_end_trial_idx, 0] = 1.
+        elif phase == 'counter_exposure':
+            obs[phase_start_trial_idx:phase_end_trial_idx, 1] = 1.
+        elif phase == 'channel':
+            obs[phase_start_trial_idx:phase_end_trial_idx, :] = 1.
+        else:
+            raise NotImplementedError
+    return obs
 
 
 def generate_heald_exp2a() -> Dict[str, np.ndarray]:
