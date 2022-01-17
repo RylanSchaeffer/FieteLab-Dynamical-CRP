@@ -149,15 +149,17 @@ class RecursiveNonstationaryCRP(BaseModel):
                 cluster_assignment_prior /= torch.sum(cluster_assignment_prior)
                 assert_torch_no_nan_no_inf_is_real(cluster_assignment_prior)
 
-                # Step 1(iv): Sometimes, somehow, small negative numbers sneak in e.g. -2e-18
+                # Step 1(iv): Sometimes, somehow, small negative numbers sneak in e.g. -2e-22
                 # Identify them, test whether they're close to 0. If they are, replace with 0.
                 # Otherwise, raise an assertion error.
                 negative_indices = cluster_assignment_prior < 0.
                 if torch.any(negative_indices):
-                    # If the values are sufficiently close to 0, replace with 0.
-                    if torch.all(torch.isclose(cluster_assignment_prior[negative_indices], torch.tensor(0.))):
-                        cluster_assignment_prior[negative_indices] = 0.
-                    assert torch.all(cluster_assignment_prior >= 0.)
+                    print(f'Smallest value: {torch.min(cluster_assignment_prior)}')
+                    # # If the values are sufficiently close to 0, replace with 0.
+                    # if torch.all(torch.isclose(cluster_assignment_prior[negative_indices], torch.tensor(0.))):
+                    #     cluster_assignment_prior[negative_indices] = 0.
+                    # assert torch.all(cluster_assignment_prior >= 0.)
+                    cluster_assignment_prior[negative_indices] = 0.
 
                     # Record latent prior.
                 cluster_assignment_priors[obs_idx, :len(cluster_assignment_prior)] = cluster_assignment_prior
