@@ -11,10 +11,11 @@
 # export WANDB_CONFIG_DIR=/om2/user/rylansch
 # export WANDB_API_KEY=51a0a43a1b4ba9981701d60c5f6887cd5bf9e03e
 # source rncrp_venv/bin/activate
-# wandb sweep 01_mixture_of_gaussians/sweep.yaml
+# wandb sweep 01_mixture_of_gaussians/sweep_quick.yaml
+# wandb sweep 01_mixture_of_gaussians/sweep_complete.yaml
 
 for i in {1..5}
 do
-  sbatch 01_mixture_of_gaussians/run_one.sh 0flwonho
+  sbatch 01_mixture_of_gaussians/run_one.sh usd703j8
   sleep 5
 done

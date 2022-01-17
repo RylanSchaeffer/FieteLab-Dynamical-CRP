@@ -9,6 +9,50 @@ from typing import Dict, Union
 import rncrp.helpers.dynamics
 
 
+def generate_heald_exp1a() -> Dict[str, np.ndarray]:
+    """
+    First experiment in Heald, Lengyel and Wolpert 2021, first part.
+
+    Shown in Figure 1b.
+    """
+
+    num_trials_per_phase = [
+        ('null', 50),
+        ('exposure', 125),
+        ('counter-exposure', 15),
+        ('channel', 150),
+    ]
+
+    raise NotImplementedError
+
+
+def generate_heald_exp1b() -> Dict[str, np.ndarray]:
+    """
+    Second experiment in Heald, Lengyel and Wolpert Nature 2021, second part.
+
+    Shown in Figure 1d.
+    """
+
+    num_trials_per_phase = [
+        ('null', 50),
+        ('exposure', 125),
+        ('counter-exposure', 15),
+        ('channel', 150),
+    ]
+
+    raise NotImplementedError
+
+
+def generate_heald_exp2a() -> Dict[str, np.ndarray]:
+    """
+    Second experiment in Heald, Lengyel and Wolpert Nature 2021.
+
+    Shown in Figure 2a.
+    """
+
+    raise NotImplementedError
+
+
 def sample_mixture_model(num_obs: int = 100,
                          obs_dim: int = 10,
                          mixing_prior_str: str = 'rncrp',
@@ -187,3 +231,5 @@ def sample_rncrp(num_mc_samples: int,
     }
 
     return monte_carlo_rncrp_results
+
+

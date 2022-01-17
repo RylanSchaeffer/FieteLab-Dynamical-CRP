@@ -108,7 +108,8 @@ def compute_analytical_rncrp(num_customer: int,
     assert customer_times.shape == (num_customer, )
 
     dynamics = convert_dynamics_str_to_dynamics_obj(
-        dynamics_str=dynamics_str)
+        dynamics_str=dynamics_str,
+        implementation_mode='numpy')
 
     # Create arrays to store all information.
     # To make Python indexing match the mathematical notation, we'll use 1-based

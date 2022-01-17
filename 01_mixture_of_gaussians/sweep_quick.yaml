@@ -1,0 +1,41 @@
+program: 01_mixture_of_gaussians/run_one.py
+project: rncrp-mixture-of-gaussians
+method: grid
+metric:
+  goal: minimize
+  name: Loss
+parameters:
+  inference_alg_str:
+    values: [
+        'RN-CRP',
+    ]
+  dynamics_str:
+    values: [
+        'step',
+        'exp',
+        'sinusoid',
+        'hyperbolic']
+  dynamics_a:
+    values: [1.]
+  dynamics_b:
+    values: [ 1. ]
+  dynamics_c:
+    values: [ 1. ]
+  dynamics_omega:
+    values: [ 1. ]
+  alpha:
+    values: [ 0.1,
+              1.,
+              10.,]
+  n_samples:
+    values: [1000]
+  n_features:
+    values: [3, 10]
+  n_clusters:
+    values: [5, 25]
+  centroids_prior_cov_prefactor:
+    values: [5., 10.]
+  likelihood_cov_prefactor:
+    values: [1., 5.]
+  repeat_idx:
+    values: [0]

@@ -278,3 +278,8 @@ def probs_to_logits(probs):
     logits = - torch.log(1. / probs - 1.)
     assert_torch_no_nan_no_inf_is_real(logits)
     return logits
+
+
+def torch_round(x: torch.Tensor, decimals=0) -> torch.Tensor:
+    b = 10**decimals
+    return torch.round(x * b) / b

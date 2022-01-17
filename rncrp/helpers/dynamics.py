@@ -1,8 +1,9 @@
 import abc
 import numpy as np
+import torch
 from typing import Dict
 
-import torch
+from rncrp.helpers.torch_helpers import torch_round
 
 dynamics_strs = [
     'perfectintegrator',
@@ -300,14 +301,14 @@ class HarmonicOscillatorTorch(Dynamics):
     #     return transformed_state
 
     def update_state(self,
-                     customer_assignment_probs: np.ndarray,
-                     time: float,
-                     ) -> Dict[str, np.ndarray]:
-        new_cos_coeff = 0.5 * np.multiply(
-            np.cos(self.params['omega'] * time),
+                     customer_assignment_probs: torch.Tensor,
+                     time: torch.Tensor,
+                     ) -> Dict[str, torch.Tensor]:
+        new_cos_coeff = 0.5 * torch.multiply(
+            torch.cos(self.params['omega'] * time),
             customer_assignment_probs)
-        new_sin_coeff = 0.5 * np.multiply(
-            np.sin(self.params['omega'] * time),
+        new_sin_coeff = 0.5 * torch.multiply(
+            torch.sin(self.params['omega'] * time),
             customer_assignment_probs)
         new_const_coeff = 0.5 * customer_assignment_probs
         self._state['cos_coeffs'] += new_cos_coeff
@@ -316,15 +317,16 @@ class HarmonicOscillatorTorch(Dynamics):
         self._add_N_to_state(time=time)
         return self._state
 
-    def _add_N_to_state(self, time):
-        N = self._state['const_coeffs'].copy()
-        N += self._state['cos_coeffs'].copy() * torch.cos(self.params['omega'] * time)
-        N += self._state['sin_coeffs'].copy() * torch.sin(self.params['omega'] * time)
+    def _add_N_to_state(self,
+                        time: torch.Tensor):
+        N = self._state['const_coeffs']
+        N += self._state['cos_coeffs'] * torch.cos(self.params['omega'] * time)
+        N += self._state['sin_coeffs'] * torch.sin(self.params['omega'] * time)
 
         # sometimes, floating point errors will give N values like -9.18e-17
         # This will break the code if we use these values to sample from a Categorical,
         # so we need to round
-        N = torch.round(N, decimals=12)
+        N = torch_round(N, decimals=6)
         self._state['N'] = N
 
 
@@ -413,35 +415,36 @@ class HyperbolicTorch(Dynamics):
                                                  end=width * params['num_exponentials'],
                                                  steps=params['num_exponentials']) + width / 2
 
-        self._probabilities = width * torch.exp(-self._exponential_rates / params['c']) / params['c']
+        self._weights = width * torch.exp(-self._exponential_rates / params['c']) / params['c']
 
         # Add a trailing dimension to make addition / multiplication easy
         self._exponential_rates = self._exponential_rates[:, np.newaxis]
 
     def initialize_state(self,
-                         customer_assignment_probs: np.ndarray,
-                         time: float,
-                         ) -> Dict[str, np.ndarray]:
+                         customer_assignment_probs: torch.Tensor,
+                         time: torch.Tensor,
+                         ) -> Dict[str, torch.Tensor]:
 
         # TODO: convert this to pytorch
-        exponential_Ns = np.repeat(customer_assignment_probs[np.newaxis, :],
-                                   repeats=self.params['num_exponentials'],
-                                   axis=0)
+        # Shape: (num exponentials, max num clusters)
+        exponential_Ns = customer_assignment_probs[np.newaxis, :].repeat(
+            self.params['num_exponentials'], 1)
 
-        N_weighted_avg = np.matmul(self._probabilities, exponential_Ns)
+        N_weighted_avg = torch.matmul(self._weights, exponential_Ns)
         self._state = {
             'N': N_weighted_avg,
             'exponential_Ns': exponential_Ns}
         return self._state
 
     def run_dynamics(self,
-                     time_start: float,
-                     time_end: float) -> Dict[str, np.ndarray]:
+                     time_start: torch.Tensor,
+                     time_end: torch.Tensor,
+                     ) -> Dict[str, torch.Tensor]:
         assert time_start < time_end
-        exp_change = np.exp(- self._exponential_rates * (time_end - time_start))
+        exp_change = torch.exp(- self._exponential_rates * (time_end - time_start))
         self._state['exponential_Ns'] *= exp_change
-        self._state['N'] = np.matmul(self._probabilities,
-                                     self._state['exponential_Ns'])
+        self._state['N'] = torch.matmul(self._weights,
+                                        self._state['exponential_Ns'])
         return self._state
 
     def update_state(self,
@@ -450,7 +453,7 @@ class HyperbolicTorch(Dynamics):
                      ) -> Dict[str, np.ndarray]:
 
         self._state['exponential_Ns'] += customer_assignment_probs[np.newaxis, :]
-        self._state['N'] = np.matmul(self._probabilities,
+        self._state['N'] = np.matmul(self._weights,
                                      self._state['exponential_Ns'])
         return self._state
 
@@ -670,6 +673,7 @@ def convert_dynamics_str_to_dynamics_obj(dynamics_str: str,
         raise NotImplementedError(dynamics_str)
     else:
         raise ValueError(f'Impermissible dynamics_str: {dynamics_str}')
+
     dynamics = dynamics_fn(dynamics_params)
 
     return dynamics

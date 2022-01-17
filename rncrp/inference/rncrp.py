@@ -41,7 +41,6 @@ class RecursiveNonstationaryCRP(BaseModel):
         self.feature_prior_params = gen_model_params['feature_prior_params']
         self.likelihood_params = gen_model_params['likelihood_params']
         self.model_str = model_str
-        self.fit_results = None
         self.num_coord_ascent_steps_per_obs = num_coord_ascent_steps_per_obs
         self.numerically_optimize = numerically_optimize
         if self.numerically_optimize:
@@ -52,7 +51,7 @@ class RecursiveNonstationaryCRP(BaseModel):
         self.learning_rate = learning_rate
         self.plot_dir = plot_dir
         self.record_history = record_history
-        self._fit_results = None
+        self.fit_results = None
 
     def fit(self,
             observations: np.ndarray,
@@ -76,9 +75,10 @@ class RecursiveNonstationaryCRP(BaseModel):
             optimize_cluster_assignments_fn = self.optimize_cluster_assignments_multivariate_normal
             optimize_cluster_params_fn = self.optimize_cluster_params_multivariate_normal
 
+            var_new_cluster = self.gen_model_params['feature_prior_params']['centroids_prior_cov_prefactor'] \
+                              + self.gen_model_params['likelihood_params']['likelihood_cov_prefactor']
             stddevs = torch.stack([
-                np.sqrt(self.gen_model_params['feature_prior_params']['centroids_prior_cov_prefactor']) * torch.eye(
-                    obs_dim).float()
+                np.sqrt(var_new_cluster) * torch.eye(obs_dim).float()
                 for _ in range((num_obs + 1) * max_num_clusters)])
             stddevs = stddevs.view(num_obs + 1, max_num_clusters, obs_dim, obs_dim).float()
 
@@ -138,8 +138,8 @@ class RecursiveNonstationaryCRP(BaseModel):
                 # Step 1: Construct prior.
                 # Step 1(i): Run dynamics.
                 cluster_assignment_prior = self.dynamics.run_dynamics(
-                    time_start=torch_observations_times[obs_idx],
-                    time_end=torch_observations_times[obs_idx + 1])['N']
+                    time_start=torch_observations_times[obs_idx - 1],
+                    time_end=torch_observations_times[obs_idx])['N']
 
                 # Step 1(ii): Add new table probability.
                 cluster_assignment_prior[1:obs_idx + 1] += self.mixing_params['alpha'] * \
@@ -195,7 +195,8 @@ class RecursiveNonstationaryCRP(BaseModel):
                                 obs_idx=obs_idx,
                                 vi_idx=vi_idx,
                                 variational_params=variational_params,
-                                sigma_obs_squared=self.gen_model_params['likelihood_params']['likelihood_cov_prefactor'])
+                                sigma_obs_squared=self.gen_model_params['likelihood_params'][
+                                    'likelihood_cov_prefactor'])
                             # time_2 = time.time()
                             # print(f'Time2 - Time 1: {time_2 - time_1}')
                             optimize_cluster_assignments_fn(
@@ -204,7 +205,8 @@ class RecursiveNonstationaryCRP(BaseModel):
                                 vi_idx=vi_idx,
                                 cluster_assignment_prior=cluster_assignment_prior,
                                 variational_params=variational_params,
-                                sigma_obs_squared=self.gen_model_params['likelihood_params']['likelihood_cov_prefactor'])
+                                sigma_obs_squared=self.gen_model_params['likelihood_params'][
+                                    'likelihood_cov_prefactor'])
                             # time_3 = time.time()
                             # print(f'Time3 - Time 2: {time_3 - time_2}')
 
@@ -235,7 +237,7 @@ class RecursiveNonstationaryCRP(BaseModel):
                 # time_5 = time.time()
                 # print(f'Time5 - Time 4: {time_5 - time_4}')
 
-        self._fit_results = dict(
+        self.fit_results = dict(
             cluster_assignment_priors=cluster_assignment_priors.numpy(),
             cluster_assignment_posteriors=variational_params['assignments']['probs'].detach().numpy(),
             num_clusters_posteriors=num_clusters_posteriors.numpy(),
@@ -315,7 +317,7 @@ class RecursiveNonstationaryCRP(BaseModel):
         # Term 2: mu_{nk}^T o_n / sigma_obs^2
         term_two = torch.einsum(
             'kd,d->k',
-            variational_params['means']['means'][obs_idx, :obs_idx+1, :],
+            variational_params['means']['means'][obs_idx, :obs_idx + 1, :],
             torch_observation) / sigma_obs_squared
         assert_torch_no_nan_no_inf_is_real(term_two)
 
@@ -324,8 +326,8 @@ class RecursiveNonstationaryCRP(BaseModel):
             'kii->k',
             torch.add(means_covs,
                       torch.einsum('ki,kj->kij',
-                                   variational_params['means']['means'][obs_idx, :obs_idx+1, :],
-                                   variational_params['means']['means'][obs_idx, :obs_idx+1, :])))
+                                   variational_params['means']['means'][obs_idx, :obs_idx + 1, :],
+                                   variational_params['means']['means'][obs_idx, :obs_idx + 1, :])))
         term_three /= sigma_obs_squared
         assert_torch_no_nan_no_inf_is_real(term_three)
 
@@ -339,7 +341,7 @@ class RecursiveNonstationaryCRP(BaseModel):
         assert torch.all(0. <= cluster_assignment_posterior_params)
         assert torch.all(cluster_assignment_posterior_params <= 1.)
 
-        variational_params['assignments']['probs'][obs_idx, :obs_idx+1] = cluster_assignment_posterior_params
+        variational_params['assignments']['probs'][obs_idx, :obs_idx + 1] = cluster_assignment_posterior_params
 
     @staticmethod
     def optimize_cluster_assignments_dirichlet_multinomial() -> None:
@@ -410,7 +412,7 @@ class RecursiveNonstationaryCRP(BaseModel):
         term_two = torch.einsum(
             'b, bd->bd',
             variational_params['assignments']['probs'][obs_idx, :obs_idx + 1],
-            torch_observation.reshape(1, obs_dim).repeat(obs_idx+1, 1),
+            torch_observation.reshape(1, obs_dim).repeat(obs_idx + 1, 1),
         ) / sigma_obs_squared
 
         new_means_means = torch.einsum(
