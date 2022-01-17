@@ -1,118 +1,106 @@
 """
-Perform inference in a mixture of Gaussians for the specified inference
-algorithm, dynamics string and time sampling string.
 
-Example usage:
-
-01_mixture_of_gaussians/run_one.py --run_one_results_dir=01_mixture_of_gaussians/results/categorical_probs=[0.2,0.2,0.2,0.2,0.2]/dataset=1 \
- --inference_alg_str=D-CRP \
- --alpha=30.91 --beta=0.0 --dynamics_str=harmonicoscillator
 """
 
-import argparse
+import itertools
 import joblib
 import logging
-import numpy as np
 import os
-import torch
-import wandb
+import subprocess
 
-# import plot
-import rncrp.data.synthetic
-import rncrp.helpers.dynamics
-import rncrp.helpers.run
-import rncrp.metrics
+import numpy as np
+
+import plot
+import utils.data
 
 
-config_defaults = {
-    'inference_alg_str': 'VI-GMM',
-    'dynamics_str': 'sinusoid',
-    'n_samples': 1000,
-    'n_features': 10,
-    'n_clusters': 25,
-    'alpha': 5.9,
-    'beta': 0.,
-    'centroids_prior_cov_prefactor': 5.,
-    'likelihood_cov_prefactor': 1.,
-    'repeat_idx': 0,
-}
-wandb.init(project='rncrp-mixture-of-gaussians',
-           config=config_defaults)
-config = wandb.config
+def run_all():
 
-print(f'Running:')
-for key, value in config.items():
-    print(key, ' : ', value)
+    # create directory
+    exp_dir_path = '01_mixture_of_gaussians'
+    results_dir_path = os.path.join(exp_dir_path, 'results')
+    os.makedirs(results_dir_path, exist_ok=True)
 
-# determine paths
-exp_dir = '01_mixture_of_gaussians'
-results_dir_path = os.path.join(exp_dir, 'results')
-os.makedirs(results_dir_path, exist_ok=True)
-inference_alg_results_path = os.path.join(results_dir_path,
-                                          f'id={wandb.run.id}.joblib')
+    cluster_assignment_samplings = [
+        ('categorical', dict(probs=np.ones(5)/5.)),
+        ('categorical', dict(probs=np.array([0.4, 0.25, 0.2, 0.1, 0.05]))),
+        ('D-CRP', dict(dynamics_str='perfectintegrator', alpha=5.98, beta=0.)),
+        ('D-CRP', dict(dynamics_str='leakyintegrator', alpha=5.98, beta=0.)),
+        ('D-CRP', dict(dynamics_str='harmonicoscillator', alpha=5.98, beta=0.))
+    ]
+    num_datasets = 10
+    num_gaussians = 5
+    gaussian_cov_scaling: float = 0.3
+    gaussian_mean_prior_cov_scaling: float = 100.
+    num_customers = 100
+    # alphas = [1.1, 10.78, 15.37, 30.91]
+    alphas = np.round(np.linspace(1.1, 30.91, 20), 2)
+    betas = [0.]
+    # betas = [0.3, 5.6, 12.9, 21.3]
+    dynamics_strs = ['perfectintegrator', 'leakyintegrator', 'harmonicoscillator']
+    inference_alg_strs = ['D-CRP']
+    hyperparams = [alphas, betas, inference_alg_strs, dynamics_strs]
 
-# set seeds
-rncrp.helpers.run.set_seed(config['repeat_idx'])
+    # generate several datasets and independently launch inference
+    for (cluster_assignment_sampling, cluster_assignment_sampling_params), dataset_idx in \
+            itertools.product(cluster_assignment_samplings, range(num_datasets)):
 
+        logging.info(f'Sampling: {cluster_assignment_sampling}, Dataset Index: {dataset_idx}')
+        sampled_mog_data = utils.data.sample_mixture_model(
+            num_obs=num_customers,
+            cluster_assignment_sampling=cluster_assignment_sampling,
+            cluster_assignment_sampling_parameters=cluster_assignment_sampling_params,
+            num_gaussians=num_gaussians,
+            component_prior_params=dict(gaussian_cov_scaling=gaussian_cov_scaling,
+                                        gaussian_mean_prior_cov_scaling=gaussian_mean_prior_cov_scaling))
 
-mixture_model_results = rncrp.data.synthetic.sample_mixture_model(
-    num_obs=config['n_samples'],
-    obs_dim=config['n_features'],
-    mixing_prior_str='rncrp',
-    mixing_distribution_params={'alpha': config['alpha'],
-                                'beta': config['beta'],
-                                'dynamics_str': config['dynamics_str']},
-    component_prior_str='gaussian',
-    component_prior_params={'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor'],
-                            'likelihood_cov_prefactor': config['likelihood_cov_prefactor']})
+        # save dataset
+        dataset_dir = os.path.join(
+            results_dir_path,
+            sampled_mog_data['cluster_assignment_sampling_descr_str'],
+            f'dataset={dataset_idx}')
+        os.makedirs(dataset_dir, exist_ok=True)
+        joblib.dump(sampled_mog_data,
+                    filename=os.path.join(dataset_dir, 'data.joblib'))
 
+        plot.plot_sample_from_mixture_of_gaussians(
+            assigned_table_seq=sampled_mog_data['assigned_table_seq'],
+            gaussian_samples_seq=sampled_mog_data['gaussian_samples_seq'],
+            plot_dir=dataset_dir)
 
-gen_model_params = {
-    'mixing_params': {
-        'alpha': config['alpha'],
-               'beta': config['beta'],
-               'dynamics_str': config['dynamics_str']},
-    'feature_prior_params': {
-        'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor']
-    },
-    'likelihood_params': {
-        'likelihood_cov_prefactor': config['likelihood_cov_prefactor']
-    }
-}
-
-inference_alg_results = rncrp.helpers.run.run_inference_alg(
-    inference_alg_str=config['inference_alg_str'],
-    observations=mixture_model_results['observations'],
-    observations_times=mixture_model_results['observations_times'],
-    gen_model_params=gen_model_params,
-)
-
-scores, map_cluster_assignments = rncrp.metrics.compute_predicted_clusters_scores(
-    cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
-    true_cluster_assignments=mixture_model_results['cluster_assignments'],
-)
-
-inference_alg_results.update(scores)
-inference_alg_results['map_cluster_assignments'] = map_cluster_assignments
-
-wandb.log(scores, step=0)
-
-data_to_store = dict(
-    config=dict(config),  # Need to convert WandB config to proper dict
-    inference_alg_results=inference_alg_results,
-    scores=scores)
-
-joblib.dump(data_to_store,
-            filename=inference_alg_results_path)
-
-# rncrp.plot.plot_inference_results(
-#     sampled_mog_data=sampled_mog_data,
-#     inference_results=stored_data['inference_results'],
-#     inference_alg_str=stored_data['inference_alg_str'],
-#     inference_alg_param=stored_data['inference_alg_params'],
-#     plot_dir=inference_results_dir)
+        for alpha, beta, inference_alg_str, dynamics_str in itertools.product(*hyperparams):
+            launch_run_one(
+                exp_dir_path=exp_dir_path,
+                dataset_dir=dataset_dir,
+                alpha=alpha,
+                beta=beta,
+                inference_alg_str=inference_alg_str,
+                dynamics_str=dynamics_str)
 
 
-print('Finished run.')
+def launch_run_one(exp_dir_path: str,
+                   dataset_dir: str,
+                   inference_alg_str: str,
+                   alpha: float,
+                   beta: float,
+                   dynamics_str: str,):
+
+    run_one_script_path = os.path.join(exp_dir_path, 'run_one.sh')
+    command_and_args = [
+        'sbatch',
+        run_one_script_path,
+        dataset_dir,
+        inference_alg_str,
+        str(alpha),
+        str(beta),
+        dynamics_str]
+
+    # TODO: Figure out where the logger is logging to
+    logging.info(f'Launching ' + ' '.join(command_and_args))
+    subprocess.run(command_and_args)
+    logging.info(f'Launched ' + ' '.join(command_and_args))
 
 
+if __name__ == '__main__':
+    run_all()
+    logging.info('Finished.')

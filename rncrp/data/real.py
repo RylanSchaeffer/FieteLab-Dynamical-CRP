@@ -133,7 +133,8 @@ def transform_site_csv_to_array(site_df,
 
 def create_climate_data(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_2020.txt',
                         duration: str = 'annual',
-                        end_year: int = 2020):
+                        end_year: int = 2020,
+                        use_zscores: bool = False):
     dataset = None
 
     with open(qualifying_sites_path) as file:
@@ -141,7 +142,7 @@ def create_climate_data(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Re
             if '.csv' in site_csv_path:
                 try:
                     df = pd.read_csv(site_csv_path.strip(), low_memory=False)
-                    site_array = transform_site_csv_to_array(df, duration, end_year)
+                    site_array = transform_site_csv_to_array(df, duration, end_year, use_zscores)
                     if type(dataset) is not np.ndarray:
                         dataset = site_array
                     else:
@@ -152,14 +153,18 @@ def create_climate_data(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Re
     return dataset
 
 def load_dataset_climate(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_',
-                         end_year: int = 2020):
+                         end_year: int = 2020,
+                         use_zscores: bool = False):
     qualifying_sites_dir = qualifying_sites_path + str(end_year) + '.txt'
-    annual_data = create_climate_data(qualifying_sites_dir, 'annual', end_year)
-    monthly_data = create_climate_data(qualifying_sites_dir, 'monthly', end_year)
+    annual_data = create_climate_data(qualifying_sites_dir, 'annual', end_year, use_zscores)
+    monthly_data = create_climate_data(qualifying_sites_dir, 'monthly', end_year, use_zscores)
+
+    true_cluster_labels = None ## TODO: OBTAIN GROUND TRUTH CLUSTERS
 
     climate_data_results = dict(
         monthly_data=monthly_data,
-        annual_data=annual_data)
+        annual_data=annual_data,
+        cluster_assignments=true_cluster_labels)
     return climate_data_results
 
 
@@ -327,7 +332,7 @@ def load_dataset_omniglot(data_dir: str = 'data',
 
     if feature_extractor_method == 'vae':
 
-        from data.omniglot_vae_feature_extractor import vae_load
+        from omniglot_vae_feature_extractor import vae_load
         vae = vae_load(omniglot_dataset=omniglot_dataset)
 
         # convert to Tensor and add channel

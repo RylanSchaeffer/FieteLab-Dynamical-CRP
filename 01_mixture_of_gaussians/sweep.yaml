@@ -8,6 +8,8 @@ parameters:
   inference_alg_str:
     values: [
         'VI-GMM',
+        'DP-Means (Offline)',
+        'DP-Means (Online)',
     ]
   dynamics_str:
     values: [
@@ -15,6 +17,14 @@ parameters:
         'exp',
         'sinusoid',
         'hyperbolic']
+  dynamics_a:
+    values: [1.]
+  dynamics_b:
+    values: [ 1. ]
+  dynamics_c:
+    values: [ 1. ]
+  dynamics_omega:
+    values: [ 1. ]
   alpha:
     values: [ 0.1, 0.5,
               1., 2.5, 5., 7.5,
@@ -30,4 +40,4 @@ parameters:
   likelihood_cov_prefactor:
     values: [1., 5., 10., 50.]
   repeat_idx:
-    values: [0, 1, 2]
+    values: [0]
