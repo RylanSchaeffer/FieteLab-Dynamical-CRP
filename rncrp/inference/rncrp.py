@@ -144,25 +144,38 @@ class RecursiveNonstationaryCRP(BaseModel):
                 # Step 1(ii): Add new table probability.
                 cluster_assignment_prior[1:obs_idx + 1] += self.mixing_params['alpha'] * \
                                                            num_clusters_posteriors[obs_idx - 1, :obs_idx].clone()
+
                 # Step 1(iii): Renormalize.
                 cluster_assignment_prior /= torch.sum(cluster_assignment_prior)
                 assert_torch_no_nan_no_inf_is_real(cluster_assignment_prior)
 
-                # Record latent prior.
+                # Step 1(iv): Sometimes, somehow, small negative numbers sneak in e.g. -2e-18
+                # Identify them, test whether they're close to 0. If they are, replace with 0.
+                # Otherwise, raise an assertion error.
+                negative_indices = cluster_assignment_prior < 0.
+                if torch.any(negative_indices):
+                    # If the values are sufficiently close to 0, replace with 0.
+                    if torch.all(torch.isclose(cluster_assignment_prior[negative_indices], torch.tensor(0.))):
+                        cluster_assignment_prior[negative_indices] = 0.
+                    assert torch.all(cluster_assignment_prior >= 0.)
+
+                    # Record latent prior.
                 cluster_assignment_priors[obs_idx, :len(cluster_assignment_prior)] = cluster_assignment_prior
 
-                # Step 2(i): Initialize variational parameters using previous time step's parameters.
-                for variable_name, variable_dict in variational_params.items():
-                    for param_name, param_tensor in variable_dict.items():
-                        param_tensor.data[obs_idx, :] = param_tensor.data[obs_idx - 1, :]
+                # Step 2(i): Initialize assignments at prior.
+                variational_params['assignments']['probs'][obs_idx, :] = cluster_assignment_prior
+                assert_torch_no_nan_no_inf_is_real(variational_params['assignments']['probs'])
 
-                # Step 2(ii): Create parameter for potential new cluster.
+                # Step 2(ii): Initialize variational parameters using previous time step's parameters.
+                for param_name, param_tensor in variational_params['means'].items():
+                    param_tensor.data[obs_idx, :] = param_tensor.data[obs_idx - 1, :]
+
+                # Step 2(iii): Create parameter for potential new cluster.
                 initialize_cluster_params_fn(torch_observation=torch_observation,
                                              obs_idx=obs_idx,
                                              variational_params=variational_params)
-
-                # Step 2(iii): Initialize assignments at prior.
-                variational_params['assignments']['probs'][obs_idx, :] = cluster_assignment_prior
+                assert_torch_no_nan_no_inf_is_real(variational_params['means']['means'])
+                assert_torch_no_nan_no_inf_is_real(variational_params['means']['stddevs'])
 
                 # Step 3: Perform coordinate ascent on variational parameters.
                 approx_lower_bounds = []
@@ -292,25 +305,27 @@ class RecursiveNonstationaryCRP(BaseModel):
 
         # TODO: replace sigma obs with likelihood params
         means_covs = convert_stddev_to_cov(
-            stddevs=variational_params['means']['stddevs'][obs_idx, :])
+            stddevs=variational_params['means']['stddevs'][obs_idx, :obs_idx + 1])
 
         # Term 1: log q(c_n = l | o_{<n})
-        term_one = torch.log(cluster_assignment_prior)
+        term_one = torch.log(cluster_assignment_prior[:obs_idx + 1])
 
         # Term 2: mu_{nk}^T o_n / sigma_obs^2
         term_two = torch.einsum(
             'kd,d->k',
-            variational_params['means']['means'][obs_idx, :],
+            variational_params['means']['means'][obs_idx, :obs_idx+1, :],
             torch_observation) / sigma_obs_squared
+        assert_torch_no_nan_no_inf_is_real(term_two)
 
         # Term 3:
         term_three = - 0.5 * torch.einsum(
             'kii->k',
             torch.add(means_covs,
                       torch.einsum('ki,kj->kij',
-                                   variational_params['means']['means'][obs_idx, :, :],
-                                   variational_params['means']['means'][obs_idx, :, :])))
+                                   variational_params['means']['means'][obs_idx, :obs_idx+1, :],
+                                   variational_params['means']['means'][obs_idx, :obs_idx+1, :])))
         term_three /= sigma_obs_squared
+        assert_torch_no_nan_no_inf_is_real(term_three)
 
         term_to_softmax = term_one + term_two + term_three
         cluster_assignment_posterior_params = torch.nn.functional.softmax(
@@ -322,7 +337,7 @@ class RecursiveNonstationaryCRP(BaseModel):
         assert torch.all(0. <= cluster_assignment_posterior_params)
         assert torch.all(cluster_assignment_posterior_params <= 1.)
 
-        variational_params['assignments']['probs'][obs_idx, :] = cluster_assignment_posterior_params
+        variational_params['assignments']['probs'][obs_idx, :obs_idx+1] = cluster_assignment_posterior_params
 
     @staticmethod
     def optimize_cluster_assignments_dirichlet_multinomial() -> None:
@@ -389,10 +404,11 @@ class RecursiveNonstationaryCRP(BaseModel):
             prev_means_precisions,
             prev_means_means)
 
+        # Need to add 1 when repeating because obs_idx starts at 0.
         term_two = torch.einsum(
             'b, bd->bd',
-            variational_params['assignments']['probs'][obs_idx, :],
-            torch_observation.reshape(1, obs_dim).repeat(obs_idx, 1),
+            variational_params['assignments']['probs'][obs_idx, :obs_idx + 1],
+            torch_observation.reshape(1, obs_dim).repeat(obs_idx+1, 1),
         ) / sigma_obs_squared
 
         new_means_means = torch.einsum(
@@ -403,6 +419,5 @@ class RecursiveNonstationaryCRP(BaseModel):
 
         # time_2_5 = time.time()
         # print(f'Time2.5 - Time2.4: {time_2_5 - time_2_4}')
-
         assert_torch_no_nan_no_inf_is_real(new_means_means)
         variational_params['means']['means'][obs_idx, :obs_idx + 1, :] = new_means_means
