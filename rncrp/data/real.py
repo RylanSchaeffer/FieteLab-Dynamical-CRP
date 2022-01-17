@@ -200,14 +200,15 @@ def transform_site_csv_to_array(site_df,
 
 def create_climate_data(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_2020.txt',
                         duration: str = 'annual',
-                        end_year: int = 2020):
+                        end_year: int = 2020,
+                        use_zscores: bool = False):
     dataset = None
     with open(qualifying_sites_path) as file:
         for site_csv_path in file:
             if '.csv' in site_csv_path:
                 try:
                     df = pd.read_csv(site_csv_path.strip(), low_memory=False)
-                    site_array = transform_site_csv_to_array(df, duration, end_year)
+                    site_array = transform_site_csv_to_array(df, duration, end_year, use_zscores)
                     if type(dataset) is not np.ndarray:
                         dataset = site_array
                     else:
@@ -218,11 +219,15 @@ def create_climate_data(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Re
     return dataset
 
 def load_dataset_climate(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_',
-                         end_year: int = 2020):
+                         end_year: int = 2020,
+                         use_zscores: bool = False):
     qualifying_sites_dir = qualifying_sites_path + str(end_year) + '.txt'
-    annual_data = create_climate_data(qualifying_sites_dir, 'annual', end_year)
-    monthly_data = create_climate_data(qualifying_sites_dir, 'monthly', end_year)
+    annual_data = create_climate_data(qualifying_sites_dir, 'annual', end_year, use_zscores)
+    monthly_data = create_climate_data(qualifying_sites_dir, 'monthly', end_year, use_zscores)
 
+    true_cluster_labels = None ## TODO: OBTAIN GROUND TRUTH CLUSTERS
+
+<<<<<<< HEAD
     labels = None
 
     dataset_dict = dict(
@@ -231,6 +236,13 @@ def load_dataset_climate(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-R
     )
 
     return dataset_dict
+=======
+    climate_data_results = dict(
+        monthly_data=monthly_data,
+        annual_data=annual_data,
+        cluster_assignments=true_cluster_labels)
+    return climate_data_results
+>>>>>>> dc99b45 (Modified climate dataset; climate runs almost ready)
 
 
 def load_dataset_covid_tracking_2021(data_dir: str = 'data',
@@ -581,6 +593,7 @@ def load_dataset_omniglot(data_dir: str = 'data',
     _, image_height, image_width = images.shape
     labels = np.array(labels)
 
+<<<<<<< HEAD
     if feature_extractor_method == 'pca':
         from sklearn.decomposition import PCA
         reshaped_images = np.reshape(images, newshape=(dataset_size, image_height * image_width))
@@ -616,6 +629,46 @@ def load_dataset_omniglot(data_dir: str = 'data',
         # image_features = lenet(torch.from_numpy(reshaped_images)).detach().numpy()
         #
         # feature_extractor = lenet
+=======
+    # if feature_extractor_method == 'pca':
+    #     from sklearn.decomposition import PCA
+    #     reshaped_images = np.reshape(images, newshape=(dataset_size, image_height * image_width))
+    #     pca = PCA(n_components=20)
+    #     pca_latents = pca.fit_transform(reshaped_images)
+    #     image_features = pca.inverse_transform(pca_latents)
+    #     # image_features = np.reshape(pca.inverse_transform(pca_latents),
+    #     #                             newshape=(dataset_size, image_height, image_width))
+    #     feature_extractor = pca
+
+    # if feature_extractor_method == 'vae_new':
+    #     vae_data = np.load(os.path.join(os.getcwd(),
+    #                                     'data/omniglot_vae/omniglot_data.npz'))
+    #     labels = vae_data['targets']
+
+    #     # Order samples by label
+    #     indices_for_sorting_labels = np.random.choice(np.arange(len(labels)),
+    #                                                 size=num_data,
+    #                                                 replace=False)
+    #     labels = labels[indices_for_sorting_labels][:num_data]
+    #     images = vae_data['images'][indices_for_sorting_labels][:num_data, :, :]
+    #     image_features = vae_data['latents'][indices_for_sorting_labels][:num_data, :]
+    #     feature_extractor = None
+
+    if feature_extractor_method == 'vae':
+
+        from omniglot_vae_feature_extractor import vae_load
+        vae = vae_load(omniglot_dataset=omniglot_dataset)
+
+        # convert to Tensor and add channel
+        torch_images = torch.unsqueeze(torch.from_numpy(images), dim=1)
+        vae.eval()
+        # define the features as the VAE means
+        vae_result = vae(torch_images)
+        torch_image_features = vae_result['mu']
+        image_features = torch_image_features.detach().numpy()
+
+        feature_extractor = vae
+>>>>>>> dc99b45 (Modified climate dataset; climate runs almost ready)
 
         raise NotImplementedError
     elif feature_extractor_method == 'vae':
@@ -947,12 +1000,8 @@ def load_dataset_morph_environment(data_dir: str = 'data',
     print(rfl.sum(), rfl.shape[0] - rfl.sum())
     print(np.unique(ml))
 
-<<<<<<< HEAD
-    _sm = np.reshape(sm, (10, 45, -1))
-    print(_sm.shape)
-=======
+
     ### TODO: GENERATE DATASET FOR CLUSTERING HERE
->>>>>>> 98b2a3b (Reformatted data array for climate dataset.)
 
     # _sm = np.reshape(sm,(10,45,-1))
     # print(_sm.shape)
@@ -961,33 +1010,6 @@ def load_dataset_morph_environment(data_dir: str = 'data',
     mapper = umap.UMAP(metric="correlation", n_neighbors=100, min_dist=.01, n_components=3).fit(sm)
     # umap.plot.points(mapper) # visualize if desired
 
-<<<<<<< HEAD
-    ## POTENTIAL TODO: GENERATE DATASET HERE INSTEAD
-    clust_labels = sk.cluster.DBSCAN(min_samples=200).fit_predict(mapper.embedding_)
-    print(np.unique(clust_labels))
-    print((clust_labels == -1).sum())
-    c = 1
-
-    morphpref = np.argmax(sm.reshape(sm.shape[0], 10, -1).mean(axis=-1), axis=-1) / 10.
-    morphpref_clustlabels = 0 * morphpref
-    morphpref_clustlabels[clust_labels == 0] = np.mean(morphpref[clust_labels == 0])
-    morphpref_clustlabels[clust_labels == 1] = np.mean(morphpref[clust_labels == 1])
-    f = plt.figure()
-    ax = f.add_subplot(111, projection='3d')
-    ax.scatter(mapper.embedding_[clust_labels > -1, 0], mapper.embedding_[clust_labels > -1, 1],
-               mapper.embedding_[clust_labels > -1, 2], c=1 - morphpref_clustlabels[clust_labels > -1], cmap='cool',
-               s=100 / rfl.shape[0] ** .5)
-
-    ### Generate dataset dictionary
-    morph_environment_dataset_results = {}
-    for c in [0, 1]:
-        clustmask = clust_labels == c
-        clust_rfl = rfl[clustmask]
-        clust_sm = sm[clustmask]
-
-        clust_embedding = mapper.embedding_[clustmask, :]
-        morph_environment_dataset_results['subclust_labels_unsorted_c' + str(c)] = clust_embedding
-=======
     # clust_labels = sk.cluster.DBSCAN(min_samples=200).fit_predict(mapper.embedding_)
     # print(np.unique(clust_labels))
     # print((clust_labels==-1).sum())
@@ -1010,8 +1032,6 @@ def load_dataset_morph_environment(data_dir: str = 'data',
     #
     #     clust_embedding = mapper.embedding_[clustmask,:]
     #     morph_environment_dataset_results['subclust_labels_unsorted_c'+str(c)] = clust_embedding
->>>>>>> 98b2a3b (Reformatted data array for climate dataset.)
-
     return morph_environment_dataset_results
 
 

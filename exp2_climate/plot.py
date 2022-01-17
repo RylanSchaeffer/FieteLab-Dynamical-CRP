@@ -7,8 +7,8 @@ import seaborn as sns
 # common plotting functions
 from rncrp.plot import *
 
-
-def plot_inference_results(sampled_mog_data: dict,
+## TODO: DECIDE WHAT TO PLOT
+def plot_inference_results(sampled_climate_data: dict,
                            inference_results: dict,
                            inference_alg_str: str,
                            inference_alg_param: float,
@@ -120,25 +120,4 @@ def plot_inference_results(sampled_mog_data: dict,
                 bbox_inches='tight',
                 dpi=300)
     # plt.show()
-    plt.close()
-
-def plot_sample_from_mixture_of_gaussians(assigned_table_seq,
-                                          gaussian_samples_seq,
-                                          plot_dir):
-
-    fig, ax = plt.subplots(nrows=1,
-                           ncols=1,
-                           figsize=(6, 6))
-
-    sns.scatterplot(gaussian_samples_seq[:, 0],
-                    gaussian_samples_seq[:, 1],
-                    hue=assigned_table_seq,
-                    palette='Set1',
-                    ax=ax,
-                    legend=False)
-    ax.set_title('Ground Truth Data')
-
-    plt.savefig(os.path.join(plot_dir, 'data.png'),
-                bbox_inches='tight',
-                dpi=300)
     plt.close()
