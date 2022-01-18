@@ -24,7 +24,11 @@ sweep_results_df['cov_prefactor_ratio'] = sweep_results_df['centroids_prior_cov_
 
 sweep_results_df.to_csv(sweep_results_df_path, index=False)
 
-plot_sweep_results_all(sweep_results_df=sweep_results_df,
-                       plot_dir=sweep_dir)
+
+for dynamics_str, sweep_subset_results_df in sweep_results_df.groupby('dynamics_str'):
+    sweep_dynamics_str_dir = os.path.join(sweep_dir, dynamics_str)
+    os.makedirs(sweep_dynamics_str_dir, exist_ok=True)
+    plot_sweep_results_all(sweep_results_df=sweep_subset_results_df,
+                           plot_dir=sweep_dynamics_str_dir)
 
 print(f'Finished 01_mixture_of_gaussians/plot_sweep.py with sweep={sweep_name}.')
