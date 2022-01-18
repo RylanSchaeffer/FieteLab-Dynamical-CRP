@@ -16,6 +16,6 @@
 
 for i in {1..5}
 do
-  sbatch 01_mixture_of_gaussians/run_one.sh fsaifrzx
+  sbatch 02_heald_sensorimotor_exp1a/run_one.sh fsaifrzx
   sleep 5
 done

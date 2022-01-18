@@ -1,10 +1,10 @@
 """
-Perform inference in a synthetic mixture of Gaussians for the specified inference
-algorithm and dynamics string.
+Perform inference in a mixture of Gaussians for the specified inference
+algorithm, dynamics string and time sampling string.
 
 Example usage:
 
-01_mixture_of_gaussians/run_one.py
+02_heald_sensorimotor_exp1a/run_one.py
 """
 
 import argparse
@@ -22,17 +22,9 @@ import rncrp.helpers.run
 import rncrp.metrics
 
 config_defaults = {
-    # 'inference_alg_str': 'VI-GMM',
-    'inference_alg_str': 'DP-Means (Offline)',
-    # 'inference_alg_str': 'RN-CRP',
+    'inference_alg_str': 'RN-CRP',
     'dynamics_str': 'hyperbolic',
-    'dynamics_a': 1.,
-    'dynamics_b': 1.,
     'dynamics_c': 1.,
-    'dynamics_omega': np.pi / 2.,
-    'n_samples': 130,
-    'n_features': 10,
-    'n_clusters': 40,
     'alpha': 0.1,
     'beta': 0.,
     'centroids_prior_cov_prefactor': 5.,
