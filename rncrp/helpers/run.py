@@ -82,6 +82,7 @@ def run_inference_alg(inference_alg_str: str,
         inference_alg = RecursiveNonstationaryCRP(
             gen_model_params=gen_model_params,
             **inference_alg_kwargs)
+
     elif inference_alg_str.startswith('DP-Means'):
         if inference_alg_kwargs is None:
             inference_alg_kwargs = dict()
@@ -106,6 +107,7 @@ def run_inference_alg(inference_alg_str: str,
         inference_alg = VariationalInferenceGMM(
             gen_model_params=gen_model_params,
             **inference_alg_kwargs)
+
     else:
         raise ValueError(f'Unknown inference algorithm: {inference_alg_str}')
 

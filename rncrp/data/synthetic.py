@@ -27,7 +27,7 @@ def generate_heald_exp1a() -> Dict[str, np.ndarray]:
                             for phase_and_num_trial in phases_and_num_trials])
     observations = np.zeros(shape=(total_num_trials, 2))
     observations_times = 1. + np.arange(total_num_trials)
-    cluster_assignments = np.zeros(observations)
+    cluster_assignments = np.zeros(total_num_trials, dtype=np.int)
 
     phase_start_trial_idx = 0
     for phase, phase_num_trials in phases_and_num_trials:
@@ -36,13 +36,13 @@ def generate_heald_exp1a() -> Dict[str, np.ndarray]:
             pass
         elif phase == 'exposure':
             observations[phase_start_trial_idx:phase_end_trial_idx, 0] = 1.
-            cluster_assignments[phase_start_trial_idx:phase_end_trial_idx] = 1.
-        elif phase == 'counter_exposure':
+            cluster_assignments[phase_start_trial_idx:phase_end_trial_idx] = 1
+        elif phase == 'counter-exposure':
             observations[phase_start_trial_idx:phase_end_trial_idx, 1] = 1.
-            cluster_assignments[phase_start_trial_idx:phase_end_trial_idx] = 2.
+            cluster_assignments[phase_start_trial_idx:phase_end_trial_idx] = 2
         elif phase == 'channel':
             observations[phase_start_trial_idx:phase_end_trial_idx, :] = 1.
-            cluster_assignments[phase_start_trial_idx:phase_end_trial_idx] = 3.
+            cluster_assignments[phase_start_trial_idx:phase_end_trial_idx] = 3
         else:
             raise NotImplementedError
 
@@ -78,7 +78,7 @@ def generate_heald_exp1b() -> Dict[str, np.ndarray]:
                             for phase_and_num_trial in phases_and_num_trials])
     observations = np.zeros(shape=(total_num_trials, 2))
     observations_times = 1. + np.arange(total_num_trials)
-    cluster_assignments = np.zeros(observations)
+    cluster_assignments = np.zeros(total_num_trials, dtype=np.int)
 
     phase_start_trial_idx = 0
     for phase, phase_num_trials in phases_and_num_trials:
@@ -87,13 +87,13 @@ def generate_heald_exp1b() -> Dict[str, np.ndarray]:
             pass
         elif phase == 'exposure':
             observations[phase_start_trial_idx:phase_end_trial_idx, 0] = 1.
-            cluster_assignments[phase_start_trial_idx:phase_end_trial_idx] = 1.
-        elif phase == 'counter_exposure':
+            cluster_assignments[phase_start_trial_idx:phase_end_trial_idx] = 1
+        elif phase == 'counter-exposure':
             observations[phase_start_trial_idx:phase_end_trial_idx, 1] = 1.
-            cluster_assignments[phase_start_trial_idx:phase_end_trial_idx] = 2.
+            cluster_assignments[phase_start_trial_idx:phase_end_trial_idx] = 2
         elif phase == 'channel':
             observations[phase_start_trial_idx:phase_end_trial_idx, :] = 1.
-            cluster_assignments[phase_start_trial_idx:phase_end_trial_idx] = 3.
+            cluster_assignments[phase_start_trial_idx:phase_end_trial_idx] = 3
         else:
             raise NotImplementedError
 

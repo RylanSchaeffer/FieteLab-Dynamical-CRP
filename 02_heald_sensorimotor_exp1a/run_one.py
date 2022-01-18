@@ -32,7 +32,7 @@ config_defaults = {
     'repeat_idx': 0,
 }
 
-wandb.init(project='rncrp-mixture-of-gaussians',
+wandb.init(project='rncrp-heald-sensorimotor-exp1a',
            config=config_defaults)
 config = wandb.config
 
@@ -41,7 +41,7 @@ for key, value in config.items():
     print(key, ' : ', value)
 
 # determine paths
-exp_dir = '01_mixture_of_gaussians'
+exp_dir = '02_heald_sensorimotor_exp1a'
 results_dir_path = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir_path, exist_ok=True)
 inference_alg_results_path = os.path.join(results_dir_path,
@@ -50,23 +50,14 @@ inference_alg_results_path = os.path.join(results_dir_path,
 # set seeds
 rncrp.helpers.run.set_seed(config['repeat_idx'])
 
-mixture_model_results = rncrp.data.synthetic.sample_mixture_model(
-    num_obs=config['n_samples'],
-    obs_dim=config['n_features'],
-    mixing_prior_str='rncrp',
-    mixing_distribution_params={'alpha': config['alpha'],
-                                'beta': config['beta'],
-                                'dynamics_str': config['dynamics_str']},
-    component_prior_str='gaussian',
-    component_prior_params={'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor'],
-                            'likelihood_cov_prefactor': config['likelihood_cov_prefactor']})
+heald_exp_1a_dict = rncrp.data.synthetic.generate_heald_exp1a()
 
 gen_model_params = {
     'mixing_params': {
         'alpha': config['alpha'],
         'beta': config['beta'],
         'dynamics_str': config['dynamics_str'],
-        'dynamics_params': mixture_model_results['dynamics_params']
+        'dynamics_params': {'c': 1.}
     },
     'feature_prior_params': {
         'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor']
@@ -79,14 +70,14 @@ gen_model_params = {
 
 inference_alg_results = rncrp.helpers.run.run_inference_alg(
     inference_alg_str=config['inference_alg_str'],
-    observations=mixture_model_results['observations'],
-    observations_times=mixture_model_results['observations_times'],
+    observations=heald_exp_1a_dict['observations'],
+    observations_times=heald_exp_1a_dict['observations_times'],
     gen_model_params=gen_model_params,
 )
 
 scores, map_cluster_assignments = rncrp.metrics.compute_predicted_clusters_scores(
     cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
-    true_cluster_assignments=mixture_model_results['cluster_assignments'],
+    true_cluster_assignments=heald_exp_1a_dict['cluster_assignments'],
 )
 
 inference_alg_results.update(scores)
@@ -102,12 +93,4 @@ data_to_store = dict(
 joblib.dump(data_to_store,
             filename=inference_alg_results_path)
 
-# rncrp.plot.plot_inference_results(
-#     sampled_mog_data=sampled_mog_data,
-#     inference_results=stored_data['inference_results'],
-#     inference_alg_str=stored_data['inference_alg_str'],
-#     inference_alg_param=stored_data['inference_alg_params'],
-#     plot_dir=inference_results_dir)
-
-
-print('Finished run.')
+print('Finished.')
