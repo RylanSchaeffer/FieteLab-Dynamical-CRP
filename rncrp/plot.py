@@ -20,11 +20,11 @@ def plot_sweep_results_all(sweep_results_df: pd.DataFrame,
     ]
 
     for plot_fn in plot_fns:
-        try:
-            plot_fn(sweep_results_df=sweep_results_df,
-                    plot_dir=plot_dir)
-        except Exception as e:
-            print(f'Exception: {e}')
+        # try:
+        plot_fn(sweep_results_df=sweep_results_df,
+                plot_dir=plot_dir)
+        # except Exception as e:
+        #     print(f'Exception: {e}')
 
         # Close all figure windows to not interfere with next plots
         plt.close('all')
@@ -68,7 +68,7 @@ def plot_num_clusters_by_alpha_colored_by_alg(
     plt.legend()
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir,
-                             f'num_clusters_by_max_dist.png'),
+                             f'num_clusters_by_alpha.png'),
                 bbox_inches='tight',
                 dpi=300)
     # plt.show()
@@ -87,7 +87,7 @@ def plot_runtime_by_alpha_colored_by_alg(
     plt.legend()
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir,
-                             f'runtime_by_max_dist.png'),
+                             f'runtime_by_alpha.png'),
                 bbox_inches='tight',
                 dpi=300)
     # plt.show()
@@ -136,7 +136,7 @@ def plot_scores_by_alpha_colored_by_alg(
         # plt.ylim(0., 1.05)
         plt.tight_layout()
         plt.savefig(os.path.join(plot_dir,
-                                 f'comparison_score={score_column}_by_max_dist.png'),
+                                 f'comparison_score={score_column}_by_alpha.png'),
                     bbox_inches='tight',
                     dpi=300)
         # plt.show()

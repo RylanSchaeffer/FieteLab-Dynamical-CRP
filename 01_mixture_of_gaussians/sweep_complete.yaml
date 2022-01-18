@@ -10,6 +10,7 @@ parameters:
         'VI-GMM',
         'DP-Means (Offline)',
         'DP-Means (Online)',
+        'RN-CRP',
     ]
   dynamics_str:
     values: [
@@ -26,18 +27,16 @@ parameters:
   dynamics_omega:
     values: [ 1. ]
   alpha:
-    values: [ 0.1, 0.5,
-              1., 2.5, 5., 7.5,
-              10., 25., 50., 75.,]
+    values: [ 0.5, 1., 2.5, 5., 7.5, 10., 15.,]
   n_samples:
     values: [1000]
   n_features:
-    values: [3, 10]
+    values: [3, 10, 15]
   n_clusters:
-    values: [5, 25, 40]
+    values: [5, 15, 25]
   centroids_prior_cov_prefactor:
-    values: [5., 10.]
+    values: [5., 10., 50.]
   likelihood_cov_prefactor:
-    values: [1., 5., 10., 50.]
+    values: [1., 5., 10., 20.]
   repeat_idx:
     values: [0]
