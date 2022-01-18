@@ -7,6 +7,9 @@ metric:
 parameters:
   inference_alg_str:
     values: [
+        'VI-GMM',
+        'DP-Means (Offline)',
+        'DP-Means (Online)',
         'RN-CRP',
     ]
   dynamics_str:
@@ -24,8 +27,7 @@ parameters:
   dynamics_omega:
     values: [ 1. ]
   alpha:
-    values: [ 0.1,
-              1.,
+    values: [ 4.,
               10.,]
   n_samples:
     values: [1000]

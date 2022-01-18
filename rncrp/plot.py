@@ -13,11 +13,7 @@ def plot_sweep_results_all(sweep_results_df: pd.DataFrame,
     os.makedirs(plot_dir, exist_ok=True)
 
     plot_fns = [
-        # plot_loss_by_cov_prefactor_ratio_colored_by_alg,
-        # plot_loss_by_alpha_colored_by_initialization,
-        # plot_loss_by_alpha_and_cov_prefactor_ratio_split_by_alg,
-        # plot_num_iters_by_alpha_colored_by_alg,
-        # plot_num_clusters_by_alpha_colored_by_alg,
+        plot_num_clusters_by_alpha_colored_by_alg,
         plot_runtime_by_alpha_colored_by_alg,
         plot_scores_by_cov_prefactor_ratio_colored_by_alg,
         plot_scores_by_alpha_colored_by_alg,
@@ -34,115 +30,10 @@ def plot_sweep_results_all(sweep_results_df: pd.DataFrame,
         plt.close('all')
 
 
-def plot_loss_by_cov_prefactor_ratio_colored_by_alg(
-        sweep_results_df: pd.DataFrame,
-        plot_dir: str):
-    sns.lineplot(data=sweep_results_df,
-                 x='cov_prefactor_ratio',
-                 y='Loss',
-                 hue='inference_alg_str')
-    plt.xscale('log')
-    plt.yscale('log')
-    plt.xlabel(r'$\rho / \sigma$')
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(os.path.join(plot_dir,
-                             f'loss_by_cov_prefactor_ratio.png'),
-                bbox_inches='tight',
-                dpi=300)
-    # plt.show()
-    plt.close()
-
-
-def plot_loss_by_alpha_colored_by_initialization(
-        sweep_results_df: pd.DataFrame,
-        plot_dir: str):
-    sns.lineplot(data=sweep_results_df,
-                 x='alpha',
-                 y='Loss',
-                 hue='inference_alg_str')
-    plt.xscale('log')
-    plt.yscale('log')
-    plt.xlabel(r'$\lambda$')
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(os.path.join(plot_dir,
-                             f'loss_by_max_dist.png'),
-                bbox_inches='tight',
-                dpi=300)
-    # plt.show()
-    plt.close()
-
-
-def plot_loss_by_alpha_and_cov_prefactor_ratio_split_by_alg(
-        sweep_results_df: pd.DataFrame,
-        plot_dir: str):
-    """
-    Plots two side-by-side heatmaps of loss (color) by max distance (x) and
-    covariance prefactor ratio (y).
-    """
-
-    # def draw_heatmap(*args, **kwargs):
-    #     data = kwargs.pop('data')
-    #     d = data.pivot(index=args[1], columns=args[0], values=args[2])
-    #     sns.heatmap(d, **kwargs)
-    #
-    # fg = sns.FacetGrid(sweep_results_df, col='ini')
-    # fg.map_dataframe(draw_heatmap, 'label1', 'label2', 'value', cbar=False)
-    #
-    # # Make heatmaps square, not rectangular.
-    # # See https://stackoverflow.com/questions/41471238/how-to-make-heatmap-square-in-seaborn-facetgrid
-    # # get figure background color
-    # facecolor = plt.gcf().get_facecolor()
-    # for ax in fg.axes.flat:
-    #     # set aspect of all axis
-    #     ax.set_aspect('equal', 'box-forced')
-    #     # set background color of axis instance
-    #     ax.set_axis_bgcolor(facecolor)
-    # plt.show()
-
-    fig, axes = plt.subplots(
-        nrows=1,
-        ncols=2,
-        figsize=(16, 8))
-
-    min_loss = sweep_results_df['Loss'].min()
-    max_loss = sweep_results_df['Loss'].max()
-
-    for ax_idx, (inference_alg_str, sweep_results_subset_df) in enumerate(
-            sweep_results_df.groupby('inference_alg_str')):
-        sweep_results_subset_df = sweep_results_subset_df[
-            ['alpha', 'cov_prefactor_ratio', 'Loss']]
-        agg_pivot_table = sweep_results_subset_df.pivot_table(
-            index='cov_prefactor_ratio',  # y
-            columns='alpha',  # x
-            values='Loss',  # z
-            aggfunc=np.mean,
-        )
-
-        axes[ax_idx].set_title(f'{inference_alg_str} Loss')
-        sns.heatmap(data=agg_pivot_table,
-                    # mask=~np.isnan(agg_pivot_table),
-                    ax=axes[ax_idx],
-                    vmin=min_loss,
-                    vmax=max_loss,
-                    square=True,
-                    norm=LogNorm())
-        axes[ax_idx].set_xlabel(r'$\lambda$')
-        axes[ax_idx].set_ylabel(r'$\rho / \sigma$')
-
-    plt.tight_layout()
-    plt.savefig(os.path.join(plot_dir,
-                             f'loss_by_alpha_and_cov_prefactor_ratio_split_by_initialization.png'),
-                bbox_inches='tight',
-                dpi=300)
-    # plt.show()
-    plt.close()
-
-
 def plot_num_clusters_by_alpha_colored_by_alg(
         sweep_results_df: pd.DataFrame,
         plot_dir: str):
+
     sns.lineplot(data=sweep_results_df,
                  x='alpha',
                  y='Num Inferred Clusters',
@@ -173,31 +64,11 @@ def plot_num_clusters_by_alpha_colored_by_alg(
 
     plt.xscale('log')
     plt.yscale('log')
-    plt.xlabel(r'$\lambda$')
+    plt.xlabel(r'$\alpha$')
     plt.legend()
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir,
                              f'num_clusters_by_max_dist.png'),
-                bbox_inches='tight',
-                dpi=300)
-    # plt.show()
-    plt.close()
-
-
-def plot_num_iters_by_alpha_colored_by_alg(
-        sweep_results_df: pd.DataFrame,
-        plot_dir: str):
-    sns.lineplot(data=sweep_results_df,
-                 x='alpha',
-                 y='Num Iter Till Convergence',
-                 hue='inference_alg_str')
-    plt.xscale('log')
-    plt.yscale('log')
-    plt.xlabel(r'$\lambda$')
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(os.path.join(plot_dir,
-                             f'num_iters_by_max_dist.png'),
                 bbox_inches='tight',
                 dpi=300)
     # plt.show()
@@ -212,7 +83,7 @@ def plot_runtime_by_alpha_colored_by_alg(
                  y='Runtime',
                  hue='inference_alg_str')
     plt.xscale('log')
-    plt.xlabel(r'$\lambda$')
+    plt.xlabel(r'$\alpha$')
     plt.legend()
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir,
@@ -260,7 +131,7 @@ def plot_scores_by_alpha_colored_by_alg(
                      y=score_column,
                      hue='inference_alg_str')
         plt.xscale('log')
-        plt.xlabel(r'$\lambda$')
+        plt.xlabel(r'$\alpha$')
         plt.legend()
         # plt.ylim(0., 1.05)
         plt.tight_layout()

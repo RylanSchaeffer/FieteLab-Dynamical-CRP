@@ -237,10 +237,13 @@ class RecursiveNonstationaryCRP(BaseModel):
                 # time_5 = time.time()
                 # print(f'Time5 - Time 4: {time_5 - time_4}')
 
+        num_inferred_clusters = torch.argmax(num_clusters_posteriors).item()
+
         self.fit_results = dict(
             cluster_assignment_priors=cluster_assignment_priors.numpy(),
             cluster_assignment_posteriors=variational_params['assignments']['probs'].detach().numpy(),
             num_clusters_posteriors=num_clusters_posteriors.numpy(),
+            num_inferred_clusters=num_inferred_clusters,
             parameters={k: v.detach().numpy() for k, v in variational_params['means'].items()},
         )
 
@@ -250,7 +253,7 @@ class RecursiveNonstationaryCRP(BaseModel):
         """
         Returns array of shape (num features, feature dimension)
         """
-        raise NotImplementedError
+        return self.fit_results['parameters']
 
     def initialize_cluster_params_multivariate_normal(self,
                                                       torch_observation: np.ndarray,

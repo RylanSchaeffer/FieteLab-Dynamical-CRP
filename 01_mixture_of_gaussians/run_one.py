@@ -25,14 +25,14 @@ import rncrp.metrics
 
 config_defaults = {
     # 'inference_alg_str': 'VI-GMM',
-    # 'inference_alg_str': 'DP-Means (Offline)',
-    'inference_alg_str': 'RN-CRP',
+    'inference_alg_str': 'DP-Means (Offline)',
+    # 'inference_alg_str': 'RN-CRP',
     'dynamics_str': 'hyperbolic',
     'dynamics_a': 1.,
     'dynamics_b': 1.,
     'dynamics_c': 1.,
     'dynamics_omega': np.pi / 2.,
-    'n_samples': 10,
+    'n_samples': 130,
     'n_features': 10,
     'n_clusters': 40,
     'alpha': 0.1,

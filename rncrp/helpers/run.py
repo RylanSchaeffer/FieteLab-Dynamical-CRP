@@ -86,7 +86,7 @@ def run_inference_alg(inference_alg_str: str,
         if inference_alg_kwargs is None:
             inference_alg_kwargs = dict()
         if inference_alg_str.endswith('(Offline)'):
-            inference_alg_kwargs['max_iter'] = 8  # same as Kulis and Jordan
+            inference_alg_kwargs['max_iter'] = 8  # Matching by Kulis and Jordan.
         elif inference_alg_str.endswith('(Online)'):
             inference_alg_kwargs['max_iter'] = 1
         else:
@@ -98,6 +98,7 @@ def run_inference_alg(inference_alg_str: str,
         inference_alg = DPMeans(
             gen_model_params=gen_model_params,
             **inference_alg_kwargs)
+
     elif inference_alg_str == 'VI-GMM':
         if inference_alg_kwargs is None:
             inference_alg_kwargs = dict()
@@ -118,6 +119,8 @@ def run_inference_alg(inference_alg_str: str,
     stop_time = timer()
     runtime = stop_time - start_time
     inference_alg_results['Runtime'] = runtime
+    wandb.log({'Runtime': runtime,
+               'Num Inferred Clusters': inference_alg_results['num_inferred_clusters']}, step=0)
 
     # Add inference alg object to results, for later generating predictions
     inference_alg_results['inference_alg'] = inference_alg

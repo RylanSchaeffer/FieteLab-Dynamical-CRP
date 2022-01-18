@@ -53,9 +53,20 @@ class VariationalInferenceGMM(BaseModel):
         params = dict(means=var_dp_gmm.means_,
                       covs=var_dp_gmm.covariances_)
 
+        total_mass_per_cluster = np.sum(cluster_assignment_posteriors, axis=0)
+        num_inferred_clusters = np.sum(total_mass_per_cluster > 1.)
+
         self.fit_results = dict(
             cluster_assignment_posteriors=cluster_assignment_posteriors,
             cluster_assignment_posteriors_running_sum=cluster_assignment_posteriors_running_sum,
+            num_inferred_clusters=num_inferred_clusters,
             parameters=params,
         )
+
         return self.fit_results
+
+    def features_after_last_obs(self) -> np.ndarray:
+        """
+        Returns array of shape (num features, feature dimension)
+        """
+        return self.fit_results['parameters']
