@@ -1,4 +1,4 @@
-# Streaming Inference for Nonstationary Mixture Models
+# Streaming Inference for Nonstationary Infinite Mixture Models
 
 ### Authors: Rylan Schaeffer, Gabrielle Kaili-May Liu, Ila Rani Fiete
 
