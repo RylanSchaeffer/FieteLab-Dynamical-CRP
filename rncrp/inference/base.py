@@ -40,8 +40,8 @@ class BaseModel(abc.ABC):
     #     pass
 
     @abc.abstractmethod
-    def features_after_last_obs(self) -> np.ndarray:
+    def centroids_after_last_obs(self) -> np.ndarray:
         """
-        Returns array of shape (num features, feature dimension)
+        Returns array of shape (num centroids, centroid dimension)
         """
         pass

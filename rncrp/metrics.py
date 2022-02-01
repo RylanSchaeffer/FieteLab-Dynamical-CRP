@@ -1,6 +1,8 @@
 import numpy as np
+import sklearn.metrics
 from sklearn.metrics import adjusted_rand_score, rand_score, adjusted_mutual_info_score, \
     normalized_mutual_info_score
+from sklearn.metrics.pairwise import euclidean_distances
 from typing import Dict, Tuple
 
 
@@ -39,3 +41,26 @@ def compute_predicted_clusters_scores(cluster_assignment_posteriors: np.ndarray,
     }
 
     return scores_results, pred_cluster_labels
+
+
+def compute_sum_of_squared_distances_to_nearest_center(X: np.ndarray,
+                                                       centroids: np.ndarray,
+                                                       ) -> float:
+    """
+    Args:
+        X: (num data, obs dim)
+        centroids: (num centroids, obs dim)
+    """
+
+    # Shape: (num centroids, num data)
+    squared_distances_to_centers = euclidean_distances(
+        X=centroids,
+        Y=X,
+        squared=True)
+    # Shape: (num data,)
+    squared_distances_to_nearest_center = np.min(
+        squared_distances_to_centers,
+        axis=0)
+    sum_of_squared_distances_to_nearest_center = np.sum(squared_distances_to_nearest_center)
+
+    return sum_of_squared_distances_to_nearest_center

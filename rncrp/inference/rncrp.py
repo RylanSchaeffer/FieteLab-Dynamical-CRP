@@ -239,11 +239,11 @@ class RecursiveNonstationaryCRP(BaseModel):
 
         return self.fit_results
 
-    def features_after_last_obs(self) -> np.ndarray:
+    def centroids_after_last_obs(self) -> np.ndarray:
         """
         Returns array of shape (num features, feature dimension)
         """
-        return self.fit_results['parameters']
+        return self.fit_results['parameters']['means'][0]
 
     def initialize_cluster_params_multivariate_normal(self,
                                                       torch_observation: np.ndarray,

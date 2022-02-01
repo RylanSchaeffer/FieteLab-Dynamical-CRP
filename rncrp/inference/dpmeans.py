@@ -180,11 +180,11 @@ class DPMeans(BaseModel):
 
         return self.fit_results
 
-    def features_after_last_obs(self) -> np.ndarray:
+    def centroids_after_last_obs(self) -> np.ndarray:
         """
         Returns array of shape (num features, feature dimension)
         """
-        return self.fit_results['parameters']
+        return self.fit_results['parameters']['means']
 
     # def score(self, X, y=None, sample_weight=None):
     #     """Opposite of the value of X on the K-means objective.

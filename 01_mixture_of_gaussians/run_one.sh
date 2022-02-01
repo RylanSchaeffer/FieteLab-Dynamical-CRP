@@ -19,4 +19,4 @@ source rncrp_venv/bin/activate
 # https://stackoverflow.com/questions/5750450/how-can-i-print-each-command-before-executing
 set -x
 
-wandb agent rylan/rncrp-mixture-of-gaussians/${id}
+wandb agent rylan/dcrp-mixture-of-gaussians/${id}
