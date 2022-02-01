@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -p use-everything
 #SBATCH -n 2                    # two cores
-#SBATCH --mem=16G               # RAM
+#SBATCH --mem=8G                # RAM
 #SBATCH --time=99:99:99         # total run time limit (HH:MM:SS)
 #SBATCH --mail-user=rylansch
 #SBATCH --mail-type=FAIL

@@ -3,7 +3,7 @@ import os
 import pandas as pd
 
 from rncrp.helpers.run import download_wandb_project_runs_results
-from rncrp.plot import plot_sweep_results_all
+import plot_mixture_of_gaussians
 
 exp_dir = '01_mixture_of_gaussians'
 results_dir = os.path.join(exp_dir, 'results')
@@ -24,11 +24,8 @@ sweep_results_df['cov_prefactor_ratio'] = sweep_results_df['centroids_prior_cov_
 
 sweep_results_df.to_csv(sweep_results_df_path, index=False)
 
-
-for dynamics_str, sweep_subset_results_df in sweep_results_df.groupby('dynamics_str'):
-    sweep_dynamics_str_dir = os.path.join(sweep_dir, dynamics_str)
-    os.makedirs(sweep_dynamics_str_dir, exist_ok=True)
-    plot_sweep_results_all(sweep_results_df=sweep_subset_results_df,
-                           plot_dir=sweep_dynamics_str_dir)
+plot_mixture_of_gaussians.plot_analyze_all_inf_algs_results(
+    all_inf_algs_results_df=sweep_results_df,
+    plot_dir=sweep_dir)
 
 print(f'Finished 01_mixture_of_gaussians/plot_sweep.py with sweep={sweep_name}.')

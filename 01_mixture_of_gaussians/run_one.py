@@ -1,6 +1,6 @@
 """
 Perform inference in a synthetic mixture of Gaussians for the specified inference
-algorithm and dynamics string.
+algorithm and model parameters.
 
 Example usage:
 
