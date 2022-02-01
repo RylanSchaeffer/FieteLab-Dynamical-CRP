@@ -30,14 +30,18 @@ def create_logger(run_dir):
 
 
 def download_wandb_project_runs_results(wandb_project_path: str,
-                                        sweep_name: str = None,
+                                        sweep_id: str = None,
                                         ) -> pd.DataFrame:
 
     # Download sweep results
     api = wandb.Api()
 
     # Project is specified by <entity/project-name>
-    runs = api.runs(path=wandb_project_path)
+    if sweep_id is None:
+        runs = api.runs(path=wandb_project_path)
+    else:
+        runs = api.runs(path=wandb_project_path,
+                        filters={"Sweep": sweep_id})
 
     sweep_results_list = []
     for run in runs:
@@ -60,11 +64,14 @@ def download_wandb_project_runs_results(wandb_project_path: str,
     sweep_results_df = pd.DataFrame(sweep_results_list)
 
     # Keep only finished runs
-    sweep_results_df = sweep_results_df[sweep_results_df['State'] == 'finished']
+    finished_runs = sweep_results_df['State'] == 'finished'
+    print(f"% of successfully finished runs: {finished_runs.mean()}")
+    sweep_results_df = sweep_results_df[finished_runs]
 
-    if sweep_name is not None:
-        sweep_results_df = sweep_results_df[sweep_results_df['Sweep'] == sweep_name]
+    if sweep_id is not None:
+        sweep_results_df = sweep_results_df[sweep_results_df['Sweep'] == sweep_id]
 
+    # Ensure we aren't working iwth a slice.
     sweep_results_df = sweep_results_df.copy()
 
     return sweep_results_df

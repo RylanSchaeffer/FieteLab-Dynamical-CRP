@@ -23,8 +23,8 @@ import rncrp.metrics
 
 config_defaults = {
     # 'inference_alg_str': 'VI-GMM',
-    'inference_alg_str': 'DP-Means (Offline)',
-    # 'inference_alg_str': 'RN-CRP',
+    # 'inference_alg_str': 'DP-Means (Offline)',
+    'inference_alg_str': 'RN-CRP',
     'dynamics_str': 'hyperbolic',
     'dynamics_a': 1.,
     'dynamics_b': 1.,
@@ -40,7 +40,7 @@ config_defaults = {
     'repeat_idx': 0,
 }
 
-wandb.init(project='rncrp-mixture-of-gaussians',
+wandb.init(project='dcrp-mixture-of-gaussians',
            config=config_defaults)
 config = wandb.config
 
@@ -101,6 +101,11 @@ inference_alg_results.update(scores)
 inference_alg_results['map_cluster_assignments'] = map_cluster_assignments
 
 wandb.log(scores, step=0)
+
+# Additionally log the (posterior over the) number of clusters per obs
+if config['inference_alg_str'] == 'RN-CRP':
+    wandb.log({'num_clusters_posteriors': inference_alg_results['num_clusters_posteriors']},
+              step=0)
 
 data_to_store = dict(
     config=dict(config),  # Need to convert WandB config to proper dict

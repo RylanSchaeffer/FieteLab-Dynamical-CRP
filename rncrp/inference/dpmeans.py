@@ -165,7 +165,7 @@ class DPMeans(BaseModel):
         nonempty_clusters = cluster_ids[num_assigned_points > 0]
         centers = centers[nonempty_clusters]
 
-        params = dict(means=centers)
+        parameters = dict(means=centers)
 
         cluster_assignment_posteriors = np.eye(num_obs)[cluster_assignments]
         cluster_assignment_posteriors_running_sum = np.cumsum(cluster_assignment_posteriors,
@@ -175,7 +175,7 @@ class DPMeans(BaseModel):
             cluster_assignment_posteriors=cluster_assignment_posteriors,
             cluster_assignment_posteriors_running_sum=cluster_assignment_posteriors_running_sum,
             num_inferred_clusters=len(nonempty_clusters),
-            parameters=params,
+            parameters=parameters,
         )
 
         return self.fit_results
