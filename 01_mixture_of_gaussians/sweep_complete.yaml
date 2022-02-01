@@ -1,5 +1,5 @@
 program: 01_mixture_of_gaussians/run_one.py
-project: rncrp-mixture-of-gaussians
+project: dcrp-mixture-of-gaussians
 method: grid
 metric:
   goal: minimize

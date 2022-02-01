@@ -9,14 +9,14 @@ exp_dir = '01_mixture_of_gaussians'
 results_dir = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir, exist_ok=True)
 wandb_sweep_path = "rylan/rncrp-mixture-of-gaussians"
-sweep_name = 'fsaifrzx'
+sweep_name = 'cb4ejxw4'
 sweep_dir = os.path.join(results_dir, sweep_name)
 os.makedirs(sweep_dir, exist_ok=True)
 sweep_results_df_path = os.path.join(sweep_dir, f'sweep={sweep_name}_results.csv')
 
 sweep_results_df = download_wandb_project_runs_results(
     wandb_project_path=wandb_sweep_path,
-    sweep_name=sweep_name)
+    sweep_id=sweep_name)
 
 # Compute SNR := rho / sigma
 sweep_results_df['cov_prefactor_ratio'] = sweep_results_df['centroids_prior_cov_prefactor'] \
