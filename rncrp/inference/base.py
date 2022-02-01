@@ -45,13 +45,3 @@ class BaseModel(abc.ABC):
         Returns array of shape (num features, feature dimension)
         """
         pass
-
-    # @abc.abstractmethod
-    # def features_by_obs(self) -> np.ndarray:
-    #     """
-    #     Returns array of shape (num obs, num features, feature dimension)
-    #     :return:
-    #     """
-    #     pass
-
-

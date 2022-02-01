@@ -9,15 +9,12 @@ from typing import Callable, Dict
 
 from rncrp.inference.base import BaseModel
 from rncrp.helpers.dynamics import convert_dynamics_str_to_dynamics_obj
-from rncrp.helpers.torch_helpers import assert_torch_no_nan_no_inf_is_real, convert_stddev_to_cov
+from rncrp.helpers.torch_helpers import assert_torch_no_nan_no_inf_is_real, convert_std_devs_to_covs
 
 
 class RecursiveNonstationaryCRP(BaseModel):
     """
-    Variational Inference for Dirichlet Process Gaussian Mixture Model, as
-    proposed by Blei and Jordan (2006).
 
-    Wrapper around scikit-learn's implementation.
     """
 
     def __init__(self,
@@ -75,12 +72,10 @@ class RecursiveNonstationaryCRP(BaseModel):
             optimize_cluster_assignments_fn = self.optimize_cluster_assignments_multivariate_normal
             optimize_cluster_params_fn = self.optimize_cluster_params_multivariate_normal
 
-            var_new_cluster = self.gen_model_params['feature_prior_params']['centroids_prior_cov_prefactor'] \
-                              + self.gen_model_params['likelihood_params']['likelihood_cov_prefactor']
-            stddevs = torch.stack([
-                np.sqrt(var_new_cluster) * torch.eye(obs_dim).float()
-                for _ in range((num_obs + 1) * max_num_clusters)])
-            stddevs = stddevs.view(num_obs + 1, max_num_clusters, obs_dim, obs_dim).float()
+            A_prefactor = np.sqrt(self.gen_model_params['feature_prior_params']['centroids_prior_cov_prefactor']
+                                  + self.gen_model_params['likelihood_params']['likelihood_cov_prefactor'])
+            A_std_devs = (A_prefactor * torch.eye(obs_dim).float()[None, None, :, :]).repeat(
+                1, max_num_clusters, 1, 1)
 
             variational_params = dict(
                 assignments=dict(
@@ -90,10 +85,10 @@ class RecursiveNonstationaryCRP(BaseModel):
                         dtype=torch.float32)),
                 means=dict(
                     means=torch.full(
-                        size=(num_obs, max_num_clusters, obs_dim),
+                        size=(1, max_num_clusters, obs_dim),
                         fill_value=0.,
                         dtype=torch.float32),
-                    stddevs=stddevs))
+                    std_devs=A_std_devs))
 
         elif self.likelihood_params['distribution'] == 'dirichlet_multinomial':
 
@@ -145,7 +140,7 @@ class RecursiveNonstationaryCRP(BaseModel):
                 cluster_assignment_prior[1:obs_idx + 1] += self.mixing_params['alpha'] * \
                                                            num_clusters_posteriors[obs_idx - 1, :obs_idx].clone()
 
-                # Step 1(iii): Renormalize.
+                # Step 1(iii): Normalize.
                 cluster_assignment_prior /= torch.sum(cluster_assignment_prior)
                 assert_torch_no_nan_no_inf_is_real(cluster_assignment_prior)
 
@@ -155,11 +150,12 @@ class RecursiveNonstationaryCRP(BaseModel):
                 negative_indices = cluster_assignment_prior < 0.
                 if torch.any(negative_indices):
                     print(f'Smallest value: {torch.min(cluster_assignment_prior)}')
-                    # # If the values are sufficiently close to 0, replace with 0.
-                    # if torch.all(torch.isclose(cluster_assignment_prior[negative_indices], torch.tensor(0.))):
-                    #     cluster_assignment_prior[negative_indices] = 0.
-                    # assert torch.all(cluster_assignment_prior >= 0.)
-                    cluster_assignment_prior[negative_indices] = 0.
+                    # If the values are sufficiently close to 0, replace with 0.
+                    if torch.all(torch.isclose(cluster_assignment_prior[negative_indices],
+                                               torch.tensor(0.),
+                                               atol=1e-4)):
+                        cluster_assignment_prior[negative_indices] = 0.
+                    assert torch.all(cluster_assignment_prior >= 0.)
 
                     # Record latent prior.
                 cluster_assignment_priors[obs_idx, :len(cluster_assignment_prior)] = cluster_assignment_prior
@@ -168,16 +164,10 @@ class RecursiveNonstationaryCRP(BaseModel):
                 variational_params['assignments']['probs'][obs_idx, :] = cluster_assignment_prior
                 assert_torch_no_nan_no_inf_is_real(variational_params['assignments']['probs'])
 
-                # Step 2(ii): Initialize variational parameters using previous time step's parameters.
-                for param_name, param_tensor in variational_params['means'].items():
-                    param_tensor.data[obs_idx, :] = param_tensor.data[obs_idx - 1, :]
-
-                # Step 2(iii): Create parameter for potential new cluster.
+                # Step 2(ii): Create parameter for potential new cluster.
                 initialize_cluster_params_fn(torch_observation=torch_observation,
                                              obs_idx=obs_idx,
                                              variational_params=variational_params)
-                assert_torch_no_nan_no_inf_is_real(variational_params['means']['means'])
-                assert_torch_no_nan_no_inf_is_real(variational_params['means']['stddevs'])
 
                 # Step 3: Perform coordinate ascent on variational parameters.
                 approx_lower_bounds = []
@@ -218,11 +208,11 @@ class RecursiveNonstationaryCRP(BaseModel):
                     cluster_assignment_posterior[:obs_idx + 1],
                     dim=0)
                 one_minus_cum_table_assignment_posterior = 1. - cum_table_assignment_posterior
-                prev_table_posterior = num_clusters_posteriors[obs_idx - 1, :obs_idx]
-                num_clusters_posteriors[obs_idx, :obs_idx] += torch.multiply(
+                prev_table_posterior = num_clusters_posteriors[0, :obs_idx]
+                num_clusters_posteriors[0, :obs_idx] += torch.multiply(
                     cum_table_assignment_posterior[:-1],
                     prev_table_posterior)
-                num_clusters_posteriors[obs_idx, 1:obs_idx + 1] += torch.multiply(
+                num_clusters_posteriors[0, 1:obs_idx + 1] += torch.multiply(
                     one_minus_cum_table_assignment_posterior[:-1],
                     prev_table_posterior)
 
@@ -259,10 +249,8 @@ class RecursiveNonstationaryCRP(BaseModel):
                                                       torch_observation: np.ndarray,
                                                       obs_idx: int,
                                                       variational_params: Dict[str, np.ndarray]):
-
-        variational_params['means']['means'].data[obs_idx, obs_idx, :] = torch_observation
-        # variational_params['means']['stddevs'].data[obs_idx, obs_idx, :, :] = \
-        #     np.sqrt(self.gen_model_params['feature_prior_params']['centroids_prior_cov_scaling']) * torch.eye(torch_observation.shape[0])
+        variational_params['means']['means'].data[0, obs_idx, :] = torch_observation
+        assert_torch_no_nan_no_inf_is_real(variational_params['means']['means'])
 
     def initialize_cluster_params_dirichlet_multinomial(self,
                                                         torch_observation: torch.Tensor,
@@ -270,7 +258,7 @@ class RecursiveNonstationaryCRP(BaseModel):
                                                         variational_params: Dict[str, torch.Tensor],
                                                         epsilon: float = 10.):
         assert_torch_no_nan_no_inf_is_real(torch_observation)
-        variational_params['concentrations'][obs_idx, obs_idx, :] = torch_observation + epsilon
+        variational_params['concentrations'][0, obs_idx, :] = torch_observation + epsilon
 
     # def compute_likelihood_dirichlet_multinomial(self,
     #                                              torch_observation: torch.Tensor,
@@ -311,8 +299,8 @@ class RecursiveNonstationaryCRP(BaseModel):
                                                          ) -> None:
 
         # TODO: replace sigma obs with likelihood params
-        means_covs = convert_stddev_to_cov(
-            stddevs=variational_params['means']['stddevs'][obs_idx, :obs_idx + 1])
+        means_covs = convert_std_devs_to_covs(
+            std_devs=variational_params['means']['std_devs'][0, :obs_idx + 1])
 
         # Term 1: log q(c_n = l | o_{<n})
         term_one = torch.log(cluster_assignment_prior[:obs_idx + 1])
@@ -320,7 +308,7 @@ class RecursiveNonstationaryCRP(BaseModel):
         # Term 2: mu_{nk}^T o_n / sigma_obs^2
         term_two = torch.einsum(
             'kd,d->k',
-            variational_params['means']['means'][obs_idx, :obs_idx + 1, :],
+            variational_params['means']['means'][0, :obs_idx + 1, :],
             torch_observation) / sigma_obs_squared
         assert_torch_no_nan_no_inf_is_real(term_two)
 
@@ -329,8 +317,8 @@ class RecursiveNonstationaryCRP(BaseModel):
             'kii->k',
             torch.add(means_covs,
                       torch.einsum('ki,kj->kij',
-                                   variational_params['means']['means'][obs_idx, :obs_idx + 1, :],
-                                   variational_params['means']['means'][obs_idx, :obs_idx + 1, :])))
+                                   variational_params['means']['means'][0, :obs_idx + 1, :],
+                                   variational_params['means']['means'][0, :obs_idx + 1, :])))
         term_three /= sigma_obs_squared
         assert_torch_no_nan_no_inf_is_real(term_three)
 
@@ -361,11 +349,11 @@ class RecursiveNonstationaryCRP(BaseModel):
         # TODO: replace sigma obs with likelihood params
         assert sigma_obs_squared > 0.
 
-        prev_means_means = variational_params['means']['means'][obs_idx - 1, :obs_idx + 1, :]
+        prev_means_means = variational_params['means']['means'][0, :obs_idx + 1, :].clone()
 
         # time_2_1 = time.time()
-        prev_means_covs = convert_stddev_to_cov(
-            stddevs=variational_params['means']['stddevs'][obs_idx - 1, :obs_idx + 1])
+        prev_means_covs = convert_std_devs_to_covs(
+            std_devs=variational_params['means']['std_devs'][0, :obs_idx + 1])
         prev_means_precisions = torch.linalg.inv(prev_means_covs)
         # time_2_2 = time.time()
         # print(f'Time2.2 - Time2.1: {time_2_2 - time_2_1}')
@@ -396,10 +384,10 @@ class RecursiveNonstationaryCRP(BaseModel):
 
         for mean_idx, mean_cov in enumerate(means_covs):
             mean_stddev = scipy.linalg.sqrtm(mean_cov.detach().numpy())
-            variational_params['means']['stddevs'][obs_idx, mean_idx, :] = torch.from_numpy(mean_stddev)
+            variational_params['means']['std_devs'][0, mean_idx, :] = torch.from_numpy(mean_stddev)
 
         assert_torch_no_nan_no_inf_is_real(
-            variational_params['means']['stddevs'][obs_idx, :, :])
+            variational_params['means']['std_devs'][0, :, :])
 
         # time_2_4 = time.time()
         # print(f'Time2.4 - Time2.3: {time_2_4 - time_2_3}')
@@ -427,4 +415,4 @@ class RecursiveNonstationaryCRP(BaseModel):
         # time_2_5 = time.time()
         # print(f'Time2.5 - Time2.4: {time_2_5 - time_2_4}')
         assert_torch_no_nan_no_inf_is_real(new_means_means)
-        variational_params['means']['means'][obs_idx, :obs_idx + 1, :] = new_means_means
+        variational_params['means']['means'][0, :obs_idx + 1, :] = new_means_means
