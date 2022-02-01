@@ -208,13 +208,13 @@ class RecursiveNonstationaryCRP(BaseModel):
                     cluster_assignment_posterior[:obs_idx + 1],
                     dim=0)
                 one_minus_cum_table_assignment_posterior = 1. - cum_table_assignment_posterior
-                prev_table_posterior = num_clusters_posteriors[obs_idx - 1, :obs_idx]
+                prev_num_clusters_posterior = num_clusters_posteriors[obs_idx - 1, :obs_idx]
                 num_clusters_posteriors[obs_idx, :obs_idx] += torch.multiply(
                     cum_table_assignment_posterior[:-1],
-                    prev_table_posterior)
+                    prev_num_clusters_posterior)
                 num_clusters_posteriors[obs_idx, 1:obs_idx + 1] += torch.multiply(
                     one_minus_cum_table_assignment_posterior[:-1],
-                    prev_table_posterior)
+                    prev_num_clusters_posterior)
 
                 # time_4 = time.time()
                 # print(f'Time4 - Time 3: {time_4 - time_3}')
