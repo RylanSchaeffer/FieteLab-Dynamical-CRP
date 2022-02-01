@@ -3,7 +3,7 @@ import os
 import pandas as pd
 
 from rncrp.helpers.run import download_wandb_project_runs_results
-from rncrp.plot import plot_sweep_results_all
+from rncrp.plot.plot_general import plot_sweep_results_all
 
 exp_dir = '01_mixture_of_gaussians'
 results_dir = os.path.join(exp_dir, 'results')

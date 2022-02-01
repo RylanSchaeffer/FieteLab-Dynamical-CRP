@@ -1,5 +1,5 @@
-program: 01_mixture_of_gaussians/run_one.py
-project: dcrp-mixture-of-gaussians
+program: 02_ames_housing/run_one.py
+project: dcrp-ames-housing
 method: grid
 metric:
   goal: minimize
@@ -28,15 +28,9 @@ parameters:
     values: [ 1. ]
   alpha:
     values: [ 1., 2.5, 5., 7.5, 10., 15., 20.]
-  n_samples:
-    values: [1000]
-  n_features:
-    values: [3, 10, 15]
-  n_clusters:
-    values: [5, 15, 25]
   centroids_prior_cov_prefactor:
     values: [5., 10., 50.]
   likelihood_cov_prefactor:
     values: [1., 5., 10., 20.]
   repeat_idx:
-    values: [0]
+    values: [0, 1]
