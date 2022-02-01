@@ -3,7 +3,7 @@ project: dcrp-mixture-of-gaussians
 method: grid
 metric:
   goal: minimize
-  name: Loss
+  name: training_reconstruction_error
 parameters:
   inference_alg_str:
     values: [
@@ -27,7 +27,7 @@ parameters:
   dynamics_omega:
     values: [ 1. ]
   alpha:
-    values: [ 1., 2.5, 5., 7.5, 10., 15.,]
+    values: [ 1., 2.5, 5., 7.5, 10., 15., 20.]
   n_samples:
     values: [1000]
   n_features:

@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -p use-everything
 #SBATCH -n 1                    # two cores
-#SBATCH --mem=4G                # RAM
+#SBATCH --mem=1G                # RAM
 #SBATCH --time=99:99:99         # total run time limit (HH:MM:SS)
 #SBATCH --mail-user=rylansch
 #SBATCH --mail-type=FAIL
@@ -16,6 +16,6 @@
 
 for i in {1..5}
 do
-  sbatch 01_mixture_of_gaussians/run_one.sh fsaifrzx
+  sbatch 01_mixture_of_gaussians/run_one.sh zrbjbekd
   sleep 5
 done

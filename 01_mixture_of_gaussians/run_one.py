@@ -22,15 +22,15 @@ import rncrp.helpers.run
 import rncrp.metrics
 
 config_defaults = {
-    # 'inference_alg_str': 'VI-GMM',
+    'inference_alg_str': 'VI-GMM',
     # 'inference_alg_str': 'DP-Means (Offline)',
-    'inference_alg_str': 'RN-CRP',
+    # 'inference_alg_str': 'RN-CRP',
     'dynamics_str': 'hyperbolic',
     'dynamics_a': 1.,
     'dynamics_b': 1.,
     'dynamics_c': 1.,
     'dynamics_omega': np.pi / 2.,
-    'n_samples': 130,
+    'n_samples': 27,
     'n_features': 10,
     'n_clusters': 40,
     'alpha': 0.1,
@@ -52,8 +52,10 @@ for key, value in config.items():
 exp_dir = '01_mixture_of_gaussians'
 results_dir_path = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir_path, exist_ok=True)
-inference_alg_results_path = os.path.join(results_dir_path,
-                                          f'id={wandb.run.id}.joblib')
+inf_alg_results_path = os.path.join(results_dir_path,
+                                    f'id={wandb.run.id}.joblib')
+wandb.log({'inf_alg_results_path': inf_alg_results_path},
+          step=0)
 
 # set seeds
 rncrp.helpers.run.set_seed(config['repeat_idx'])
@@ -96,16 +98,16 @@ scores, map_cluster_assignments = rncrp.metrics.compute_predicted_clusters_score
     cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
     true_cluster_assignments=mixture_model_results['cluster_assignments'],
 )
-
 inference_alg_results.update(scores)
 inference_alg_results['map_cluster_assignments'] = map_cluster_assignments
-
 wandb.log(scores, step=0)
 
-# Additionally log the (posterior over the) number of clusters per obs
-if config['inference_alg_str'] == 'RN-CRP':
-    wandb.log({'num_clusters_posteriors': inference_alg_results['num_clusters_posteriors']},
-              step=0)
+sum_sqrd_distances = rncrp.metrics.compute_sum_of_squared_distances_to_nearest_center(
+    X=mixture_model_results['observations'],
+    centroids=inference_alg_results['inference_alg'].centroids_after_last_obs())
+inference_alg_results['training_reconstruction_error'] = sum_sqrd_distances
+wandb.log({'training_reconstruction_error': sum_sqrd_distances}, step=0)
+
 
 data_to_store = dict(
     config=dict(config),  # Need to convert WandB config to proper dict
@@ -113,14 +115,6 @@ data_to_store = dict(
     scores=scores)
 
 joblib.dump(data_to_store,
-            filename=inference_alg_results_path)
-
-# rncrp.plot.plot_inference_results(
-#     sampled_mog_data=sampled_mog_data,
-#     inference_results=stored_data['inference_results'],
-#     inference_alg_str=stored_data['inference_alg_str'],
-#     inference_alg_param=stored_data['inference_alg_params'],
-#     plot_dir=inference_results_dir)
-
+            filename=inf_alg_results_path)
 
 print('Finished run.')
