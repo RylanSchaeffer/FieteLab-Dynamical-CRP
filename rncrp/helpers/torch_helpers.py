@@ -22,7 +22,7 @@ def assert_torch_no_nan_no_inf_is_real(x):
         raise ValueError('Contains imaginary values')
 
 
-def convert_stddev_to_cov(stddevs: torch.Tensor) -> torch.Tensor:
+def convert_std_devs_to_covs(std_devs: torch.Tensor) -> torch.Tensor:
     """
     Converts half-covariance M into covariance M^T M in a batched manner.
     Convert batch half-covariance to covariance.
@@ -32,25 +32,25 @@ def convert_stddev_to_cov(stddevs: torch.Tensor) -> torch.Tensor:
     """
 
     # if no batch dimension is given, add one
-    has_batch_dim = len(stddevs.shape) == 3
+    has_batch_dim = len(std_devs.shape) == 3
     if not has_batch_dim:
-        stddevs = torch.unsqueeze(stddevs, dim=0)
+        std_devs = torch.unsqueeze(std_devs, dim=0)
 
-    cov = torch.einsum(
+    covs = torch.einsum(
         'abc, abd->acd',
-        stddevs,
-        stddevs)
+        std_devs,
+        std_devs)
     # batch_size = half_cov.shape[0]
     # cov_test = torch.stack([torch.matmul(half_cov[k].T, half_cov[k])
     #                         for k in range(batch_size)])
-    # assert torch.allclose(cov, cov_test)
+    # assert torch.allclose(covs, cov_test)
 
     # if no batch dimension was originally given, remove
     if not has_batch_dim:
-        cov = torch.squeeze(cov, dim=0)
+        covs = torch.squeeze(covs, dim=0)
 
-    assert_torch_no_nan_no_inf_is_real(cov)
-    return cov
+    assert_torch_no_nan_no_inf_is_real(covs)
+    return covs
 
 
 def expected_log_bernoulli_under_bernoulli(p_prob: torch.Tensor,
