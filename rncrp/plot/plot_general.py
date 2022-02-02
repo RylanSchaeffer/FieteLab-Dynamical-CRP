@@ -10,6 +10,13 @@ plt.rcParams["font.family"] = ["Times New Roman"]
 plt.rcParams["font.size"] = 16  # was previously 22
 sns.set_style("whitegrid")
 
+algorithm_color_map = {
+    'RN-CRP': 'tab:blue',
+    'DP-Means (Offline)': 'tab:orange',
+    'DP-Means (Online)': 'tab:purple',
+    'VI-GMM': 'tab:green',
+}
+
 
 def plot_sweep_results_all(sweep_results_df: pd.DataFrame,
                            plot_dir: str = 'results'):
@@ -41,7 +48,8 @@ def plot_num_clusters_by_alpha_colored_by_alg(
     sns.lineplot(data=sweep_results_df,
                  x='alpha',
                  y='Num Inferred Clusters',
-                 hue='inference_alg_str')
+                 hue='inference_alg_str',
+                 palette=algorithm_color_map)
 
     # Can't figure out how to add another line to Seaborn, so manually adding
     # the next line of Num True Clusters.
@@ -66,7 +74,6 @@ def plot_num_clusters_by_alpha_colored_by_alg(
         linewidth=0,
         color='k')
 
-    plt.xscale('log')
     plt.yscale('log')
     plt.xlabel(r'$\alpha$')
     plt.legend()
@@ -82,11 +89,13 @@ def plot_num_clusters_by_alpha_colored_by_alg(
 def plot_runtime_by_alpha_colored_by_alg(
         sweep_results_df: pd.DataFrame,
         plot_dir: str):
+
     sns.lineplot(data=sweep_results_df,
                  x='alpha',
                  y='Runtime',
-                 hue='inference_alg_str')
-    plt.xscale('log')
+                 hue='inference_alg_str',
+                 palette=algorithm_color_map)
+    plt.yscale('log')
     plt.xlabel(r'$\alpha$')
     plt.legend()
     plt.tight_layout()
@@ -109,7 +118,8 @@ def plot_scores_by_cov_prefactor_ratio_colored_by_alg(
         sns.lineplot(data=sweep_results_df,
                      x='cov_prefactor_ratio',
                      y=score_column,
-                     hue='inference_alg_str')
+                     hue='inference_alg_str',
+                     palette=algorithm_color_map)
         plt.xscale('log')
         plt.xlabel(r'$\rho / \sigma$')
         plt.legend()
@@ -133,8 +143,8 @@ def plot_scores_by_alpha_colored_by_alg(
         sns.lineplot(data=sweep_results_df,
                      x='alpha',
                      y=score_column,
-                     hue='inference_alg_str')
-        plt.xscale('log')
+                     hue='inference_alg_str',
+                     palette=algorithm_color_map)
         plt.xlabel(r'$\alpha$')
         plt.legend()
         # plt.ylim(0., 1.05)
