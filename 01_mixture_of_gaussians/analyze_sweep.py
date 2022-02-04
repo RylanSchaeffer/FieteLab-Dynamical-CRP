@@ -34,4 +34,4 @@ plot_mixture_of_gaussians.plot_analyze_all_inf_algs_results(
     plot_dir=sweep_dir,
 )
 
-print(f'Finished 01_mixture_of_gaussians/plot_sweep.py with sweep={sweep_name}.')
+print(f'Finished 01_mixture_of_gaussians/analyze_sweep.py with sweep={sweep_name}.')
