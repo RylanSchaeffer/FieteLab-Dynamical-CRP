@@ -630,6 +630,8 @@ def convert_dynamics_str_to_dynamics_obj(dynamics_str: str,
             dynamics_fn = LinearFirstOrderNumpy
         elif implementation_mode == 'torch':
             dynamics_fn = LinearFirstOrderTorch
+        else:
+            raise NotImplementedError
 
     elif dynamics_str == 'exp':
         if dynamics_params is None:
@@ -639,6 +641,8 @@ def convert_dynamics_str_to_dynamics_obj(dynamics_str: str,
             dynamics_fn = LinearFirstOrderNumpy
         elif implementation_mode == 'torch':
             dynamics_fn = LinearFirstOrderTorch
+        else:
+            raise NotImplementedError
 
     elif dynamics_str == 'sinusoid':
         if dynamics_params is None:
@@ -650,6 +654,8 @@ def convert_dynamics_str_to_dynamics_obj(dynamics_str: str,
             dynamics_fn = HarmonicOscillatorNumpy
         elif implementation_mode == 'torch':
             dynamics_fn = HarmonicOscillatorTorch
+        else:
+            raise NotImplementedError
 
     elif dynamics_str == 'hyperbolic':
         if dynamics_params is None:
@@ -659,6 +665,8 @@ def convert_dynamics_str_to_dynamics_obj(dynamics_str: str,
             dynamics_fn = HyperbolicNumpy
         elif implementation_mode == 'torch':
             dynamics_fn = HyperbolicTorch
+        else:
+            raise NotImplementedError
 
     elif dynamics_str == 'statetransition':
         # dynamics = StateTransition(

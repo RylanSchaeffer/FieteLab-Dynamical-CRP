@@ -71,14 +71,14 @@ observations = observations.values
 observations_times = ames_housing_data['observations']['TimeSold'].values
 
 # Compute the correct parameters, depending on the dynamics
-if config['dynamics_str'] == 'step':
-    dynamics_params = {}
-elif config['dynamics_str'] == 'exp':
-    dynamics_params = {}
-elif config['dynamics_str'] == 'hyperbolic':
-    dynamics_params = {}
-elif config['dynamics_str'] == 'sinusoid':
-    dynamics_params = {}
+if config['dynamics_str'] == 'sinusoid':
+    dynamics_params = {'omega': np.pi / 2}
+# elif config['dynamics_str'] == 'step':
+#     dynamics_params = {}
+# elif config['dynamics_str'] == 'exp':
+#     dynamics_params = {}
+# elif config['dynamics_str'] == 'hyperbolic':
+#     dynamics_params = {}
 else:
     raise NotImplementedError
 
