@@ -9,7 +9,7 @@ from timeit import default_timer as timer
 from typing import Dict, List, Tuple
 import wandb
 
-from rncrp.inference import DPMeans, RecursiveNonstationaryCRP, VariationalInferenceGMM
+from rncrp.inference import DPMeans, DynamicalCRP, VariationalInferenceGMM
 
 
 def create_logger(run_dir):
@@ -83,10 +83,10 @@ def run_inference_alg(inference_alg_str: str,
                       gen_model_params: Dict[str, Dict[str, float]],
                       inference_alg_kwargs: Dict = None):
 
-    if inference_alg_str == 'RN-CRP':
+    if inference_alg_str == 'Dynamical-CRP':
         if inference_alg_kwargs is None:
             inference_alg_kwargs = dict()
-        inference_alg = RecursiveNonstationaryCRP(
+        inference_alg = DynamicalCRP(
             gen_model_params=gen_model_params,
             **inference_alg_kwargs)
 

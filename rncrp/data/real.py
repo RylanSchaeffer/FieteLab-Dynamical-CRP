@@ -48,12 +48,13 @@ def load_dataset(dataset_name: str,
     dataset_dict = load_dataset_fn(
         data_dir=data_dir,
         **dataset_kwargs)
+
     return dataset_dict
 
 
 def load_dataset_ames_housing_2011(data_dir: str = 'data',
                                    **kwargs,
-                                   ) -> Dict[str, np.ndarray]:
+                                   ) -> Dict[str, pd.DataFrame]:
 
     ames_housing_bunch = fetch_openml(name="house_prices", as_frame=True)
 
@@ -61,7 +62,7 @@ def load_dataset_ames_housing_2011(data_dir: str = 'data',
     observations = ames_housing_bunch.frame
 
     # Convert sale price to target.
-    labels = observations.SalePrice
+    labels = observations[['SalePrice']]
     # Also drop the pointless `Id` column.
     observations.drop(columns=['SalePrice', 'Id'], inplace=True)
 
@@ -84,6 +85,8 @@ def load_dataset_ames_housing_2011(data_dir: str = 'data',
     rows_without_nan = ~(obs_rows_with_nan | label_rows_with_nan)
     observations = observations[rows_without_nan]
     labels = labels[rows_without_nan]
+
+    observations['TimeSold'] = observations['YrSold'] + observations['MoSold'] / 12.
 
     dataset_dict = dict(
         observations=observations,

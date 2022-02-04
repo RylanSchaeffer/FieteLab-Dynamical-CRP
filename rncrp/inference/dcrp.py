@@ -12,14 +12,14 @@ from rncrp.helpers.dynamics import convert_dynamics_str_to_dynamics_obj
 from rncrp.helpers.torch_helpers import assert_torch_no_nan_no_inf_is_real
 
 
-class RecursiveNonstationaryCRP(BaseModel):
+class DynamicalCRP(BaseModel):
     """
 
     """
 
     def __init__(self,
                  gen_model_params: Dict[str, Dict],
-                 model_str: str = 'RN-CRP',
+                 model_str: str = 'Dynamical-CRP',
                  plot_dir: str = None,
                  num_coord_ascent_steps_per_obs: int = 3,
                  numerically_optimize: bool = False,

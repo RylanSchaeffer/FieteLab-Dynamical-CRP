@@ -7,14 +7,17 @@ import scipy.special
 import scipy.stats
 import seaborn as sns
 
+plt.rcParams["font.family"] = ["Times New Roman"]
+plt.rcParams["font.size"] = 16  # was previously 22
+sns.set_style("whitegrid")
+
+
 alphas_color_map = {
     1.1: 'tab:blue',
     10.78: 'tab:orange',
     15.37: 'tab:purple',
     30.91: 'tab:green'
 }
-
-plt.rcParams.update({'font.size': 20})
 
 
 def plot_customer_assignments_analytical_vs_monte_carlo(sampled_customer_assignments_by_customer,

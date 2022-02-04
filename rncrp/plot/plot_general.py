@@ -11,7 +11,7 @@ plt.rcParams["font.size"] = 16  # was previously 22
 sns.set_style("whitegrid")
 
 algorithm_color_map = {
-    'RN-CRP': 'tab:blue',
+    'Dynamical-CRP': 'tab:blue',
     'DP-Means (Offline)': 'tab:orange',
     'DP-Means (Online)': 'tab:purple',
     'VI-GMM': 'tab:green',

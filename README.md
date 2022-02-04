@@ -11,11 +11,11 @@ This code corresponds to our .
 
 After cloning the repository, create a virtual environment for Python 3:
 
-`python3 -m venv rncrp_venv`
+`python3 -m venv dcrp_venv`
 
 Then activate the virtual environment:
 
-`source rncrp_venv/bin/activate`
+`source dcrp_venv/bin/activate`
 
 Ensure pip is up to date:
 
@@ -30,19 +30,19 @@ We did not test Python2, but Python2 may work.
 
 ## Running
 
-Each experiment has its own directory, each containing a `main.py` that creates a `plots`
-subdirectory (e.g. `exp_00_ibp_prior/plots`) and then reproduces the plots in the paper. Each 
-`main.py` should be run from the repository directory e.g.:
-
-`python3 exp_00_ibp_prior/main.py`
+Each experiment (e.g. `00_prior`) is in its own directory. Each experiment directory should contain a 
+`run_one.py` file for running a single configuration. If you want to launch sweeps, 
+we run sweeps via [Weights and Biases](https://wandb.ai/) that we configure via `.yaml` files. 
+After completing your runs, each experiment directory should also contain an `analyze_sweep.py`
+file that reads the results from Weights and Biases and generates the plots in a `plots`
+subdirectory (e.g. `00_prior/plots`).
 
 ## TODO
-- Write out mean field family and approximate variational lower bound
-- Derive parameter updates for Gaussian likelihood and probably one other (e.g. multinomial)
-- Generate synthetic data with particular temporal structure - assume the algorithm knows exactly the generative process
+- Derive parameter updates for von-Mises likelihood
+- Derive parameter updates for Dirichlet-Multinomial likelihood
+- Real-world data: housing
 - Real-world data: Omniglot, with particular temporal transition between "languages"
 - Real-world data: NYT Corpus or some other text corpus
-- Add to Unsupervised Learning of Visual Features by Contrasting Cluster Assignments
 
 ## Contact
 
