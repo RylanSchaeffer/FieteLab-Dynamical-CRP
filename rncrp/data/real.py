@@ -88,6 +88,11 @@ def load_dataset_ames_housing_2011(data_dir: str = 'data',
 
     observations['TimeSold'] = observations['YrSold'] + observations['MoSold'] / 12.
 
+    # Reset indices, check matching shape
+    assert observations.shape[0] == labels.shape[0]
+    observations.reset_index(drop=True, inplace=True)
+    labels.reset_index(drop=True, inplace=True)
+
     dataset_dict = dict(
         observations=observations,
         labels=labels,

@@ -54,17 +54,21 @@ wandb.log({'inf_alg_results_path': inf_alg_results_path},
           step=0)
 
 # Set seeds.
-rncrp.helpers.run.set_seed(config['repeat_idx'])
+rncrp.helpers.run.set_seed(seed=config['repeat_idx'])
 
-# Load data and permute order of data based on seed.
+# Load data and sort based on date.
 ames_housing_data = rncrp.data.real.load_dataset_ames_housing_2011()
-n_obs = ames_housing_data['observations'].shape[0]
-permutation = np.random.permutation(np.arange(n_obs))
+sorting_indices = ames_housing_data['observations']['TimeSold'].argsort()
 ames_housing_data['observations'] = \
-    ames_housing_data['observations'][permutation]
+    ames_housing_data['observations'].iloc[sorting_indices]
 ames_housing_data['labels'] = \
-    ames_housing_data['labels'][permutation]
-print('Randomly permuted the order of 2016 Cancer Gene Expression data.')
+    ames_housing_data['labels'].iloc[sorting_indices]
+
+# Separate observations from observations times
+observations = ames_housing_data['observations']
+observations.drop(columns=['TimeSold', 'YrSold', 'MoSold'])
+observations = observations.values
+observations_times = ames_housing_data['observations']['TimeSold'].values
 
 # Compute the correct parameters, depending on the dynamics
 if config['dynamics_str'] == 'step':
@@ -94,9 +98,6 @@ gen_model_params = {
         'likelihood_cov_prefactor': config['likelihood_cov_prefactor']
     }
 }
-
-observations_times = ames_housing_data['observations']
-observations = ames_housing_data['observations'].copy()
 
 inference_alg_results = rncrp.helpers.run.run_inference_alg(
     inference_alg_str=config['inference_alg_str'],
