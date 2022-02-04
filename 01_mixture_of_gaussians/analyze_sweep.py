@@ -9,7 +9,7 @@ exp_dir = '01_mixture_of_gaussians'
 results_dir = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir, exist_ok=True)
 wandb_sweep_path = "rylan/dcrp-mixture-of-gaussians"
-sweep_name = 'zrbjbekd'
+sweep_name = '5vkotbim'
 sweep_dir = os.path.join(results_dir, sweep_name)
 os.makedirs(sweep_dir, exist_ok=True)
 sweep_results_df_path = os.path.join(sweep_dir, f'sweep={sweep_name}_results.csv')
@@ -31,7 +31,7 @@ else:
 
 plot_mixture_of_gaussians.plot_analyze_all_inf_algs_results(
     all_inf_algs_results_df=sweep_results_df,
-    plot_dir=sweep_dir
+    plot_dir=sweep_dir,
 )
 
 print(f'Finished 01_mixture_of_gaussians/plot_sweep.py with sweep={sweep_name}.')

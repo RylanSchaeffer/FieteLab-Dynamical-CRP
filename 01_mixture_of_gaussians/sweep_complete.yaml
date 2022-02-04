@@ -10,7 +10,7 @@ parameters:
         'VI-GMM',
         'DP-Means (Offline)',
         'DP-Means (Online)',
-        'RN-CRP',
+        'Dynamical-CRP',
     ]
   dynamics_str:
     values: [

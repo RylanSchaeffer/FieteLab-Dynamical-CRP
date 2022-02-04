@@ -13,8 +13,8 @@
 # source rncrp_venv/bin/activate
 # wandb sweep 02_ames_housing/sweep_complete.yaml
 
-for i in {1..5}
+for i in {1..10}
 do
-  sbatch 02_ames_housing/run_one.sh zrbjbekd
+  sbatch 02_ames_housing/run_one.sh 5vkotbim
   sleep 5
 done

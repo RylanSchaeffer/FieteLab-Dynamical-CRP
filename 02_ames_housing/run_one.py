@@ -23,8 +23,8 @@ import rncrp.metrics
 config_defaults = {
     'inference_alg_str': 'VI-GMM',
     # 'inference_alg_str': 'DP-Means (Offline)',
-    # 'inference_alg_str': 'RN-CRP',
-    'dynamics_str': 'hyperbolic',
+    # 'inference_alg_str': 'Dynamical-CRP',
+    'dynamics_str': 'sinusoid',
     'dynamics_a': 1.,
     'dynamics_b': 1.,
     'dynamics_c': 1.,

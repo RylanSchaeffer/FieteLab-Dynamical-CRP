@@ -22,9 +22,9 @@ import rncrp.helpers.run
 import rncrp.metrics
 
 config_defaults = {
-    'inference_alg_str': 'VI-GMM',
+    # 'inference_alg_str': 'VI-GMM',
     # 'inference_alg_str': 'DP-Means (Offline)',
-    # 'inference_alg_str': 'RN-CRP',
+    'inference_alg_str': 'Dynamical-CRP',
     'dynamics_str': 'hyperbolic',
     'dynamics_a': 1.,
     'dynamics_b': 1.,
