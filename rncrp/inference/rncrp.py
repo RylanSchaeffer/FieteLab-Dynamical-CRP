@@ -9,7 +9,7 @@ from typing import Callable, Dict
 
 from rncrp.inference.base import BaseModel
 from rncrp.helpers.dynamics import convert_dynamics_str_to_dynamics_obj
-from rncrp.helpers.torch_helpers import assert_torch_no_nan_no_inf_is_real, convert_std_devs_to_covs
+from rncrp.helpers.torch_helpers import assert_torch_no_nan_no_inf_is_real
 
 
 class RecursiveNonstationaryCRP(BaseModel):
@@ -74,7 +74,7 @@ class RecursiveNonstationaryCRP(BaseModel):
 
             A_prefactor = np.sqrt(self.gen_model_params['feature_prior_params']['centroids_prior_cov_prefactor']
                                   + self.gen_model_params['likelihood_params']['likelihood_cov_prefactor'])
-            A_std_devs = (A_prefactor * torch.eye(obs_dim).float()[None, None, :, :]).repeat(
+            A_diag_covs = (A_prefactor * torch.eye(obs_dim).float()[None, None, :, :]).repeat(
                 1, max_num_clusters, 1, 1)
 
             variational_params = dict(
@@ -88,7 +88,7 @@ class RecursiveNonstationaryCRP(BaseModel):
                         size=(1, max_num_clusters, obs_dim),
                         fill_value=0.,
                         dtype=torch.float32),
-                    std_devs=A_std_devs))
+                    diag_covs=A_diag_covs))
 
         elif self.likelihood_params['distribution'] == 'dirichlet_multinomial':
 
@@ -179,7 +179,7 @@ class RecursiveNonstationaryCRP(BaseModel):
                         raise NotImplementedError
                     else:
                         with torch.no_grad():
-                            # time_1 = time.time()
+                            time_1 = time.time()
                             optimize_cluster_params_fn(
                                 torch_observation=torch_observation,
                                 obs_idx=obs_idx,
@@ -187,8 +187,8 @@ class RecursiveNonstationaryCRP(BaseModel):
                                 variational_params=variational_params,
                                 sigma_obs_squared=self.gen_model_params['likelihood_params'][
                                     'likelihood_cov_prefactor'])
-                            # time_2 = time.time()
-                            # print(f'Time2 - Time 1: {time_2 - time_1}')
+                            time_2 = time.time()
+                            print(f'Time2 - Time 1: {time_2 - time_1}')
                             optimize_cluster_assignments_fn(
                                 torch_observation=torch_observation,
                                 obs_idx=obs_idx,
@@ -197,8 +197,8 @@ class RecursiveNonstationaryCRP(BaseModel):
                                 variational_params=variational_params,
                                 sigma_obs_squared=self.gen_model_params['likelihood_params'][
                                     'likelihood_cov_prefactor'])
-                            # time_3 = time.time()
-                            # print(f'Time3 - Time 2: {time_3 - time_2}')
+                            time_3 = time.time()
+                            print(f'Time3 - Time 2: {time_3 - time_2}')
 
                 cluster_assignment_posterior = variational_params['assignments']['probs'][obs_idx, :].clone()
 
@@ -298,10 +298,6 @@ class RecursiveNonstationaryCRP(BaseModel):
                                                          sigma_obs_squared: int = 1e-0,
                                                          ) -> None:
 
-        # TODO: replace sigma obs with likelihood params
-        means_covs = convert_std_devs_to_covs(
-            std_devs=variational_params['means']['std_devs'][0, :obs_idx + 1])
-
         # Term 1: log q(c_n = l | o_{<n})
         term_one = torch.log(cluster_assignment_prior[:obs_idx + 1])
 
@@ -315,7 +311,7 @@ class RecursiveNonstationaryCRP(BaseModel):
         # Term 3:
         term_three = - 0.5 * torch.einsum(
             'kii->k',
-            torch.add(means_covs,
+            torch.add(variational_params['means']['diag_covs'][0, :obs_idx + 1],
                       torch.einsum('ki,kj->kij',
                                    variational_params['means']['means'][0, :obs_idx + 1, :],
                                    variational_params['means']['means'][0, :obs_idx + 1, :])))
@@ -351,11 +347,9 @@ class RecursiveNonstationaryCRP(BaseModel):
 
         prev_means_means = variational_params['means']['means'][0, :obs_idx + 1, :].clone()
 
-        # time_2_1 = time.time()
-        prev_means_covs = convert_std_devs_to_covs(
-            std_devs=variational_params['means']['std_devs'][0, :obs_idx + 1])
-        prev_means_precisions = torch.linalg.inv(prev_means_covs)
-        # time_2_2 = time.time()
+        time_2_1 = time.time()
+        prev_means_precisions = torch.linalg.inv(variational_params['means']['diag_covs'][0, :obs_idx + 1])
+        time_2_2 = time.time()
         # print(f'Time2.2 - Time2.1: {time_2_2 - time_2_1}')
 
         obs_dim = torch_observation.shape[0]
@@ -371,7 +365,7 @@ class RecursiveNonstationaryCRP(BaseModel):
         mean_precisions = torch.add(prev_means_precisions, weighted_eyes)
         means_covs = torch.linalg.inv(mean_precisions)
 
-        # time_2_3 = time.time()
+        time_2_3 = time.time()
         # print(f'Time2.3 - Time2.2: {time_2_3 - time_2_2}')
 
         # No update on pytorch matrix square root
@@ -382,14 +376,12 @@ class RecursiveNonstationaryCRP(BaseModel):
         #     torch.from_numpy(scipy.linalg.sqrtm(gaussian_cov.detach().numpy()))
         #     for gaussian_cov in mean_covs])
 
-        for mean_idx, mean_cov in enumerate(means_covs):
-            mean_stddev = scipy.linalg.sqrtm(mean_cov.detach().numpy())
-            variational_params['means']['std_devs'][0, mean_idx, :] = torch.from_numpy(mean_stddev)
+        variational_params['means']['diag_covs'][0, :obs_idx + 1] = means_covs
 
         assert_torch_no_nan_no_inf_is_real(
-            variational_params['means']['std_devs'][0, :, :])
+            variational_params['means']['diag_covs'][0, :, :])
 
-        # time_2_4 = time.time()
+        time_2_4 = time.time()
         # print(f'Time2.4 - Time2.3: {time_2_4 - time_2_3}')
 
         # Step 2: Use updated covariances to compute updated means

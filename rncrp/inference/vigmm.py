@@ -42,6 +42,7 @@ class VariationalInferenceGMM(BaseModel):
             n_components=num_obs,
             max_iter=self.max_iter,
             n_init=self.num_initializations,
+            covariance_type='spherical',
             init_params='random',
             weight_concentration_prior_type='dirichlet_process',
             weight_concentration_prior=self.mixing_params['alpha'])
