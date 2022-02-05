@@ -29,8 +29,9 @@ if not os.path.isfile(sweep_results_df_path):
 else:
     sweep_results_df = pd.read_csv(sweep_results_df_path)
 
+print(f"Number of runs: {sweep_results_df.shape[0]} for sweep={sweep_name}")
 
 plot_sweep_results_all(sweep_results_df=sweep_results_df,
                        plot_dir=sweep_dir)
 
-print(f'Finished 02_ames_housing/analyze_sweep.py with sweep={sweep_name}.')
+print(f'Finished 02_ames_housing/analyze_sweep.py for sweep={sweep_name}.')

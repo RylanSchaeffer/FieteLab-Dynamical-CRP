@@ -29,9 +29,11 @@ else:
     sweep_results_df = pd.read_csv(sweep_results_df_path)
 
 
-plot_mixture_of_gaussians.plot_analyze_all_inf_algs_results(
+print(f"Number of runs: {sweep_results_df.shape[0]} for sweep={sweep_name}")
+
+plot_mixture_of_vonmisesfisher.plot_analyze_all_inf_algs_results(
     all_inf_algs_results_df=sweep_results_df,
     plot_dir=sweep_dir,
 )
 
-print(f'Finished 03_mixture_of_vonmisesfisher/plot_sweep.py with sweep={sweep_name}.')
+print(f'Finished 03_mixture_of_vonmisesfisher/plot_sweep.py for sweep={sweep_name}.')

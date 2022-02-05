@@ -71,7 +71,7 @@ def download_wandb_project_runs_results(wandb_project_path: str,
     if sweep_id is not None:
         sweep_results_df = sweep_results_df[sweep_results_df['Sweep'] == sweep_id]
 
-    # Ensure we aren't working iwth a slice.
+    # Ensure we aren't working with a slice.
     sweep_results_df = sweep_results_df.copy()
 
     return sweep_results_df
