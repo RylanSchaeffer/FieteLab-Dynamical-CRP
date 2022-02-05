@@ -20,7 +20,6 @@ algorithm_color_map = {
 
 def plot_sweep_results_all(sweep_results_df: pd.DataFrame,
                            plot_dir: str = 'results'):
-
     os.makedirs(plot_dir, exist_ok=True)
 
     plot_fns = [
@@ -28,6 +27,7 @@ def plot_sweep_results_all(sweep_results_df: pd.DataFrame,
         plot_runtime_by_alpha_colored_by_alg,
         plot_scores_by_cov_prefactor_ratio_colored_by_alg,
         plot_scores_by_alpha_colored_by_alg,
+        plot_scores_by_dimension_colored_by_alg,
     ]
 
     for plot_fn in plot_fns:
@@ -44,7 +44,6 @@ def plot_sweep_results_all(sweep_results_df: pd.DataFrame,
 def plot_num_clusters_by_alpha_colored_by_alg(
         sweep_results_df: pd.DataFrame,
         plot_dir: str):
-
     sns.lineplot(data=sweep_results_df,
                  x='alpha',
                  y='Num Inferred Clusters',
@@ -54,9 +53,9 @@ def plot_num_clusters_by_alpha_colored_by_alg(
     # Can't figure out how to add another line to Seaborn, so manually adding
     # the next line of Num True Clusters.
     num_true_clusters_by_lambda = \
-    sweep_results_df[['alpha', 'n_clusters']].groupby('alpha').agg({
-        'n_clusters': ['mean', 'sem']
-    })['n_clusters']
+        sweep_results_df[['alpha', 'n_clusters']].groupby('alpha').agg({
+            'n_clusters': ['mean', 'sem']
+        })['n_clusters']
 
     means = num_true_clusters_by_lambda['mean'].values
     sems = num_true_clusters_by_lambda['sem'].values
@@ -89,7 +88,6 @@ def plot_num_clusters_by_alpha_colored_by_alg(
 def plot_runtime_by_alpha_colored_by_alg(
         sweep_results_df: pd.DataFrame,
         plot_dir: str):
-
     sns.lineplot(data=sweep_results_df,
                  x='alpha',
                  y='Runtime',
@@ -110,7 +108,6 @@ def plot_runtime_by_alpha_colored_by_alg(
 def plot_scores_by_cov_prefactor_ratio_colored_by_alg(
         sweep_results_df: pd.DataFrame,
         plot_dir: str):
-
     scores_columns = [col for col in sweep_results_df.columns.values
                       if 'Score' in col]
 
@@ -156,3 +153,26 @@ def plot_scores_by_alpha_colored_by_alg(
         # plt.show()
         plt.close()
 
+
+def plot_scores_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
+                                            plot_dir: str):
+    scores_columns = [col for col in sweep_results_df.columns.values
+                      if 'Score' in col]
+
+    for score_column in scores_columns:
+        sns.lineplot(data=sweep_results_df,
+                     x='n_features',
+                     y=score_column,
+                     hue='inference_alg_str',
+                     palette=algorithm_color_map,
+                     err_style="bars",)
+        plt.xlabel(r'Data Dimension')
+        plt.legend()
+        # plt.ylim(0., 1.05)
+        plt.tight_layout()
+        plt.savefig(os.path.join(plot_dir,
+                                 f'comparison_score={score_column}_by_dimension.png'),
+                    bbox_inches='tight',
+                    dpi=300)
+        # plt.show()
+        plt.close()
