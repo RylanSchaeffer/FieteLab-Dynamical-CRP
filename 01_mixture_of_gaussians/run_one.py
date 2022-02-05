@@ -58,7 +58,7 @@ wandb.log({'inf_alg_results_path': inf_alg_results_path},
           step=0)
 
 # set seeds
-rncrp.helpers.run.set_seed(config['repeat_idx'])
+rncrp.helpers.run.set_seed(seed=config['repeat_idx'])
 
 mixture_model_results = rncrp.data.synthetic.sample_mixture_model(
     num_obs=config['n_samples'],
