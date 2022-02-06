@@ -9,6 +9,7 @@ Example usage:
 
 import joblib
 import logging
+import numpy as np
 import os
 import torch
 import wandb
