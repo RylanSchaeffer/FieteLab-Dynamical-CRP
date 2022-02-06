@@ -129,6 +129,43 @@ def load_dataset_boston_housing_1993(data_dir: str = 'data',
 
     return dataset_dict
 
+
+def load_dataset_cancer_gene_expression_2016(data_dir: str = 'data',
+                                             **kwargs,
+                                             ) -> Dict[str, np.ndarray]:
+    """
+    Properties:
+      - dtype: Real
+      - Samples: 801
+      - Dimensions: 20531
+      - Link: https://archive.ics.uci.edu/ml/datasets/gene+expression+cancer+RNA-Seq#
+    """
+
+    dataset_dir = os.path.join(data_dir,
+                               'cancer_gene_expression_2016')
+    observations_path = os.path.join(dataset_dir, 'data.csv')
+    labels_path = os.path.join(dataset_dir, 'labels.csv')
+    observations = pd.read_csv(observations_path, index_col=0)
+    labels = pd.read_csv(labels_path, index_col=0)
+
+    # Convert strings to integer codes
+    labels['Class'] = labels['Class'].astype('category').cat.codes
+
+    # Exclude any row containing any NaN
+    obs_rows_with_nan = observations.isna().any(axis=1)
+    label_rows_with_nan = observations.isna().any(axis=1)
+    rows_without_nan = ~(obs_rows_with_nan | label_rows_with_nan)
+    observations = observations[rows_without_nan]
+    labels = labels[rows_without_nan]
+
+    dataset_dict = dict(
+        observations=observations.values.astype(np.float32),
+        labels=labels.values.astype(np.float32),
+    )
+
+    return dataset_dict
+
+
 def create_climate_metrics_array(site_df,
                                  duration: str = 'annual',
                                  end_year: int = 2020,
@@ -196,6 +233,7 @@ def create_climate_metrics_array(site_df,
 
     return site_array.T
 
+
 def create_climate_data(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_2020.txt',
                         duration: str = 'annual',
                         end_year: int = 2020,
@@ -217,6 +255,7 @@ def create_climate_data(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Re
 
     return dataset
 
+
 def load_dataset_climate(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_',
                          end_year: int = 2020,
                          use_zscores: bool = False):
@@ -232,7 +271,7 @@ def load_dataset_climate(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-R
     )
     
     return dataset_dict
-  
+
 
 def load_dataset_covid_tracking_2021(data_dir: str = 'data',
                                      **kwargs,
@@ -836,34 +875,6 @@ def transform_site_csv_to_array(site_df,
                             outdf.TMAX.to_numpy(),
                             outdf.PRCP.to_numpy()))
     return site_array
-
-
-def create_climate_data(qualifying_sites_path: str = None,
-                        duration: str = 'annual'):
-    datalist = list()
-    with open(qualifying_sites_path) as file:
-        for site_csv_path in file:
-            if '.csv' in site_csv_path:
-                try:
-                    df = pd.read_csv(site_csv_path.strip(), low_memory=False)
-                    site_array = transform_site_csv_to_array(df, duration)
-                    datalist.append(site_array)
-                except:
-                    print("Invalid File: ", site_csv_path)
-
-    dataset = np.array(datalist)
-    dataset = stats.zscore(dataset, axis=0, nan_policy='raise')
-    return dataset
-
-
-def load_dataset_climate(qualifying_sites_path: str = None):
-    annual_data = create_climate_data(qualifying_sites_path, 'annual')
-    monthly_data = create_climate_data(qualifying_sites_path, 'monthly')
-
-    climate_data_results = dict(
-        monthly_data=monthly_data,
-        annual_data=annual_data)
-    return climate_data_results
 
 
 def load_dataset_morph_environment(data_dir: str = 'data',
