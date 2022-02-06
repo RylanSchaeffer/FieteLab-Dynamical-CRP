@@ -1,8 +1,11 @@
 import time
 
+# from mpmath import besselj
 import numpy as np
 import scipy
 import sklearn.mixture
+import tensorflow_probability as tfp
+tfd = tfp.distributions
 import torch
 import torch.nn.functional
 from typing import Callable, Dict
@@ -107,6 +110,29 @@ class DynamicalCRP(BaseModel):
             #                               requires_grad=True))
 
             raise NotImplementedError
+        elif self.likelihood_params['distribution'] == 'vonmises_fisher':
+
+            initialize_cluster_params_fn = self.initialize_cluster_params_vonmises_fisher
+            optimize_cluster_assignments_fn = self.optimize_cluster_assignments_vonmises_fisher
+            optimize_cluster_params_fn = self.optimize_cluster_params_vonmises_fisher
+
+            variational_params = dict(
+                assignments=dict(
+                    probs=torch.full(
+                        size=(num_obs, max_num_clusters),
+                        fill_value=0.,
+                        dtype=torch.float32)),
+                means=dict(
+                    means=torch.full(
+                        size=(1, max_num_clusters, obs_dim),
+                        fill_value=0.,
+                        dtype=torch.float32),
+                    concentrations=torch.full(
+                        size=(1, max_num_clusters, 1),
+                        fill_value=1.,
+                        dtype=torch.float32,
+                    )))
+
         else:
             raise NotImplementedError
 
@@ -188,7 +214,7 @@ class DynamicalCRP(BaseModel):
                                 sigma_obs_squared=self.gen_model_params['likelihood_params'][
                                     'likelihood_cov_prefactor'])
                             time_2 = time.time()
-                            # print(f'Time2 - Time1: {time_2 - time_1}')
+                            print(f'Time2 - Time1: {time_2 - time_1}')
                             optimize_cluster_assignments_fn(
                                 torch_observation=torch_observation,
                                 obs_idx=obs_idx,
@@ -198,7 +224,7 @@ class DynamicalCRP(BaseModel):
                                 sigma_obs_squared=self.gen_model_params['likelihood_params'][
                                     'likelihood_cov_prefactor'])
                             time_3 = time.time()
-                            # print(f'Time3 - Time2: {time_3 - time_2}')
+                            print(f'Time3 - Time2: {time_3 - time_2}')
 
                 cluster_assignment_posterior = variational_params['assignments']['probs'][obs_idx, :].clone()
 
@@ -217,7 +243,7 @@ class DynamicalCRP(BaseModel):
                     prev_num_clusters_posterior)
 
                 time_4 = time.time()
-                # print(f'Time4 - Time3: {time_4 - time_3}')
+                print(f'Time4 - Time3: {time_4 - time_3}')
 
                 # Step 5: Update dynamics state using new cluster assignment posterior.
                 self.dynamics.update_state(
@@ -225,7 +251,7 @@ class DynamicalCRP(BaseModel):
                     time=torch_observations_times[obs_idx])
 
                 time_5 = time.time()
-                # print(f'Time5 - Time4: {time_5 - time_4}')
+                print(f'Time5 - Time4: {time_5 - time_4}')
 
         num_inferred_clusters = torch.argmax(num_clusters_posteriors).item()
 
@@ -245,48 +271,33 @@ class DynamicalCRP(BaseModel):
         """
         return self.fit_results['parameters']['means'][0]
 
-    def initialize_cluster_params_multivariate_normal(self,
-                                                      torch_observation: np.ndarray,
-                                                      obs_idx: int,
-                                                      variational_params: Dict[str, np.ndarray]):
-        variational_params['means']['means'].data[0, obs_idx, :] = torch_observation
-        assert_torch_no_nan_no_inf_is_real(variational_params['means']['means'])
-
-    def initialize_cluster_params_dirichlet_multinomial(self,
-                                                        torch_observation: torch.Tensor,
+    @staticmethod
+    def initialize_cluster_params_dirichlet_multinomial(torch_observation: torch.Tensor,
                                                         obs_idx: int,
                                                         variational_params: Dict[str, torch.Tensor],
                                                         epsilon: float = 10.):
         assert_torch_no_nan_no_inf_is_real(torch_observation)
         variational_params['concentrations'][0, obs_idx, :] = torch_observation + epsilon
 
-    # def compute_likelihood_dirichlet_multinomial(self,
-    #                                              torch_observation: torch.Tensor,
-    #                                              obs_idx: int,
-    #                                              variational_params: Dict[str, torch.Tensor], ):
-    #     words_in_doc = torch.sum(torch_observation)
-    #     total_concentrations_per_latent = torch.sum(
-    #         variational_params['concentrations'][:obs_idx + 1], dim=1)
-    #
-    #     # Intermediate computations
-    #     log_numerator = torch.log(words_in_doc) + log_beta(a=total_concentrations_per_latent, b=words_in_doc)
-    #     log_beta_terms = log_beta(a=variational_params['concentrations'][:obs_idx + 1],
-    #                               b=torch_observation)
-    #
-    #     log_x_times_beta_terms = torch.add(log_beta_terms, torch.log(torch_observation))
-    #     log_x_times_beta_terms[torch.isnan(log_x_times_beta_terms)] = 0.
-    #     log_denominator = torch.sum(log_x_times_beta_terms, dim=1)
-    #
-    #     assert_torch_no_nan_no_inf_is_real(log_denominator)
-    #     log_likelihoods_per_latent = log_numerator - log_denominator
-    #
-    #     assert_torch_no_nan_no_inf_is_real(log_likelihoods_per_latent)
-    #     likelihoods_per_latent = torch.exp(log_likelihoods_per_latent)
-    #
-    #     return likelihoods_per_latent, log_likelihoods_per_latent
+    @staticmethod
+    def initialize_cluster_params_multivariate_normal(torch_observation: np.ndarray,
+                                                      obs_idx: int,
+                                                      variational_params: Dict[str, np.ndarray]):
+        variational_params['means']['means'].data[0, obs_idx, :] = torch_observation
+        assert_torch_no_nan_no_inf_is_real(variational_params['means']['means'])
 
     @staticmethod
-    def optimize_cluster_params_dirichlet_multinomial() -> None:
+    def initialize_cluster_params_vonmises_fisher(torch_observation: np.ndarray,
+                                                  obs_idx: int,
+                                                  variational_params: Dict[str, np.ndarray]):
+
+        # Data should already lie on sphere, so need to normalize.
+        direction = torch_observation
+        variational_params['means']['means'].data[0, obs_idx, :] = direction
+        assert_torch_no_nan_no_inf_is_real(variational_params['means']['means'])
+
+    @staticmethod
+    def optimize_cluster_assignments_dirichlet_multinomial() -> None:
         raise NotImplementedError
 
     @staticmethod
@@ -309,13 +320,6 @@ class DynamicalCRP(BaseModel):
         assert_torch_no_nan_no_inf_is_real(term_two)
 
         # Term 3:
-        # TODO: Refactor this for diagonal covariance
-        # term_three = - 0.5 * torch.einsum(
-        #     'kii->k',
-        #     torch.add(variational_params['means']['diag_covs'][0, :obs_idx + 1, :],
-        #               torch.einsum('ki,kj->kij',
-        #                            variational_params['means']['means'][0, :obs_idx + 1, :],
-        #                            variational_params['means']['means'][0, :obs_idx + 1, :])))
         term_three = - 0.5 * torch.add(
             torch.sum(variational_params['means']['diag_covs'][0, :obs_idx + 1, :],
                       dim=1),  # Trace of diagonal covariance. Shape: (num obs,)
@@ -339,7 +343,73 @@ class DynamicalCRP(BaseModel):
         variational_params['assignments']['probs'][obs_idx, :obs_idx + 1] = cluster_assignment_posterior_params
 
     @staticmethod
-    def optimize_cluster_assignments_dirichlet_multinomial() -> None:
+    def optimize_cluster_assignments_vonmises_fisher(torch_observation: torch.Tensor,
+                                                     obs_idx: int,
+                                                     vi_idx: int,
+                                                     cluster_assignment_prior: torch.Tensor,
+                                                     variational_params: Dict[str, dict],
+                                                     sigma_obs_squared: int = 1e-0,
+                                                     ) -> None:
+
+        # Term 1: log q(c_n = l | o_{<n})
+        # Shape: (max num clusters, )
+        term_one = torch.log(cluster_assignment_prior[:obs_idx + 1])
+
+        assert_torch_no_nan_no_inf_is_real(term_one)
+
+        # Shape: (max num clusters, obs dim)
+        # TODO: Refactor to not use TensorFlow
+        tf_means = tfd.VonMisesFisher(
+            mean_direction=variational_params['means']['means'][0, :obs_idx + 1, :],
+            concentration=variational_params['means']['concentrations'][0, :obs_idx + 1, :]).means()
+        torch_means = torch.from_numpy(tf_means.numpy())
+
+        # Term 2: E[phi_{nk}]^T o_n / sigma_obs^2
+        # Shape: (max num clusters, )
+        term_two = torch.einsum(
+            'kd,d->k',
+            torch_means,
+            torch_observation) / sigma_obs_squared
+        assert_torch_no_nan_no_inf_is_real(term_two)
+
+        term_to_softmax = term_one + term_two
+        cluster_assignment_posterior_params = torch.nn.functional.softmax(
+            term_to_softmax,  # shape: (max num clusters, )
+            dim=0)
+
+        # check that Bernoulli probs are all valid
+        assert_torch_no_nan_no_inf_is_real(cluster_assignment_posterior_params)
+        assert torch.all(0. <= cluster_assignment_posterior_params)
+        assert torch.all(cluster_assignment_posterior_params <= 1.)
+
+        variational_params['assignments']['probs'][obs_idx, :obs_idx + 1, :] = cluster_assignment_posterior_params
+
+    @staticmethod
+    def optimize_cluster_params_dirichlet_multinomial() -> None:
+        # def compute_likelihood_dirichlet_multinomial(self,
+        #                                              torch_observation: torch.Tensor,
+        #                                              obs_idx: int,
+        #                                              variational_params: Dict[str, torch.Tensor], ):
+        #     words_in_doc = torch.sum(torch_observation)
+        #     total_concentrations_per_latent = torch.sum(
+        #         variational_params['concentrations'][:obs_idx + 1], dim=1)
+        #
+        #     # Intermediate computations
+        #     log_numerator = torch.log(words_in_doc) + log_beta(a=total_concentrations_per_latent, b=words_in_doc)
+        #     log_beta_terms = log_beta(a=variational_params['concentrations'][:obs_idx + 1],
+        #                               b=torch_observation)
+        #
+        #     log_x_times_beta_terms = torch.add(log_beta_terms, torch.log(torch_observation))
+        #     log_x_times_beta_terms[torch.isnan(log_x_times_beta_terms)] = 0.
+        #     log_denominator = torch.sum(log_x_times_beta_terms, dim=1)
+        #
+        #     assert_torch_no_nan_no_inf_is_real(log_denominator)
+        #     log_likelihoods_per_latent = log_numerator - log_denominator
+        #
+        #     assert_torch_no_nan_no_inf_is_real(log_likelihoods_per_latent)
+        #     likelihoods_per_latent = torch.exp(log_likelihoods_per_latent)
+        #
+        #     return likelihoods_per_latent, log_likelihoods_per_latent
         raise NotImplementedError
 
     @staticmethod
@@ -358,7 +428,7 @@ class DynamicalCRP(BaseModel):
         time_2_1 = time.time()
         prev_means_diag_precisions = 1. / variational_params['means']['diag_covs'][0, :obs_idx + 1, :]
         time_2_2 = time.time()
-        # print(f'Time2.2 - Time2.1: {time_2_2 - time_2_1}')
+        print(f'Time2.2 - Time2.1: {time_2_2 - time_2_1}')
 
         obs_dim = torch_observation.shape[0]
         max_num_clusters = prev_means_means.shape[0]
@@ -374,7 +444,7 @@ class DynamicalCRP(BaseModel):
         means_diag_covs = 1. / mean_diag_precisions
 
         time_2_3 = time.time()
-        # print(f'Time2.3 - Time2.2: {time_2_3 - time_2_2}')
+        print(f'Time2.3 - Time2.2: {time_2_3 - time_2_2}')
 
         # No update on pytorch matrix square root
         # https://github.com/pytorch/pytorch/issues/9983#issuecomment-907530049
@@ -388,13 +458,13 @@ class DynamicalCRP(BaseModel):
 
         # Slowest piece
         time_2_3_1 = time.time()
-        # print(f'Time2.3.1 - Time2.3: {time_2_3_1 - time_2_3}')
+        print(f'Time2.3.1 - Time2.3: {time_2_3_1 - time_2_3}')
 
         assert_torch_no_nan_no_inf_is_real(
             variational_params['means']['diag_covs'][0, :, :])
 
         time_2_4 = time.time()
-        # print(f'Time2.4 - Time2.3: {time_2_4 - time_2_3}')
+        print(f'Time2.4 - Time2.3: {time_2_4 - time_2_3}')
 
         # Step 2: Use updated covariances to compute updated means
         # Sigma_{n-1,l}^{-1} \mu_{n-1, l}
@@ -417,6 +487,34 @@ class DynamicalCRP(BaseModel):
         )
 
         time_2_5 = time.time()
-        # print(f'Time2.5 - Time2.4: {time_2_5 - time_2_4}')
+        print(f'Time2.5 - Time2.4: {time_2_5 - time_2_4}')
         assert_torch_no_nan_no_inf_is_real(new_means_means)
         variational_params['means']['means'][0, :obs_idx + 1, :] = new_means_means
+
+    @staticmethod
+    def optimize_cluster_params_vonmises_fisher(torch_observation: torch.Tensor,
+                                                obs_idx: int,
+                                                vi_idx: int,
+                                                variational_params: Dict[str, dict],
+                                                sigma_obs_squared: int = 1e-0,
+                                                ) -> None:
+
+        # TODO: replace sigma obs with likelihood params
+        assert sigma_obs_squared > 0.
+
+        rhs = torch.add(
+            torch.multiply(variational_params['means']['concentrations'][0, :obs_idx + 1, :],  # (max num clusters, 1)
+                           variational_params['means']['means'][0, :obs_idx + 1, :],  # (max num clusters, obs dim)
+                           ),  # Shape: (max num clusters, obs dim)
+            torch.multiply(
+                variational_params['assignments']['probs'][obs_idx, :obs_idx + 1, None],  # Shape (max num clusters, 1)
+                torch_observation[None, :],  # Shape: (1, obs dim,)
+            ) / sigma_obs_squared,  # Shape: (max num clusters, obs dim)
+        )  # Shape: (max num clusters, obs dim)
+
+        magnitudes = torch.norm(rhs, dim=1)  # Shape: (max num clusters,)
+        assert_torch_no_nan_no_inf_is_real(magnitudes)
+        directions = rhs / magnitudes[:, None]  # Shape: (max num clusters, obs dim)
+        assert_torch_no_nan_no_inf_is_real(directions)
+        variational_params['means']['concentrations'][0, :obs_idx + 1, 0] = magnitudes
+        variational_params['means']['means'][0, :obs_idx + 1, :] = directions
