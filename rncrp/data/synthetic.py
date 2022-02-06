@@ -5,7 +5,6 @@ import scipy.stats
 import torch
 import torchvision
 from typing import Dict, Union
-from sklearn.preprocessing import normalize
 import tensorflow as tf
 import tensorflow_probability as tfp
 
@@ -130,7 +129,6 @@ def sample_mixture_model(num_obs: int = 100,
                          component_prior_str: str = 'gaussian',
                          component_prior_params: dict = None,
                          **kwargs):
-
     # Ensure we have parameters to sample cluster assignments.
     if mixing_distribution_params is None:
         if mixing_prior_str == 'rncrp':
@@ -204,21 +202,20 @@ def sample_mixture_model(num_obs: int = 100,
                                           cov=covs[assigned_cluster])
             for assigned_cluster in cluster_assignments])
 
-    elif component_prior_str == 'vonmises-fisher':
+    elif component_prior_str == 'vonmises_fisher':
 
-        assert component_prior_params['kappa'] >= 0
+        assert component_prior_params['likelihood_kappa'] >= 0
 
         tfd = tfp.distributions
 
         # mus dimension: num_components x obs_dim
         # each mu (row) is a unit vector
-        mus = np.array([
-            normalize(np.random.rand(obs_dim).reshape(-1,1)).flatten()
-            for i in range(num_components)])
+        mus = np.random.normal(loc=0., scale=1, size=(num_components, obs_dim))
+        mus /= np.linalg.norm(mus, axis=1)[:, np.newaxis]
 
         # all vmf components have same concentration parameter kappa
-        # kappas dimension: 1 x num_components
-        kappas = np.ones(obs_dim) * component_prior_params['kappa']
+        # Shape: (num_components, )
+        kappas = component_prior_params['likelihood_kappa'] * np.ones(num_components)
 
         components = dict(component_prior_str=component_prior_str,
                           mus=mus,
@@ -237,7 +234,7 @@ def sample_mixture_model(num_obs: int = 100,
     cluster_assignments_one_hot = np.zeros((num_obs, num_obs))
     cluster_assignments_one_hot[np.arange(num_obs), cluster_assignments] = 1.
 
-    result = dict(
+    mixture_model_result = dict(
         mixing_prior_str=mixing_prior_str,
         mixing_distribution_params=mixing_distribution_params,
         component_prior_str=component_prior_str,
@@ -250,7 +247,7 @@ def sample_mixture_model(num_obs: int = 100,
         dynamics_params=dynamics_params,
     )
 
-    return result
+    return mixture_model_result
 
 
 def sample_rncrp(num_mc_samples: int,
@@ -260,7 +257,6 @@ def sample_rncrp(num_mc_samples: int,
                  dynamics_str: str,
                  dynamics_params: Dict[str, float] = None
                  ) -> Dict[str, np.ndarray]:
-
     assert alpha > 0.
     assert beta >= 0.
 
@@ -333,5 +329,3 @@ def sample_rncrp(num_mc_samples: int,
     }
 
     return monte_carlo_rncrp_results
-
-
