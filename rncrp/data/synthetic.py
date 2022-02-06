@@ -5,6 +5,9 @@ import scipy.stats
 import torch
 import torchvision
 from typing import Dict, Union
+from sklearn.preprocessing import normalize
+import tensorflow as tf
+import tensorflow_probability as tfp
 
 import rncrp.helpers.dynamics
 
@@ -172,7 +175,6 @@ def sample_mixture_model(num_obs: int = 100,
             }
         elif component_prior_str == 'vonmises-fisher':
             component_prior_params = {
-                'mu': 1.,
                 'kappa': 1.,
             }
         else:
@@ -203,25 +205,30 @@ def sample_mixture_model(num_obs: int = 100,
             for assigned_cluster in cluster_assignments])
 
     elif component_prior_str == 'vonmises-fisher':
-        mus = np.random.vonmises(
-            mu=component_prior_params['mu'] * np.ones(obs_dim),
-            kappa=component_prior_params['kappa'] * np.ones(obs_dim),
-            size=num_components)
 
-        # all components have same concentration parameter kappa
-        kappa = np.ones(obs_dim) * component_prior_params['kappa']
-        kappas = np.repeat(
-            kappa[np.newaxis, :],
-            repeats=num_components,
-            axis=0)
+        assert component_prior_params['kappa'] >= 0
+
+        tfd = tfp.distributions
+
+        # mus dimension: num_components x obs_dim
+        # each mu (row) is a unit vector
+        mus = np.array([
+            normalize(np.random.rand(obs_dim).reshape(-1,1)).flatten()
+            for i in range(num_components)])
+
+        # all vmf components have same concentration parameter kappa
+        # kappas dimension: 1 x num_components
+        kappas = np.ones(obs_dim) * component_prior_params['kappa']
 
         components = dict(component_prior_str=component_prior_str,
                           mus=mus,
                           kappas=kappas)
 
+        # observations dimension: num_obs x obs_dim
         observations = np.array([
-            np.random.vonmises(mu=mus[assigned_cluster],
-                               kappa=kappas[assigned_cluster])
+            tfd.VonMisesFisher(
+                mean_direction=mus[assigned_cluster],
+                concentration=kappas[assigned_cluster]).sample(seed=0).numpy()
             for assigned_cluster in cluster_assignments])
 
     else:
