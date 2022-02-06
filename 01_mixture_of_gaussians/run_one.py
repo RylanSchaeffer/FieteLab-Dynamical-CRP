@@ -7,10 +7,9 @@ Example usage:
 01_mixture_of_gaussians/run_one.py
 """
 
-import argparse
+import itertools
 import joblib
 import logging
-import numpy as np
 import os
 import torch
 import wandb

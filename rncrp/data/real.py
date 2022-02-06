@@ -129,8 +129,11 @@ def load_dataset_boston_housing_1993(data_dir: str = 'data',
 
     return dataset_dict
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> dc99b4552d1560a8773f198cc502ccd1837efa2c
 def transform_site_csv_to_array(site_df,
                                 duration: str = 'annual',
                                 end_year: int = 2020,
@@ -181,6 +184,7 @@ def transform_site_csv_to_array(site_df,
                                outdf.LATITUDE.to_numpy(),
                                outdf.LONGITUDE.to_numpy(),
                                outdf.ELEVATION.to_numpy()))
+<<<<<<< HEAD
 
     # Concatenate climate metrics into 3 x (# years or # months) array
     site_metrics = np.vstack((outdf.TMAX.to_numpy(),
@@ -203,6 +207,31 @@ def create_climate_data(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Re
                         end_year: int = 2020,
                         use_zscores: bool = False):
     dataset = None
+=======
+
+    # Concatenate climate metrics into 3 x (# years or # months) array
+    site_metrics = np.vstack((outdf.TMAX.to_numpy(),
+                              outdf.TMIN.to_numpy(),
+                              outdf.PRCP.to_numpy()))
+
+    # Convert climate metrics to z-scores if want to look more specifically at climate variability of each site
+    if use_zscores:
+        site_zscores = stats.zscore(site_metrics, axis=1, nan_policy='raise')
+        site_array = np.vstack((site_metadata, site_zscores))
+
+    # Otherwise, study overall climate by using raw data values
+    else:
+        site_array = np.vstack((site_metadata, site_metrics))
+
+    return site_array.T
+
+def create_climate_data(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_2020.txt',
+                        duration: str = 'annual',
+                        end_year: int = 2020,
+                        use_zscores: bool = False):
+    dataset = None
+
+>>>>>>> dc99b4552d1560a8773f198cc502ccd1837efa2c
     with open(qualifying_sites_path) as file:
         for site_csv_path in file:
             if '.csv' in site_csv_path:
@@ -226,6 +255,7 @@ def load_dataset_climate(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-R
     monthly_data = create_climate_data(qualifying_sites_dir, 'monthly', end_year, use_zscores)
 
     true_cluster_labels = None ## TODO: OBTAIN GROUND TRUTH CLUSTERS
+<<<<<<< HEAD
 
 <<<<<<< HEAD
     labels = None
@@ -234,6 +264,8 @@ def load_dataset_climate(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-R
         observations=annual_data, #or monthly data?
         labels=labels,
     )
+=======
+>>>>>>> dc99b4552d1560a8773f198cc502ccd1837efa2c
 
     return dataset_dict
 =======
@@ -1032,6 +1064,7 @@ def load_dataset_morph_environment(data_dir: str = 'data',
     #
     #     clust_embedding = mapper.embedding_[clustmask,:]
     #     morph_environment_dataset_results['subclust_labels_unsorted_c'+str(c)] = clust_embedding
+
     return morph_environment_dataset_results
 
 
