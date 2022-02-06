@@ -82,7 +82,7 @@ gen_model_params = {
         'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor']
     },
     'likelihood_params': {
-        'distribution': 'multivariate_normal',
+        'distribution': 'vonmises_fisher',
         'likelihood_cov_prefactor': config['likelihood_cov_prefactor']
     }
 }
