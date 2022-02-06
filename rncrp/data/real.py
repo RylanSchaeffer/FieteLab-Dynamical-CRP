@@ -129,10 +129,10 @@ def load_dataset_boston_housing_1993(data_dir: str = 'data',
 
     return dataset_dict
 
-def generate_data_array_given_site_df(site_df,
-                                      duration: str = 'annual',
-                                      end_year: int = 2020,
-                                      use_zscores: bool = False):
+def create_climate_metrics_array(site_df,
+                                 duration: str = 'annual',
+                                 end_year: int = 2020,
+                                 use_zscores: bool = False):
     df = site_df.copy()
     df["year"] = df.DATE.apply(lambda x: int(x[:4]))
     df = df[(df.year >= 1946) & (df.year <= end_year)]
@@ -207,7 +207,7 @@ def create_climate_data(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Re
             if '.csv' in site_csv_path:
                 try:
                     df = pd.read_csv(site_csv_path.strip(), low_memory=False)
-                    site_array = transform_site_csv_to_array(df, duration, end_year, use_zscores)
+                    site_array = create_climate_metrics_array(df, duration, end_year, use_zscores)
                     if type(dataset) is not np.ndarray:
                         dataset = site_array
                     else:
