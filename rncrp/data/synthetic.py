@@ -170,6 +170,11 @@ def sample_mixture_model(num_obs: int = 100,
                 'centroids_prior_cov_prefactor': 10.,
                 'likelihood_cov_prefactor': 1.,
             }
+        elif component_prior_str == 'vonmises-fisher':
+            component_prior_params = {
+                'mu': 1.,
+                'kappa': 1.,
+            }
         else:
             raise NotImplementedError
 
@@ -196,6 +201,29 @@ def sample_mixture_model(num_obs: int = 100,
             np.random.multivariate_normal(mean=means[assigned_cluster],
                                           cov=covs[assigned_cluster])
             for assigned_cluster in cluster_assignments])
+
+    elif component_prior_str == 'vonmises-fisher':
+        mus = np.random.vonmises(
+            mu=component_prior_params['mu'] * np.ones(obs_dim),
+            kappa=component_prior_params['kappa'] * np.ones(obs_dim),
+            size=num_components)
+
+        # all components have same concentration parameter kappa
+        kappa = np.ones(obs_dim) * component_prior_params['kappa']
+        kappas = np.repeat(
+            kappa[np.newaxis, :],
+            repeats=num_components,
+            axis=0)
+
+        components = dict(component_prior_str=component_prior_str,
+                          mus=mus,
+                          kappas=kappas)
+
+        observations = np.array([
+            np.random.vonmises(mu=mus[assigned_cluster],
+                               kappa=kappas[assigned_cluster])
+            for assigned_cluster in cluster_assignments])
+
     else:
         raise NotImplementedError
 
