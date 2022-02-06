@@ -25,6 +25,7 @@ def plot_sweep_results_all(sweep_results_df: pd.DataFrame,
     plot_fns = [
         plot_num_clusters_by_alpha_colored_by_alg,
         plot_runtime_by_alpha_colored_by_alg,
+        plot_runtime_by_dimension_colored_by_alg,
         plot_scores_by_cov_prefactor_ratio_colored_by_alg,
         plot_scores_by_alpha_colored_by_alg,
         plot_scores_by_dimension_colored_by_alg,
@@ -39,6 +40,7 @@ def plot_sweep_results_all(sweep_results_df: pd.DataFrame,
 
         # Close all figure windows to not interfere with next plots
         plt.close('all')
+        print(f'Plotted {str(plot_fn)}')
 
 
 def plot_num_clusters_by_alpha_colored_by_alg(
@@ -99,6 +101,27 @@ def plot_runtime_by_alpha_colored_by_alg(
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir,
                              f'runtime_by_alpha.png'),
+                bbox_inches='tight',
+                dpi=300)
+    # plt.show()
+    plt.close()
+
+
+def plot_runtime_by_dimension_colored_by_alg(
+        sweep_results_df: pd.DataFrame,
+        plot_dir: str):
+    sns.lineplot(data=sweep_results_df,
+                 x='n_features',
+                 y='Runtime',
+                 hue='inference_alg_str',
+                 palette=algorithm_color_map,
+                 err_style='bars')
+    plt.yscale('log')
+    plt.xlabel(r'Data Dimension')
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(plot_dir,
+                             f'runtime_by_dimension.png'),
                 bbox_inches='tight',
                 dpi=300)
     # plt.show()

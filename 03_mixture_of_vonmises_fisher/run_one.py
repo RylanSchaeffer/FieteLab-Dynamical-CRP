@@ -4,7 +4,7 @@ algorithm and model parameters.
 
 Example usage:
 
-03_mixture_of_vonmisesfisher/run_one.py
+03_mixture_of_vonmises_fisher/run_one.py
 """
 
 import argparse
@@ -40,7 +40,7 @@ config_defaults = {
     'repeat_idx': 0,
 }
 
-wandb.init(project='dcrp-mixture-of-vonmisesfisher',
+wandb.init(project='dcrp-mixture-of-vonmises-fisher',
            config=config_defaults)
 config = wandb.config
 
@@ -49,7 +49,7 @@ for key, value in config.items():
     print(key, ' : ', value)
 
 # determine paths
-exp_dir = '03_mixture_of_vonmisesfisher'
+exp_dir = '03_mixture_of_vonmises_fisher'
 results_dir_path = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir_path, exist_ok=True)
 inf_alg_results_path = os.path.join(results_dir_path,

@@ -1,5 +1,5 @@
-program: 03_mixture_of_vonmisesfisher/run_one.py
-project: dcrp-mixture-of-vonmisesfisher
+program: 03_mixture_of_vonmises_fisher/run_one.py
+project: dcrp-mixture-of-vonmises-fisher
 method: grid
 metric:
   goal: minimize
@@ -7,9 +7,9 @@ metric:
 parameters:
   inference_alg_str:
     values: [
-        'VI-GMM',
-        'DP-Means (Offline)',
-        'DP-Means (Online)',
+#        'VI-GMM',
+#        'DP-Means (Offline)',
+#        'DP-Means (Online)',
         'Dynamical-CRP',
     ]
   dynamics_str:
