@@ -8,6 +8,7 @@ import torch
 from timeit import default_timer as timer
 from typing import Dict, List, Tuple
 import wandb
+import tensorflow as tf
 
 from rncrp.inference import DPMeans, DynamicalCRP, VariationalInferenceGMM
 
@@ -140,3 +141,4 @@ def run_inference_alg(inference_alg_str: str,
 def set_seed(seed: int):
     np.random.seed(seed)
     torch.manual_seed(seed)
+    tf.random.set_seed(seed)
