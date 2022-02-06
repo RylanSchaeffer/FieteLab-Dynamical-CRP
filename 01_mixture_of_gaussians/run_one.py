@@ -7,7 +7,6 @@ Example usage:
 01_mixture_of_gaussians/run_one.py
 """
 
-import itertools
 import joblib
 import logging
 import os
