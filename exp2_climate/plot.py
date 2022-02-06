@@ -7,8 +7,8 @@ import seaborn as sns
 # common plotting functions
 from rncrp.plot import *
 
-
-def plot_inference_results(sampled_mog_data: dict,
+## TODO: DECIDE WHAT TO PLOT
+def plot_inference_results(sampled_climate_data: dict,
                            inference_results: dict,
                            inference_alg_str: str,
                            inference_alg_param: float,

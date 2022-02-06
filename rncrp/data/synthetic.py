@@ -5,6 +5,9 @@ import scipy.stats
 import torch
 import torchvision
 from typing import Dict, Union
+from sklearn.preprocessing import normalize
+import tensorflow as tf
+import tensorflow_probability as tfp
 
 import rncrp.helpers.dynamics
 
@@ -170,6 +173,10 @@ def sample_mixture_model(num_obs: int = 100,
                 'centroids_prior_cov_prefactor': 10.,
                 'likelihood_cov_prefactor': 1.,
             }
+        elif component_prior_str == 'vonmises-fisher':
+            component_prior_params = {
+                'kappa': 1.,
+            }
         else:
             raise NotImplementedError
 
@@ -196,6 +203,34 @@ def sample_mixture_model(num_obs: int = 100,
             np.random.multivariate_normal(mean=means[assigned_cluster],
                                           cov=covs[assigned_cluster])
             for assigned_cluster in cluster_assignments])
+
+    elif component_prior_str == 'vonmises-fisher':
+
+        assert component_prior_params['kappa'] >= 0
+
+        tfd = tfp.distributions
+
+        # mus dimension: num_components x obs_dim
+        # each mu (row) is a unit vector
+        mus = np.array([
+            normalize(np.random.rand(obs_dim).reshape(-1,1)).flatten()
+            for i in range(num_components)])
+
+        # all vmf components have same concentration parameter kappa
+        # kappas dimension: 1 x num_components
+        kappas = np.ones(obs_dim) * component_prior_params['kappa']
+
+        components = dict(component_prior_str=component_prior_str,
+                          mus=mus,
+                          kappas=kappas)
+
+        # observations dimension: num_obs x obs_dim
+        observations = np.array([
+            tfd.VonMisesFisher(
+                mean_direction=mus[assigned_cluster],
+                concentration=kappas[assigned_cluster]).sample().numpy()
+            for assigned_cluster in cluster_assignments])
+
     else:
         raise NotImplementedError
 

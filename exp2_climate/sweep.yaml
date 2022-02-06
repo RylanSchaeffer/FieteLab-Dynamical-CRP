@@ -1,0 +1,45 @@
+program: exp2_climate/run_one.py
+## TODO: CHANGE PROJECT NAME IF NEEDED
+project: rncrp-climate
+method: grid
+metric:
+  goal: minimize
+  name: Loss
+parameters:
+  inference_alg_str:
+    values: [
+        'VI-GMM',
+        'DP-Means (Offline)',
+        'DP-Means (Online)',
+    ]
+#  dynamics_str:
+#    values: [
+#        'step',
+#        'exp',
+#        'sinusoid',
+#        'hyperbolic']
+#  dynamics_a:
+#    values: [1.]
+#  dynamics_b:
+#    values: [ 1. ]
+#  dynamics_c:
+#    values: [ 1. ]
+#  dynamics_omega:
+#    values: [ 1. ]
+  alpha:
+    values: [ 0.1, 0.5,
+              1., 2.5, 5., 7.5,
+              10., 25., 50., 75.,]
+  ## TODO: INCLUDE BETA?
+#  n_samples:
+#    values: [1000]
+#  n_features:
+#    values: [3, 10]
+#  n_clusters:
+#    values: [5, 25, 40]
+  centroids_prior_cov_prefactor:
+    values: [5., 10.]
+  likelihood_cov_prefactor:
+    values: [1., 5., 10., 50.]
+  repeat_idx:
+    values: [0]
