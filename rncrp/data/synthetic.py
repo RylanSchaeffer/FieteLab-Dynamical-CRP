@@ -228,7 +228,7 @@ def sample_mixture_model(num_obs: int = 100,
         observations = np.array([
             tfd.VonMisesFisher(
                 mean_direction=mus[assigned_cluster],
-                concentration=kappas[assigned_cluster]).sample(seed=0).numpy()
+                concentration=kappas[assigned_cluster]).sample().numpy()
             for assigned_cluster in cluster_assignments])
 
     else:
