@@ -129,10 +129,10 @@ def load_dataset_boston_housing_1993(data_dir: str = 'data',
 
     return dataset_dict
 
-def transform_site_csv_to_array(site_df,
-                                duration: str = 'annual',
-                                end_year: int = 2020,
-                                use_zscores: bool = False):
+def generate_data_array_given_site_df(site_df,
+                                      duration: str = 'annual',
+                                      end_year: int = 2020,
+                                      use_zscores: bool = False):
     df = site_df.copy()
     df["year"] = df.DATE.apply(lambda x: int(x[:4]))
     df = df[(df.year >= 1946) & (df.year <= end_year)]
