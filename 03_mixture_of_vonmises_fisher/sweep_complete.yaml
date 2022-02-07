@@ -7,9 +7,6 @@ metric:
 parameters:
   inference_alg_str:
     values: [
-        'VI-GMM',
-        'DP-Means (Offline)',
-        'DP-Means (Online)',
         'Dynamical-CRP',
     ]
   dynamics_str:
@@ -34,9 +31,7 @@ parameters:
     values: [3, 10, 15]
   n_clusters:
     values: [5, 15, 25]
-  centroids_prior_cov_prefactor:
+  likelihood_kappa:
     values: [5., 10., 50.]
-  likelihood_cov_prefactor:
-    values: [1., 5., 10., 20.]
   repeat_idx:
     values: [0]
