@@ -7,12 +7,9 @@ Example usage:
 03_mixture_of_vonmises_fisher/run_one.py
 """
 
-import argparse
 import joblib
-import logging
 import numpy as np
 import os
-import torch
 import wandb
 
 # import plot
@@ -22,8 +19,6 @@ import rncrp.helpers.run
 import rncrp.metrics
 
 config_defaults = {
-    # 'inference_alg_str': 'VI-GMM',
-    # 'inference_alg_str': 'DP-Means (Offline)',
     'inference_alg_str': 'Dynamical-CRP',
     'dynamics_str': 'hyperbolic',
     'dynamics_a': 1.,
@@ -35,8 +30,7 @@ config_defaults = {
     'n_clusters': 40,
     'alpha': 0.1,
     'beta': 0.,
-    'centroids_prior_cov_prefactor': 5.,
-    'likelihood_cov_prefactor': 50.,
+    'likelihood_kappa': 1.,
     'repeat_idx': 0,
 }
 
@@ -67,9 +61,8 @@ mixture_model_results = rncrp.data.synthetic.sample_mixture_model(
     mixing_distribution_params={'alpha': config['alpha'],
                                 'beta': config['beta'],
                                 'dynamics_str': config['dynamics_str']},
-    component_prior_str='gaussian',
-    component_prior_params={'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor'],
-                            'likelihood_cov_prefactor': config['likelihood_cov_prefactor']})
+    component_prior_str='vonmises_fisher',
+    component_prior_params={'likelihood_kappa': config['likelihood_kappa']})
 
 gen_model_params = {
     'mixing_params': {
@@ -79,11 +72,11 @@ gen_model_params = {
         'dynamics_params': mixture_model_results['dynamics_params']
     },
     'feature_prior_params': {
-        'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor']
+        # 'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor']
     },
     'likelihood_params': {
         'distribution': 'vonmises_fisher',
-        'likelihood_cov_prefactor': config['likelihood_cov_prefactor']
+        'likelihood_kappa': config['likelihood_kappa']
     }
 }
 

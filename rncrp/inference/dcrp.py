@@ -211,8 +211,7 @@ class DynamicalCRP(BaseModel):
                                 obs_idx=obs_idx,
                                 vi_idx=vi_idx,
                                 variational_params=variational_params,
-                                sigma_obs_squared=self.gen_model_params['likelihood_params'][
-                                    'likelihood_cov_prefactor'])
+                                likelihood_params=self.gen_model_params['likelihood_params'])
                             time_2 = time.time()
                             print(f'Time2 - Time1: {time_2 - time_1}')
                             optimize_cluster_assignments_fn(
@@ -221,8 +220,7 @@ class DynamicalCRP(BaseModel):
                                 vi_idx=vi_idx,
                                 cluster_assignment_prior=cluster_assignment_prior,
                                 variational_params=variational_params,
-                                sigma_obs_squared=self.gen_model_params['likelihood_params'][
-                                    'likelihood_cov_prefactor'])
+                                likelihood_params=self.gen_model_params['likelihood_params'])
                             time_3 = time.time()
                             print(f'Time3 - Time2: {time_3 - time_2}')
 
@@ -306,10 +304,13 @@ class DynamicalCRP(BaseModel):
                                                          vi_idx: int,
                                                          cluster_assignment_prior: torch.Tensor,
                                                          variational_params: Dict[str, dict],
-                                                         sigma_obs_squared: int = 1e-0,
+                                                         likelihood_params: Dict[str, float],
                                                          ) -> None:
 
+        sigma_obs_squared = likelihood_params['likelihood_cov_prefactor']
+
         # Term 1: log q(c_n = l | o_{<n})
+        # Warning: can get -inf here if probability of new cluster is 0
         term_one = torch.log(cluster_assignment_prior[:obs_idx + 1])
 
         # Term 2: mu_{nk}^T o_n / sigma_obs^2
@@ -348,28 +349,29 @@ class DynamicalCRP(BaseModel):
                                                      vi_idx: int,
                                                      cluster_assignment_prior: torch.Tensor,
                                                      variational_params: Dict[str, dict],
-                                                     sigma_obs_squared: int = 1e-0,
+                                                     likelihood_params: Dict[str, float],
                                                      ) -> None:
+
+        likelihood_kappa = likelihood_params['likelihood_kappa']
 
         # Term 1: log q(c_n = l | o_{<n})
         # Shape: (max num clusters, )
+        # Warning: can get -inf here if probability of new cluster is 0
         term_one = torch.log(cluster_assignment_prior[:obs_idx + 1])
-
-        assert_torch_no_nan_no_inf_is_real(term_one)
 
         # Shape: (max num clusters, obs dim)
         # TODO: Refactor to not use TensorFlow
         tf_means = tfd.VonMisesFisher(
-            mean_direction=variational_params['means']['means'][0, :obs_idx + 1, :],
-            concentration=variational_params['means']['concentrations'][0, :obs_idx + 1, :]).means()
+            mean_direction=variational_params['means']['means'][0, :obs_idx + 1, :].numpy(),
+            concentration=variational_params['means']['concentrations'][0, :obs_idx + 1, 0].numpy()).mean()
         torch_means = torch.from_numpy(tf_means.numpy())
 
         # Term 2: E[phi_{nk}]^T o_n / sigma_obs^2
         # Shape: (max num clusters, )
-        term_two = torch.einsum(
+        term_two = likelihood_kappa * torch.einsum(
             'kd,d->k',
             torch_means,
-            torch_observation) / sigma_obs_squared
+            torch_observation)
         assert_torch_no_nan_no_inf_is_real(term_two)
 
         term_to_softmax = term_one + term_two
@@ -382,7 +384,7 @@ class DynamicalCRP(BaseModel):
         assert torch.all(0. <= cluster_assignment_posterior_params)
         assert torch.all(cluster_assignment_posterior_params <= 1.)
 
-        variational_params['assignments']['probs'][obs_idx, :obs_idx + 1, :] = cluster_assignment_posterior_params
+        variational_params['assignments']['probs'][obs_idx, :obs_idx + 1] = cluster_assignment_posterior_params
 
     @staticmethod
     def optimize_cluster_params_dirichlet_multinomial() -> None:
@@ -417,10 +419,10 @@ class DynamicalCRP(BaseModel):
                                                     obs_idx: int,
                                                     vi_idx: int,
                                                     variational_params: Dict[str, dict],
-                                                    sigma_obs_squared: int = 1e-0,
+                                                    likelihood_params: Dict[str, float],
                                                     ) -> None:
 
-        # TODO: replace sigma obs with likelihood params
+        sigma_obs_squared = likelihood_params['likelihood_cov_prefactor']
         assert sigma_obs_squared > 0.
 
         prev_means_means = variational_params['means']['means'][0, :obs_idx + 1, :].clone()
@@ -496,20 +498,20 @@ class DynamicalCRP(BaseModel):
                                                 obs_idx: int,
                                                 vi_idx: int,
                                                 variational_params: Dict[str, dict],
-                                                sigma_obs_squared: int = 1e-0,
+                                                likelihood_params: Dict[str, float],
                                                 ) -> None:
 
         # TODO: replace sigma obs with likelihood params
-        assert sigma_obs_squared > 0.
+        likelihood_kappa = likelihood_params['likelihood_kappa']
 
         rhs = torch.add(
             torch.multiply(variational_params['means']['concentrations'][0, :obs_idx + 1, :],  # (max num clusters, 1)
                            variational_params['means']['means'][0, :obs_idx + 1, :],  # (max num clusters, obs dim)
                            ),  # Shape: (max num clusters, obs dim)
-            torch.multiply(
+            likelihood_kappa * torch.multiply(
                 variational_params['assignments']['probs'][obs_idx, :obs_idx + 1, None],  # Shape (max num clusters, 1)
                 torch_observation[None, :],  # Shape: (1, obs dim,)
-            ) / sigma_obs_squared,  # Shape: (max num clusters, obs dim)
+            ),  # Shape: (max num clusters, obs dim)
         )  # Shape: (max num clusters, obs dim)
 
         magnitudes = torch.norm(rhs, dim=1)  # Shape: (max num clusters,)
