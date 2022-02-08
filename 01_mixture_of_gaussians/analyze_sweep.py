@@ -20,7 +20,7 @@ if not os.path.isfile(sweep_results_df_path):
         sweep_id=sweep_name)
 
     # Compute SNR := rho / sigma
-    sweep_results_df['cov_prefactor_ratio'] = sweep_results_df['centroids_prior_cov_prefactor'] \
+    sweep_results_df['snr'] = sweep_results_df['centroids_prior_cov_prefactor'] \
                                               / sweep_results_df['likelihood_cov_prefactor']
 
     sweep_results_df.to_csv(sweep_results_df_path, index=False)

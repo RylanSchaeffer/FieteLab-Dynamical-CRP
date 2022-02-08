@@ -26,7 +26,7 @@ def plot_sweep_results_all(sweep_results_df: pd.DataFrame,
         plot_num_clusters_by_alpha_colored_by_alg,
         plot_runtime_by_alpha_colored_by_alg,
         plot_runtime_by_dimension_colored_by_alg,
-        plot_scores_by_cov_prefactor_ratio_colored_by_alg,
+        plot_scores_by_snr_colored_by_alg,
         plot_scores_by_alpha_colored_by_alg,
         plot_scores_by_dimension_colored_by_alg,
     ]
@@ -128,7 +128,7 @@ def plot_runtime_by_dimension_colored_by_alg(
     plt.close()
 
 
-def plot_scores_by_cov_prefactor_ratio_colored_by_alg(
+def plot_scores_by_snr_colored_by_alg(
         sweep_results_df: pd.DataFrame,
         plot_dir: str):
     scores_columns = [col for col in sweep_results_df.columns.values
@@ -136,17 +136,17 @@ def plot_scores_by_cov_prefactor_ratio_colored_by_alg(
 
     for score_column in scores_columns:
         sns.lineplot(data=sweep_results_df,
-                     x='cov_prefactor_ratio',
+                     x='snr',
                      y=score_column,
                      hue='inference_alg_str',
                      palette=algorithm_color_map)
         plt.xscale('log')
-        plt.xlabel(r'$\rho / \sigma$')
+        plt.xlabel(r'SNR')
         plt.legend()
         # plt.ylim(0., 1.05)
         plt.tight_layout()
         plt.savefig(os.path.join(plot_dir,
-                                 f'comparison_score={score_column}_by_cov_prefactor_ratio.png'),
+                                 f'comparison_score={score_column}_by_snr.png'),
                     bbox_inches='tight',
                     dpi=300)
         # plt.show()

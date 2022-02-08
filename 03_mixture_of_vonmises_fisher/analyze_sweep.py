@@ -9,7 +9,7 @@ exp_dir = '03_mixture_of_vonmises_fisher'
 results_dir = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir, exist_ok=True)
 wandb_sweep_path = "rylan/dcrp-mixture-of-vonmises-fisher"
-sweep_name = '5vkotbim'
+sweep_name = 'simx0pgt'
 sweep_dir = os.path.join(results_dir, sweep_name)
 os.makedirs(sweep_dir, exist_ok=True)
 sweep_results_df_path = os.path.join(sweep_dir, f'sweep={sweep_name}_results.csv')
@@ -19,15 +19,13 @@ if not os.path.isfile(sweep_results_df_path):
         wandb_project_path=wandb_sweep_path,
         sweep_id=sweep_name)
 
-    # Compute SNR := rho / sigma
-    sweep_results_df['cov_prefactor_ratio'] = sweep_results_df['centroids_prior_cov_prefactor'] \
-                                              / sweep_results_df['likelihood_cov_prefactor']
+    # Compute SNR
+    sweep_results_df['snr'] = sweep_results_df['likelihood_kappa']
 
     sweep_results_df.to_csv(sweep_results_df_path, index=False)
 
 else:
     sweep_results_df = pd.read_csv(sweep_results_df_path)
-
 
 print(f"Number of runs: {sweep_results_df.shape[0]} for sweep={sweep_name}")
 

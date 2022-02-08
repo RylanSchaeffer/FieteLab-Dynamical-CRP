@@ -32,7 +32,7 @@ config_defaults = {
     'n_samples': 27,
     'n_features': 10,
     'n_clusters': 40,
-    'alpha': 0.1,
+    'alpha': 1.1,
     'beta': 0.,
     'centroids_prior_cov_prefactor': 5.,
     'likelihood_cov_prefactor': 50.,
