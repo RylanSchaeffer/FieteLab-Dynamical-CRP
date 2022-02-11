@@ -9,7 +9,7 @@ import subprocess
 
 import numpy as np
 
-import plot
+import plot_climate
 import rncrp.data
 
 def run_all():

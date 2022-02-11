@@ -2,35 +2,30 @@
 
 """
 
-import argparse
 import joblib
-import logging
 import numpy as np
 import os
-import torch
 import wandb
 
-# import plot
+# import plot_climate
 import rncrp.data.real
 import rncrp.helpers.dynamics
 import rncrp.helpers.run
 import rncrp.metrics
 
 config_defaults = {
-    # 'inference_alg_str': 'VI-GMM',
-    # 'inference_alg_str': 'DP-Means (Offline)',
     'inference_alg_str': 'RN-CRP',
-    # 'dynamics_str': 'step',
-    # 'dynamics_a': 1.,
-    # 'dynamics_b': 1.,
-    # 'dynamics_c': 1.,
-    # 'dynamics_omega': np.pi / 2.,
+    'dynamics_str': 'step',
+    'dynamics_a': 1.,
+    'dynamics_b': 1.,
+    'dynamics_c': 1.,
+    'dynamics_omega': np.pi / 2.,
     'alpha': 5.9,
     'beta': 0.,
     'repeat_idx': 0,
 }
 
-wandb.init(project='rncrp-climate', ## TODO: EDIT PROJECT NAME IF NEEDED
+wandb.init(project='rncrp-climate',
            config=config_defaults)
 config = wandb.config
 
