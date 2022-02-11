@@ -234,10 +234,28 @@ def create_climate_metrics_array(site_df,
     return site_array.T
 
 
-def create_climate_data(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_2020.txt',
-                        duration: str = 'annual',
-                        end_year: int = 2020,
-                        use_zscores: bool = False):
+def load_dataset_climate(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_',
+                         end_year: int = 2020,
+                         use_zscores: bool = False):
+
+    qualifying_sites_dir = qualifying_sites_path + str(end_year) + '.txt'
+    annual_data = load_dataset_climate_helper(qualifying_sites_dir, 'annual', end_year, use_zscores)
+    monthly_data = load_dataset_climate_helper(qualifying_sites_dir, 'monthly', end_year, use_zscores)
+
+    labels = None
+
+    dataset_dict = dict(
+        observations=annual_data,  #or monthly data?
+        labels=labels,
+    )
+    
+    return dataset_dict
+
+
+def load_dataset_climate_helper(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_2020.txt',
+                                duration: str = 'annual',
+                                end_year: int = 2020,
+                                use_zscores: bool = False):
     dataset = None
 
     with open(qualifying_sites_path) as file:
@@ -254,23 +272,6 @@ def create_climate_data(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Re
                     print("Invalid File: ", site_csv_path)
 
     return dataset
-
-
-def load_dataset_climate(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_',
-                         end_year: int = 2020,
-                         use_zscores: bool = False):
-    qualifying_sites_dir = qualifying_sites_path + str(end_year) + '.txt'
-    annual_data = create_climate_data(qualifying_sites_dir, 'annual', end_year, use_zscores)
-    monthly_data = create_climate_data(qualifying_sites_dir, 'monthly', end_year, use_zscores)
-
-    labels = None
-
-    dataset_dict = dict(
-        observations=annual_data, #or monthly data?
-        labels=labels,
-    )
-    
-    return dataset_dict
 
 
 def load_dataset_covid_tracking_2021(data_dir: str = 'data',
