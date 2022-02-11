@@ -1,8 +1,9 @@
 import itertools
+import json
 import numpy as np
-import pickle
 import os
 import pandas as pd
+import pickle
 import torch
 import torchvision
 import scipy as sp
@@ -15,6 +16,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from typing import Dict, List, Tuple
 
+
 # import rncrp.helpers.morph_envir_preprocessing as pp
 # import rncrp.helpers.morph_envir_utilities as u
 # import rncrp.helpers.PlaceCellAnalysis as pc
@@ -24,12 +26,13 @@ def load_dataset(dataset_name: str,
                  dataset_kwargs: Dict = None,
                  data_dir: str = 'data',
                  ) -> Dict[str, np.ndarray]:
-
     if dataset_kwargs is None:
         dataset_kwargs = dict()
 
     if dataset_name == 'ames_housing_2011':
         load_dataset_fn = load_dataset_ames_housing_2011
+    elif dataset_name == 'arxiv_2022':
+        load_dataset_fn = load_dataset_arxiv_2022
     elif dataset_name == 'boston_housing_1993':
         load_dataset_fn = load_dataset_boston_housing_1993
     elif dataset_name == 'cancer_gene_expression_2016':
@@ -55,7 +58,6 @@ def load_dataset(dataset_name: str,
 def load_dataset_ames_housing_2011(data_dir: str = 'data',
                                    **kwargs,
                                    ) -> Dict[str, pd.DataFrame]:
-
     ames_housing_bunch = fetch_openml(name="house_prices", as_frame=True)
 
     # Shape: (1460, 81)
@@ -96,6 +98,56 @@ def load_dataset_ames_housing_2011(data_dir: str = 'data',
     dataset_dict = dict(
         observations=observations,
         labels=labels,
+    )
+
+    return dataset_dict
+
+
+def load_dataset_arxiv_2022(data_dir: str = 'data',
+                            **kwargs,
+                            ) -> Dict[str, np.ndarray]:
+    dataset_dir = os.path.join(data_dir, 'arxiv_2022')
+    data_json_path = os.path.join(dataset_dir, 'arxiv-metadata-oai-snapshot.json')
+    data_trimmed_path = os.path.join(dataset_dir, 'arxiv-metadata-trimmed.csv')
+
+    if not os.path.isfile(data_trimmed_path):
+
+        # https://www.kaggle.com/onyonixch/scientific-paper-clustering
+        # If the whole dataset is to be loaded, it is recommended in the footnote of
+        # the dataset to load the dataset with the library dask. Dask makes it
+        # possible to load larger datasets and process large amount of data on
+        # personal computers or VM's with limited resources.
+        import dask.bag as db
+
+        arxiv_abstracts_dask_db = db.read_text(
+            '../input/arxiv/arxiv-metadata-oai-snapshot.json').map(json.loads)
+
+        # get only necessary fields of the metadata file
+        get_latest_version = lambda x: x['versions'][-1]['created']
+
+        # TODO: confirm that update_date looks like the right field
+        trim = lambda x: {
+            # 'id': x['id'],
+            # 'authors': x['authors'],
+            'title': x['title'],
+            # 'doi': x['doi'],
+            'category': x['categories'].split(' '),
+            'abstract': x['abstract'],
+            'latest_date': get_latest_version(x)
+        }
+        # filter for papers published on or after 2019-01-01
+        arxiv_abstracts_df = (arxiv_abstracts_dask_db.map(trim).compute())
+        arxiv_abstracts_df.to_csv(data_trimmed_path, index=False)
+
+    else:
+        arxiv_abstracts_df = pd.read_csv(data_trimmed_path, index_col=False)
+
+    observations = arxiv_abstracts_df.loc[:, ~arxiv_abstracts_df.columns.isin(['category'])].copy()
+    labels = arxiv_abstracts_df['category']
+
+    dataset_dict = dict(
+        observations=observations.values,
+        labels=labels.values,
     )
 
     return dataset_dict
@@ -175,7 +227,7 @@ def create_climate_metrics_array(site_df,
     df = df[(df.year >= 1946) & (df.year <= end_year)]
 
     if duration == 'annual':
-        iterable = list(range(1946, end_year+1))
+        iterable = list(range(1946, end_year + 1))
         index = pd.Index(iterable, name="year")
         outdf = pd.DataFrame(columns=index).T
 
@@ -192,7 +244,7 @@ def create_climate_metrics_array(site_df,
     elif duration == 'monthly':
         df["month"] = df.DATE.apply(lambda x: int(x[5:7]))
 
-        year_iterable = list(range(1946, end_year+1))
+        year_iterable = list(range(1946, end_year + 1))
         month_iterable = list(range(1, 13))
         index = pd.MultiIndex.from_product([year_iterable, month_iterable], names=["year", "month"])
         outdf = pd.DataFrame(columns=index).T
@@ -234,10 +286,10 @@ def create_climate_metrics_array(site_df,
     return site_array.T
 
 
-def load_dataset_climate(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_',
-                         end_year: int = 2020,
-                         use_zscores: bool = False):
-
+def load_dataset_climate(
+        qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_',
+        end_year: int = 2020,
+        use_zscores: bool = False):
     qualifying_sites_dir = qualifying_sites_path + str(end_year) + '.txt'
     annual_data = load_dataset_climate_helper(qualifying_sites_dir, 'annual', end_year, use_zscores)
     monthly_data = load_dataset_climate_helper(qualifying_sites_dir, 'monthly', end_year, use_zscores)
@@ -245,17 +297,18 @@ def load_dataset_climate(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-R
     labels = None
 
     dataset_dict = dict(
-        observations=annual_data,  #or monthly data?
+        observations=annual_data,  # or monthly data?
         labels=labels,
     )
-    
+
     return dataset_dict
 
 
-def load_dataset_climate_helper(qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_2020.txt',
-                                duration: str = 'annual',
-                                end_year: int = 2020,
-                                use_zscores: bool = False):
+def load_dataset_climate_helper(
+        qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_2020.txt',
+        duration: str = 'annual',
+        end_year: int = 2020,
+        use_zscores: bool = False):
     dataset = None
 
     with open(qualifying_sites_path) as file:
@@ -267,7 +320,7 @@ def load_dataset_climate_helper(qualifying_sites_path: str = '/om2/user/gkml/Fie
                     if type(dataset) is not np.ndarray:
                         dataset = site_array
                     else:
-                        dataset = np.vstack((dataset,site_array))
+                        dataset = np.vstack((dataset, site_array))
                 except:
                     print("Invalid File: ", site_csv_path)
 
@@ -511,6 +564,11 @@ def load_dataset_newsgroup(data_dir: str = 'data',
     )
 
     return newsgroup_dataset_results
+
+
+def load_dataset_newsroom(data_dir: str = 'data'):
+    # https://www.tensorflow.org/datasets/catalog/newsroom
+    pass
 
 
 def load_dataset_mnist(data_dir: str = 'data',
@@ -960,7 +1018,6 @@ def load_dataset_morph_environment(data_dir: str = 'data',
     print(rfl.sum(), rfl.shape[0] - rfl.sum())
     print(np.unique(ml))
 
-
     ### TODO: GENERATE DATASET FOR CLUSTERING HERE
 
     # _sm = np.reshape(sm,(10,45,-1))
@@ -997,4 +1054,4 @@ def load_dataset_morph_environment(data_dir: str = 'data',
 
 
 if __name__ == '__main__':
-    load_dataset(dataset_name='ames_housing_2011')
+    load_dataset(dataset_name='arxiv_2022')
