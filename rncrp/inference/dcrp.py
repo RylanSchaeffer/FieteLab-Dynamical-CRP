@@ -177,10 +177,11 @@ class DynamicalCRP(BaseModel):
                 if torch.any(negative_indices):
                     print(f'Smallest value: {torch.min(cluster_assignment_prior)}')
                     # If the values are sufficiently close to 0, replace with 0.
-                    if torch.all(torch.isclose(cluster_assignment_prior[negative_indices],
-                                               torch.tensor(0.),
-                                               atol=1e-4)):
-                        cluster_assignment_prior[negative_indices] = 0.
+                    # if torch.all(torch.isclose(cluster_assignment_prior[negative_indices],
+                    #                            torch.tensor(0.),
+                    #                            atol=1e-4)):
+                    #     cluster_assignment_prior[negative_indices] = 0.
+                    cluster_assignment_prior[negative_indices] = 0.
                     assert torch.all(cluster_assignment_prior >= 0.)
 
                     # Record latent prior.
