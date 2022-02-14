@@ -25,7 +25,7 @@ config_defaults = {
     'repeat_idx': 0,
 }
 
-wandb.init(project='rncrp-climate',
+wandb.init(project='dcrp-climate',
            config=config_defaults)
 config = wandb.config
 
