@@ -64,3 +64,39 @@ def compute_sum_of_squared_distances_to_nearest_center(X: np.ndarray,
     sum_of_squared_distances_to_nearest_center = np.sum(squared_distances_to_nearest_center)
 
     return sum_of_squared_distances_to_nearest_center
+
+
+def compute_cluster_linear_regression_score(cluster_assignment_posteriors: np.ndarray,
+                                            targets: np.ndarray,
+                                            fit_intercept: bool = True,
+                                            use_vanilla: bool = True,
+                                            use_ridge: bool = False,
+                                            use_lasso: bool = False):
+
+    assert cluster_assignment_posteriors.shape[0] == targets.shape[0]
+    assert use_vanilla + use_lasso + use_ridge == 1
+
+    if use_vanilla:
+        from sklearn.linear_model import LinearRegression
+        linear_model = LinearRegression(fit_intercept=fit_intercept)
+    elif use_ridge:
+        from sklearn.linear_model import Ridge
+        linear_model = Ridge(fit_intercept=fit_intercept)
+    elif use_lasso:
+        from sklearn.linear_model import Lasso
+        linear_model = Lasso(fit_intercept=fit_intercept)
+    else:
+        raise ValueError('How did you end up here?')
+
+    linear_model.fit(X=cluster_assignment_posteriors, y=targets)
+    predicted_targets = linear_model.predict(cluster_assignment_posteriors)
+
+    # R^2: 1 - Sum of Squared Residuals / Total sum of squares
+    coeff_of_determination = linear_model.score(X=cluster_assignment_posteriors, y=targets)
+
+    cluster_linear_regression_results = {
+        'coeff_of_determination': coeff_of_determination,
+        'predicted_targets': predicted_targets,
+    }
+
+    return cluster_linear_regression_results
