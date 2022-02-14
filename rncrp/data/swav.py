@@ -11,10 +11,10 @@ Modified from https://github.com/facebookresearch/swav/
 # LICENSE file in the root directory of this source tree.
 #
 import random
-from logging import getLogger
 
-from PIL import ImageFilter
 import numpy as np
+import os
+from PIL import ImageFilter
 import torch
 import torch.nn.functional
 import torch.utils.data
@@ -22,7 +22,11 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from typing import List
 
-logger = getLogger()
+
+path_to_imagenet = '/home/akhilan/om2/train'
+path_to_write_data = 'data/swav_imagenet_2021'
+
+os.makedirs(path_to_write_data, exist_ok=True)
 
 
 class MultiCropDataset(datasets.ImageFolder):
@@ -106,10 +110,7 @@ def get_color_distortion(s=1.0):
     return color_distort
 
 
-
 model = torch.hub.load('facebookresearch/swav:main', 'resnet50')
-
-path_to_imagenet = '/home/akhilan/om2/train'
 
 train_dataset = MultiCropDataset(
     data_path=path_to_imagenet)
@@ -124,6 +125,8 @@ train_loader = torch.utils.data.DataLoader(
     drop_last=True
 )
 
+outputs, targets = [], []
+
 for it, inputs in enumerate(train_loader):
 
     # normalize the prototypes
@@ -132,6 +135,17 @@ for it, inputs in enumerate(train_loader):
         w = torch.nn.functional.normalize(w, dim=1, p=2)
         model.module.prototypes.weight.copy_(w)
 
-    embedding, output = model(inputs)
-    embedding = embedding.detach()
+        embedding, output = model(inputs)
+        # embedding = embedding.detach()
+        outputs.append(outputs.detach())
+
+outputs = torch.cat(outputs).numpy()
+targets = torch.cat(targets).numpy()
+
+# Imagenet Classes: https://gist.github.com/yrevar/942d3a0ac09ec9e5eb3a
+np.save(file=path_to_write_data,
+        outputs=outputs,
+        targets=targets)
+
+
 
