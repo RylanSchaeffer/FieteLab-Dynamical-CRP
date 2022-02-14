@@ -1,7 +1,8 @@
 """
-Modified from https://github.com/facebookresearch/swav/blob/main/src/multicropdataset.py
-"""
+Script to pass ImageNet through pretrained SwAV and save activations to disk.
 
+Modified from https://github.com/facebookresearch/swav/
+"""
 
 # Copyright (c) Facebook, Inc. and its affiliates.
 # All rights reserved.
@@ -14,6 +15,9 @@ from logging import getLogger
 
 from PIL import ImageFilter
 import numpy as np
+import torch
+import torch.nn.functional
+import torch.utils.data
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from typing import List
@@ -100,3 +104,34 @@ def get_color_distortion(s=1.0):
     rnd_gray = transforms.RandomGrayscale(p=0.2)
     color_distort = transforms.Compose([rnd_color_jitter, rnd_gray])
     return color_distort
+
+
+
+model = torch.hub.load('facebookresearch/swav:main', 'resnet50')
+
+path_to_imagenet = '/home/akhilan/om2/train'
+
+train_dataset = MultiCropDataset(
+    data_path=path_to_imagenet)
+
+sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
+train_loader = torch.utils.data.DataLoader(
+    train_dataset,
+    sampler=sampler,
+    batch_size=64,  # SwAV Default arg
+    num_workers=10,  # SwAV Default arg
+    pin_memory=True,
+    drop_last=True
+)
+
+for it, inputs in enumerate(train_loader):
+
+    # normalize the prototypes
+    with torch.no_grad():
+        w = model.module.prototypes.weight.data.clone()
+        w = torch.nn.functional.normalize(w, dim=1, p=2)
+        model.module.prototypes.weight.copy_(w)
+
+    embedding, output = model(inputs)
+    embedding = embedding.detach()
+
