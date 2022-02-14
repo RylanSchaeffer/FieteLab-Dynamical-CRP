@@ -1,6 +1,5 @@
-program: exp2_climate/run_one.py
-## TODO: CHANGE PROJECT NAME IF NEEDED
-project: rncrp-climate
+program: 04_climate/run_one.py
+project: dcrp-climate
 method: grid
 metric:
   goal: minimize
@@ -11,6 +10,7 @@ parameters:
         'VI-GMM',
         'DP-Means (Offline)',
         'DP-Means (Online)',
+        'Dynamical-CRP',
     ]
 #  dynamics_str:
 #    values: [
