@@ -106,17 +106,26 @@ inference_alg_results = rncrp.helpers.run.run_inference_alg(
     gen_model_params=gen_model_params,
 )
 
+cluster_linear_regression_results = rncrp.metrics.compute_cluster_linear_regression_score(
+    cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
+    targets=ames_housing_data['labels'].values)
+wandb.log({
+    'coeff_of_determination': cluster_linear_regression_results['coeff_of_determination']},
+    step=0)
 
-sum_sqrd_distances = rncrp.metrics.compute_sum_of_squared_distances_to_nearest_center(
-    X=mixture_model_results['observations'],
-    centroids=inference_alg_results['inference_alg'].centroids_after_last_obs())
-inference_alg_results['training_reconstruction_error'] = sum_sqrd_distances
-wandb.log({'training_reconstruction_error': sum_sqrd_distances}, step=0)
+
+# Not really relevant if centroids are changing
+# sum_sqrd_distances = rncrp.metrics.compute_sum_of_squared_distances_to_nearest_center(
+#     X=ames_housing_data['observations'],
+#     centroids=inference_alg_results['inference_alg'].centroids_after_last_obs())
+# inference_alg_results['training_reconstruction_error'] = sum_sqrd_distances
+# wandb.log({'training_reconstruction_error': sum_sqrd_distances}, step=0)
 
 
 data_to_store = dict(
     config=dict(config),  # Need to convert WandB config to proper dict
     inference_alg_results=inference_alg_results,
+    cluster_linear_regression_results=cluster_linear_regression_results,
     )
 
 joblib.dump(data_to_store,
