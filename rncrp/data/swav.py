@@ -23,7 +23,9 @@ import torchvision.transforms as transforms
 from typing import List
 
 
-path_to_imagenet = '/home/akhilan/om2/train'
+path_to_imagenet = '/om2/user/akhilan/train'
+model_str = 'resnet50'
+assert model_str in {'resnet50', 'resnet50w2', 'resnet50w4', 'resnet50w5'}
 path_to_write_data = 'data/swav_imagenet_2021'
 
 os.makedirs(path_to_write_data, exist_ok=True)
@@ -110,42 +112,56 @@ def get_color_distortion(s=1.0):
     return color_distort
 
 
-model = torch.hub.load('facebookresearch/swav:main', 'resnet50')
+model = torch.hub.load('facebookresearch/swav:main', model=model_str)
+
+print(f'Loaded model: {model}')
 
 train_dataset = MultiCropDataset(
     data_path=path_to_imagenet)
 
-sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
+# sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
 train_loader = torch.utils.data.DataLoader(
     train_dataset,
-    sampler=sampler,
+    # sampler=sampler,
     batch_size=64,  # SwAV Default arg
     num_workers=10,  # SwAV Default arg
     pin_memory=True,
     drop_last=True
 )
 
+# train_loader.sampler.set_epoch(0)
+
 outputs, targets = [], []
 
-for it, inputs in enumerate(train_loader):
+for batch_index, inputs in enumerate(train_loader):
+
+    print(f'Batch index: {batch_index}')
+
+    print(type(inputs))
+    print(inputs)
 
     # normalize the prototypes
     with torch.no_grad():
-        w = model.module.prototypes.weight.data.clone()
-        w = torch.nn.functional.normalize(w, dim=1, p=2)
-        model.module.prototypes.weight.copy_(w)
+        # w = model.module.prototypes.weight.data.clone()
+        # w = torch.nn.functional.normalize(w, dim=1, p=2)
+        # model.module.prototypes.weight.copy_(w)
 
         embedding, output = model(inputs)
         # embedding = embedding.detach()
-        outputs.append(outputs.detach())
+        outputs.append(output.detach())
+
+print('Finished extracting ImageNet representations.')
 
 outputs = torch.cat(outputs).numpy()
 targets = torch.cat(targets).numpy()
+
+print('Concatenated representations and converted to NumPy.')
 
 # Imagenet Classes: https://gist.github.com/yrevar/942d3a0ac09ec9e5eb3a
 np.save(file=path_to_write_data,
         outputs=outputs,
         targets=targets)
 
+print('Wrote representations to disk.')
 
 
