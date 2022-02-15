@@ -14,6 +14,8 @@ import random
 
 import numpy as np
 import os
+
+import torchvision.datasets
 from PIL import ImageFilter
 import torch
 import torch.nn.functional
@@ -23,12 +25,14 @@ import torchvision.transforms as transforms
 from typing import List
 
 
-path_to_imagenet = '/om2/user/akhilan/train'
+path_to_imagenet = '/om2/user/akhilan'
+path_to_write_data = 'data/swav_imagenet_2021'
+os.makedirs(path_to_write_data, exist_ok=True)
 model_str = 'resnet50'
 assert model_str in {'resnet50', 'resnet50w2', 'resnet50w4', 'resnet50w5'}
-path_to_write_data = 'data/swav_imagenet_2021'
 
-os.makedirs(path_to_write_data, exist_ok=True)
+path_to_imagenet_train = os.path.join(path_to_imagenet, 'train')
+path_to_imagenet_val = os.path.join(path_to_imagenet, 'val')
 
 
 class MultiCropDataset(datasets.ImageFolder):
@@ -112,33 +116,71 @@ def get_color_distortion(s=1.0):
     return color_distort
 
 
-model = torch.hub.load('facebookresearch/swav:main', model=model_str)
+# model = torch.hub.load('facebookresearch/swav:main',
+#                        model=model_str,
+#                        # pretrained=True,
+#                        )
 
-print(f'Loaded model: {model}')
+# Print available methods
+# print(dir(model))
 
-train_dataset = MultiCropDataset(
-    data_path=path_to_imagenet)
+# Print what arguments model requires to run
+# print(help(model))
+
+from pl_bolts.models.self_supervised import SwAV
+
+weight_path = 'https://pl-bolts-weights.s3.us-east-2.amazonaws.com/swav/swav_imagenet/swav_imagenet.pth.tar'
+swav = SwAV.load_from_checkpoint(weight_path, strict=True)
+
+swav.freeze()
+
+
+# model = torchvision.models.resnet50()
+# ckp = torch.hub.load_state_dict_from_url(
+#     'https://dl.fbaipublicfiles.com/deepcluster/swav_800ep_pretrain.pth.tar',
+#     map_location=torch.device('cpu'))
+#
+#
+# for k in ckp.keys():
+#     if "projection_head" in k or "prototypes" in k:
+#         print(k, ckp[k].shape)
+
+# checkpoint = torch.load('.user/swav_800ep_pretrain.pth.tar')
+# model.load_state_dict(checkpoint, strict=False)
+#
+#
+# model.load_state_dict(ckp)
+
+print(f'Loaded model: {model_str}')
+
+train_dataset = torchvision.datasets.ImageFolder(
+    root=path_to_imagenet_train,
+    transform=torchvision.transforms.Compose([
+        torchvision.transforms.ToTensor()]))
+
+# train_dataset = torchvision.datasets.ImageNet(
+#     root=path_to_imagenet)
+
+# train_dataset = MultiCropDataset(
+#     data_path=path_to_imagenet_train)
 
 # sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
 train_loader = torch.utils.data.DataLoader(
     train_dataset,
     # sampler=sampler,
-    batch_size=64,  # SwAV Default arg
-    num_workers=10,  # SwAV Default arg
+    batch_size=1,  # SwAV Default arg
+    num_workers=1,  # SwAV Default arg
     pin_memory=True,
-    drop_last=True
+    drop_last=False,
 )
 
 # train_loader.sampler.set_epoch(0)
 
-outputs, targets = [], []
+embeddings, targets = [], []
 
-for batch_index, inputs in enumerate(train_loader):
+for batch_index, (input_tensor, target_tensor) in enumerate(train_loader):
 
     print(f'Batch index: {batch_index}')
-
-    print(type(inputs))
-    print(inputs)
 
     # normalize the prototypes
     with torch.no_grad():
@@ -146,21 +188,28 @@ for batch_index, inputs in enumerate(train_loader):
         # w = torch.nn.functional.normalize(w, dim=1, p=2)
         # model.module.prototypes.weight.copy_(w)
 
-        embedding, output = model(inputs)
+        # Note! This is different than swav(input_tensor) because it also passes through
+        # the MLP projection head
+        embedding, _ = swav.model.forward(input_tensor)
         # embedding = embedding.detach()
-        outputs.append(output.detach())
+        embeddings.append(embedding.detach().numpy())
+        targets.append(target_tensor.numpy())
+
+    if batch_index > 10:
+        break
 
 print('Finished extracting ImageNet representations.')
 
-outputs = torch.cat(outputs).numpy()
-targets = torch.cat(targets).numpy()
+embeddings = np.concatenate(embeddings)
+targets = np.concatenate(targets)
 
 print('Concatenated representations and converted to NumPy.')
 
 # Imagenet Classes: https://gist.github.com/yrevar/942d3a0ac09ec9e5eb3a
 np.save(file=path_to_write_data,
-        outputs=outputs,
-        targets=targets)
+        outputs=embeddings,
+        targets=targets,
+        prototypes=swav.model.prototypes.weight.numpy())
 
 print('Wrote representations to disk.')
 
