@@ -33,6 +33,7 @@ assert model_str in {'resnet50', 'resnet50w2', 'resnet50w4', 'resnet50w5'}
 
 path_to_imagenet_train = os.path.join(path_to_imagenet, 'train')
 path_to_imagenet_val = os.path.join(path_to_imagenet, 'val')
+path_to_imagenet_test = os.path.join(path_to_imagenet, 'test')
 
 # class MultiCropDataset(datasets.ImageFolder):
 #
@@ -165,14 +166,14 @@ train_transform = transforms.Compose([
     normalize,
 ])
 
-val_transform = transforms.Compose([
+val_and_test_transform = transforms.Compose([
     transforms.Resize(256),
     transforms.CenterCrop(224),
     transforms.ToTensor(),
     normalize,
 ])
 
-for split in ['val', 'train']:
+for split in ['test', 'val', 'train']:
 
     if split == 'train':
         dataset = torchvision.datasets.ImageFolder(
@@ -181,7 +182,11 @@ for split in ['val', 'train']:
     elif split == 'val':
         dataset = torchvision.datasets.ImageFolder(
             path_to_imagenet_val,
-            transform=val_transform)
+            transform=val_and_test_transform)
+    elif split == 'test':
+        dataset = torchvision.datasets.ImageFolder(
+            path_to_imagenet_test,
+            transform=val_and_test_transform)
     else:
         raise ValueError
 
@@ -199,7 +204,7 @@ for split in ['val', 'train']:
 
     for batch_index, (input_tensor, target_tensor) in enumerate(dataloader, start=1):
 
-        print(f'Batch index: {batch_index}')
+        print(f'Split: {split}\tBatch index: {batch_index}')
 
         # normalize the prototypes
         with torch.no_grad():
