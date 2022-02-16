@@ -928,6 +928,7 @@ def load_dataset_swav_imagenet_2021(data_dir: str = 'data',
     assert split in {'train', 'test', 'val'}
 
     # load all available numpy
+    # TO generate, see the
     numpy_array_paths = sorted([
         os.path.join(dataset_dir, filename) for filename in os.listdir(dataset_dir)
         if filename.startswith(split)])
