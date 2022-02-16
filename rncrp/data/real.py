@@ -15,7 +15,7 @@ from sklearn.preprocessing import OneHotEncoder
 # import umap.plot
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 
 # import rncrp.helpers.morph_envir_preprocessing as pp
@@ -46,6 +46,8 @@ def load_dataset(dataset_name: str,
         load_dataset_fn = load_dataset_electric_grid_stability_2016
     elif dataset_name == 'wisconsin_breast_cancer_1995':
         load_dataset_fn = load_dataset_wisconsin_breast_cancer_1995
+    elif dataset_name == 'swav_imagenet_2021':
+        load_dataset_fn = load_dataset_swav_imagenet_2021
     else:
         raise NotImplementedError
 
@@ -236,7 +238,7 @@ def create_data_for_label_generation(site_df,
         outdf.loc[:, "Tn"] = df.groupby(["year"]).TMIN.mean().reset_index().set_index(["year"])
         outdf.loc[:, "Tx"] = df.groupby(["year"]).TMAX.mean().reset_index().set_index(["year"])
         outdf.loc[:, "Tm"] = df.groupby(["year"]).TAVG.mean().reset_index().set_index(["year"])
-        outdf.loc[:, "Tm"] = np.where(np.isnan(outdf.Tm),(outdf.Tn+outdf.Tx)/2.,outdf.Tm)
+        outdf.loc[:, "Tm"] = np.where(np.isnan(outdf.Tm), (outdf.Tn + outdf.Tx) / 2., outdf.Tm)
 
     elif duration == 'monthly':
         df["month"] = df.DATE.apply(lambda x: int(x[5:7]))
@@ -250,7 +252,7 @@ def create_data_for_label_generation(site_df,
         outdf.loc[:, "Tn"] = df.groupby(["year", "month"]).TMIN.mean().reset_index().set_index(["year", "month"])
         outdf.loc[:, "Tx"] = df.groupby(["year", "month"]).TMAX.mean().reset_index().set_index(["year", "month"])
         outdf.loc[:, "Tm"] = df.groupby(["year", "month"]).TAVG.mean().reset_index().set_index(["year", "month"])
-        outdf.loc[:, "Tm"] = np.where(np.isnan(outdf.Tm),(outdf.Tn+outdf.Tx)/2.,outdf.Tm)
+        outdf.loc[:, "Tm"] = np.where(np.isnan(outdf.Tm), (outdf.Tn + outdf.Tx) / 2., outdf.Tm)
 
     else:
         raise ValueError('Impermissible computation interval:', duration)
@@ -357,19 +359,23 @@ def load_dataset_climate(
                                                end_year=end_year,
                                                use_zscores=use_zscores,
                                                get_labels=True)
-    np.save('/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/monthly_data.npy',monthly_data)
+    np.save('/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/monthly_data.npy', monthly_data)
 
     if get_labels:
         dataframe_for_label_generation = pd.DataFrame(monthly_data)
-        dataframe_for_label_generation.to_csv("/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/dataframe_for_label_generation.csv", index=False)
-        print("Data for label generation saved to:","/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/dataframe_for_label_generation.csv")
+        dataframe_for_label_generation.to_csv(
+            "/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/dataframe_for_label_generation.csv",
+            index=False)
+        print("Data for label generation saved to:",
+              "/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/dataframe_for_label_generation.csv")
 
     else:
         # label_filename = 'annual_labels_without_subclasses.csv'
         # label_filename = 'annual_labels_with_subclasses.csv'
         label_filename = 'monthly_labels_without_subclasses.csv'
         # label_filename = 'monthly_labels_with_subclasses.csv'
-        labels_array = pd.read_csv('/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/'+label_filename).values
+        labels_array = pd.read_csv(
+            '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/' + label_filename).values
         encoder = OneHotEncoder()
         one_hot_labels = encoder.fit_transform(labels_array).toarray()
 
@@ -387,14 +393,13 @@ def load_dataset_climate_helper(
         end_year: int = 2020,
         use_zscores: bool = False,
         get_labels: bool = False):
-
     dataset = None
 
     with open(qualifying_sites_path) as file:
         for site_csv_path in file:
             if '.csv' in site_csv_path:
                 try:
-                    print("On Site:",site_csv_path[-15:])
+                    print("On Site:", site_csv_path[-15:])
                     df = pd.read_csv(site_csv_path.strip(), low_memory=False)
                     site_array = create_climate_metrics_array(df, duration, end_year, use_zscores)
                     if get_labels:
@@ -913,9 +918,47 @@ def load_dataset_reddit(num_data: int,
     return reddit_dataset_results
 
 
+def load_dataset_swav_imagenet_2021(data_dir: str = 'data',
+                                    split: str = 'val',
+                                    **kwargs,
+                                    ) -> Dict[str, np.ndarray]:
+
+    dataset_dir = os.path.join(data_dir, 'swav_imagenet_2021')
+
+    assert split in {'train', 'test', 'val'}
+
+    # load all available numpy
+    numpy_array_paths = sorted([
+        os.path.join(dataset_dir, filename) for filename in os.listdir(dataset_dir)
+        if filename.startswith(split)])
+
+    numpy_array_file_handles = [
+        np.load(numpy_array_path) for numpy_array_path in numpy_array_paths]
+
+    embeddings = np.concatenate([
+        numpy_array['embeddings'] for numpy_array in numpy_array_file_handles])
+    targets = np.concatenate([
+        numpy_array['targets'] for numpy_array in numpy_array_file_handles])
+
+    # All arrays should have the same prototypes, so arbitrarily take the
+    # first array's prototypes. Has shape (3000, 128)
+    prototypes = numpy_array_file_handles[0]['prototypes']
+
+    dataset_dict = dict(
+        observations=embeddings,
+        labels=targets,
+        prototypes=prototypes,
+    )
+
+    for numpy_array_file in numpy_array_file_handles:
+        numpy_array_file.close()
+
+    return dataset_dict
+
+
 def load_dataset_template(data_dir: str = 'data',
                           **kwargs,
-                          ) -> Dict[str, np.ndarray]:
+                          ) -> Dict[str, Union[np.ndarray, pd.DataFrame]]:
     dataset_dir = os.path.join(data_dir,
                                'wisconsin_breast_cancer_1995')
     data_path = os.path.join(dataset_dir, 'data.csv')
@@ -1135,4 +1178,4 @@ def load_dataset_morph_environment(data_dir: str = 'data',
 
 
 if __name__ == '__main__':
-    load_dataset(dataset_name='arxiv_2022')
+    load_dataset(dataset_name='swav_imagenet_2021')
