@@ -9,9 +9,15 @@ from typing import Dict, Tuple
 def compute_predicted_clusters_scores(cluster_assignment_posteriors: np.ndarray,
                                       true_cluster_assignments: np.ndarray,
                                       ) -> Tuple[Dict[str, float], np.ndarray]:
-    # cluster assignment posteriors has shape (number obs, num clusters)
-    # (r, c)th element is probability the rth observation belongs to cth cluster
-    # true_cluster_labels: integer classes with shape (num obs, )
+
+    """
+
+    Parameters:
+        cluster_assignment_posteriors: shape (number obs, num clusters).
+            (r, c)th element is probability the rth observation belongs to cth cluster
+        true_cluster_assignments: integer classes with shape (num obs, )
+            or binary with shape (num obs, max num clusters)
+    """
 
     if len(cluster_assignment_posteriors.shape) == 2:
         pred_cluster_labels = np.argmax(cluster_assignment_posteriors,
