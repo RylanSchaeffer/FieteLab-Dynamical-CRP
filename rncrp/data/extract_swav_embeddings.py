@@ -173,7 +173,7 @@ val_and_test_transform = transforms.Compose([
     normalize,
 ])
 
-for split in ['test', 'val', 'train']:
+for split in ['val']:  # 'test', 'train'
 
     if split == 'train':
         dataset = torchvision.datasets.ImageFolder(
@@ -200,7 +200,7 @@ for split in ['test', 'val', 'train']:
     )
     print('Created dataloader.')
 
-    embeddings, targets = [], []
+    embeddings, targets, images = [], [], []
 
     for batch_index, (input_tensor, target_tensor) in enumerate(dataloader, start=1):
 
@@ -215,19 +215,22 @@ for split in ['test', 'val', 'train']:
             # embedding = embedding.detach()
             embeddings.append(embedding.detach().numpy())
             targets.append(target_tensor.numpy())
+            images.append(input_tensor.numpy())
 
         # 20 embeddings per batch * 50 batches per write = 10k embeddings per write
         if (batch_index % 50) == 0:
 
             embeddings_array = np.concatenate(embeddings)
             targets_array = np.concatenate(targets)
+            images_array = np.concatenate(images)
 
             # Imagenet Classes: https://gist.github.com/yrevar/942d3a0ac09ec9e5eb3a
             np.savez(file=os.path.join(path_to_write_data, split + f'_batch={batch_index}.npz'),
                      embeddings=embeddings_array,
                      targets=targets_array,
+                     images=images_array,
                      prototypes=swav.model.prototypes.weight.numpy())
 
             print('Wrote representations to disk.')
 
-            embeddings, targets = [], []
+            embeddings, targets, images = [], [], []
