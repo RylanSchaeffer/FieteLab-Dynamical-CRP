@@ -1,4 +1,4 @@
-# Streaming Inference for Nonstationary Infinite Mixture Models
+# Streaming Inference for Non-Stationary Infinite Mixture Models
 
 ### Authors: Rylan Schaeffer, Gabrielle Kaili-May Liu, Ila Rani Fiete
 
@@ -36,13 +36,6 @@ we run sweeps via [Weights and Biases](https://wandb.ai/) that we configure via 
 After completing your runs, each experiment directory should also contain an `analyze_sweep.py`
 file that reads the results from Weights and Biases and generates the plots in a `plots`
 subdirectory (e.g. `00_prior/plots`).
-
-## TODO
-- Derive parameter updates for von-Mises likelihood
-- Derive parameter updates for Dirichlet-Multinomial likelihood
-- Real-world data: housing
-- Real-world data: Omniglot, with particular temporal transition between "languages"
-- Real-world data: NYT Corpus or some other text corpus
 
 ## Contact
 
