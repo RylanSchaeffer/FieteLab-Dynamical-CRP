@@ -129,7 +129,7 @@ path_to_imagenet_val = os.path.join(path_to_imagenet, 'val')
 weight_path = 'https://pl-bolts-weights.s3.us-east-2.amazonaws.com/swav/swav_imagenet/swav_imagenet.pth.tar'
 swav = SwAV.load_from_checkpoint(weight_path, strict=True)
 swav.freeze()
-swav = swav.cuda()
+# swav = swav.cuda()
 
 # # Check out number of redundant prototypes
 # p = swav.model.prototypes.weight.numpy()
@@ -185,12 +185,15 @@ for split in ['val', 'train']:
     else:
         raise ValueError
 
+    print('Created dataset.')
+
     dataloader = torch.utils.data.DataLoader(
         dataset,
-        batch_size=50,  # SwAV Default arg = 64
-        num_workers=10,  # SwAV Default arg = 10
+        batch_size=20,  # SwAV Default arg = 64
+        num_workers=2,  # SwAV Default arg = 10
         drop_last=False,
     )
+    print('Created dataloader.')
 
     embeddings, targets = [], []
 
@@ -208,8 +211,8 @@ for split in ['val', 'train']:
             embeddings.append(embedding.detach().numpy())
             targets.append(target_tensor.numpy())
 
-        # 50 embeddings per batch * 200 batches per write = 10k embeddings per write
-        if (batch_index % 20) == 0:
+        # 20 embeddings per batch * 50 batches per write = 10k embeddings per write
+        if (batch_index % 50) == 0:
 
             embeddings_array = np.concatenate(embeddings)
             targets_array = np.concatenate(targets)
