@@ -8,13 +8,11 @@
 
 
 # Run this, then pipe sweep ID to each individual run
-# export WANDB_CONFIG_DIR=/om2/user/rylansch
-# export WANDB_API_KEY=51a0a43a1b4ba9981701d60c5f6887cd5bf9e03e
 # source rncrp_venv/bin/activate
-# wandb sweep 03_mixture_of_vonmises_fisher/sweep_complete.yaml
+# wandb sweep 05_swav_pretrained/sweep_complete.yaml
 
 for i in {1..5}
 do
-  sbatch 05_swav_pretrained/run_one.sh simx0pgt
+  sbatch 05_swav_pretrained/run_one.sh r4iixpy6
   sleep 5
 done
