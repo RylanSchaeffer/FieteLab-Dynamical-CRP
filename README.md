@@ -1,4 +1,4 @@
-# Streaming Inference for Non-Stationary Infinite Mixture Models
+# Streaming Inference for Infinite Non-Stationary Clustering
 
 ### Authors: Rylan Schaeffer, Gabrielle Kaili-May Liu, Ila Rani Fiete
 
