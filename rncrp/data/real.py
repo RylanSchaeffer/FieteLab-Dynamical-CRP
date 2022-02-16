@@ -939,6 +939,10 @@ def load_dataset_swav_imagenet_2021(data_dir: str = 'data',
 
     embeddings = np.concatenate([
         numpy_array['embeddings'] for numpy_array in numpy_array_file_handles])
+
+    # Check that embeddings all live on hypersphere
+    assert np.allclose(np.linalg.norm(embeddings, axis=1), 1.)
+
     targets = np.concatenate([
         numpy_array['targets'] for numpy_array in numpy_array_file_handles])
 
