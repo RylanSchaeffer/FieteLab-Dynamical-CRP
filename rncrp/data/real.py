@@ -920,6 +920,7 @@ def load_dataset_reddit(num_data: int,
 
 def load_dataset_swav_imagenet_2021(data_dir: str = 'data',
                                     split: str = 'val',
+                                    include_images: bool = False,
                                     **kwargs,
                                     ) -> Dict[str, np.ndarray]:
 
@@ -950,6 +951,11 @@ def load_dataset_swav_imagenet_2021(data_dir: str = 'data',
         labels=targets,
         prototypes=prototypes,
     )
+
+    if include_images:
+        images = np.concatenate([
+            numpy_array['images'] for numpy_array in numpy_array_file_handles])
+        dataset_dict['images'] = images
 
     for numpy_array_file in numpy_array_file_handles:
         numpy_array_file.close()
