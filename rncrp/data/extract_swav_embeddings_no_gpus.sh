@@ -12,4 +12,4 @@ set -x
 
 source rncrp_venv/bin/activate
 
-python3 rncrp/data/extract_swav_embeddings.py
+python3 -u rncrp/data/extract_swav_embeddings.py

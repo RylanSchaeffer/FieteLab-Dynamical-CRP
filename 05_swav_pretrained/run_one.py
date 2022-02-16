@@ -26,6 +26,7 @@ config_defaults = {
     'alpha': 1.1,
     'beta': 0.,
     'likelihood_kappa': 1.,
+    'n_samples': 1000,
     'repeat_idx': 0,
     'imagenet_split': 'val',
 }
@@ -56,7 +57,7 @@ swav_imagenet_data = rncrp.data.real.load_dataset(
 
 # Permute order of observations
 num_obs = swav_imagenet_data['observations'].shape[0]
-shuffled_indices = np.random.permutation(np.arange(num_obs))
+shuffled_indices = np.random.permutation(np.arange(config['n_samples']))
 observations = swav_imagenet_data['observations'][shuffled_indices]
 true_cluster_assignments = swav_imagenet_data['labels'][shuffled_indices]
 observation_times = np.arange(num_obs)
