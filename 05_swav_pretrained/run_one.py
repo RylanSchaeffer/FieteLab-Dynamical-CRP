@@ -27,6 +27,7 @@ config_defaults = {
     'beta': 0.,
     'likelihood_kappa': 1.,
     'repeat_idx': 0,
+    'imagenet_split': 'val',
 }
 
 wandb.init(project='dcrp-swav-pretrained',
@@ -49,15 +50,23 @@ wandb.log({'inf_alg_results_path': inf_alg_results_path},
 # set seeds
 rncrp.helpers.run.set_seed(seed=config['repeat_idx'])
 
-mixture_model_results = rncrp.data.real.load_dataset(
-    dataset_name='swav_imagenet_2021')
+swav_imagenet_data = rncrp.data.real.load_dataset(
+    dataset_name='swav_imagenet_2021',
+    dataset_kwargs={'split': config['imagenet_split']})
+
+# Permute order of observations
+num_obs = swav_imagenet_data['observations'].shape[0]
+shuffled_indices = np.random.permutation(np.arange(num_obs))
+observations = swav_imagenet_data['observations'][shuffled_indices]
+true_cluster_assignments = swav_imagenet_data['labels'][shuffled_indices]
+observation_times = np.arange(num_obs)
 
 gen_model_params = {
     'mixing_params': {
         'alpha': config['alpha'],
         'beta': config['beta'],
         'dynamics_str': config['dynamics_str'],
-        'dynamics_params': mixture_model_results['dynamics_params']
+        'dynamics_params': {'a': config['dynamics_a'], 'b': 0.},
     },
     'feature_prior_params': {
         # 'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor']
@@ -70,21 +79,21 @@ gen_model_params = {
 
 inference_alg_results = rncrp.helpers.run.run_inference_alg(
     inference_alg_str=config['inference_alg_str'],
-    observations=mixture_model_results['observations'],
-    observations_times=mixture_model_results['observations_times'],
+    observations=observations,
+    observations_times=observation_times,
     gen_model_params=gen_model_params,
 )
 
 scores, map_cluster_assignments = rncrp.metrics.compute_predicted_clusters_scores(
     cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
-    true_cluster_assignments=mixture_model_results['cluster_assignments'],
+    true_cluster_assignments=true_cluster_assignments,
 )
 inference_alg_results.update(scores)
 inference_alg_results['map_cluster_assignments'] = map_cluster_assignments
 wandb.log(scores, step=0)
 
 sum_sqrd_distances = rncrp.metrics.compute_sum_of_squared_distances_to_nearest_center(
-    X=mixture_model_results['observations'],
+    X=observations,
     centroids=inference_alg_results['inference_alg'].centroids_after_last_obs())
 inference_alg_results['training_reconstruction_error'] = sum_sqrd_distances
 wandb.log({'training_reconstruction_error': sum_sqrd_distances}, step=0)

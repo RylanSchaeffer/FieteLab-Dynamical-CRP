@@ -14,11 +14,12 @@ parameters:
         'step']
   dynamics_a:
     values: [1.]
-  dynamics_b:
-    values: [ 1. ]
   alpha:
     values: [ 1., 2.5, 5., 7.5, 10., 15., 20.]
   likelihood_kappa:
     values: [1., 5., 10., 50.]
   repeat_idx:
     values: [0]
+  imagenet_split:
+    values: ['val']
+
