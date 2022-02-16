@@ -61,7 +61,7 @@ shuffled_indices = np.random.permutation(np.arange(config['n_samples']))
 observations = swav_imagenet_data['observations'][shuffled_indices]
 true_cluster_assignments = swav_imagenet_data['labels'][shuffled_indices]
 observation_times = np.arange(num_obs)
-wandb.log({'n_clusters': np.unique(true_cluster_assignments)}, step=0)
+wandb.log({'n_clusters': len(np.unique(true_cluster_assignments))}, step=0)
 
 gen_model_params = {
     'mixing_params': {
