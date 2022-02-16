@@ -10,6 +10,7 @@ import scipy as sp
 from scipy import stats
 import sklearn as sk
 from sklearn.datasets import fetch_openml
+from sklearn.preprocessing import OneHotEncoder
 # import umap
 # import umap.plot
 import matplotlib.pyplot as plt
@@ -218,6 +219,60 @@ def load_dataset_cancer_gene_expression_2016(data_dir: str = 'data',
     return dataset_dict
 
 
+def create_data_for_label_generation(site_df,
+                                     duration: str = 'annual',
+                                     end_year: int = 2020,
+                                     use_zscores: bool = False):
+    df = site_df.copy()
+    df["year"] = df.DATE.apply(lambda x: int(x[:4]))
+    df = df[(df.year >= 1946) & (df.year <= end_year)]
+
+    if duration == 'annual':
+        iterable = list(range(1946, end_year + 1))
+        index = pd.Index(iterable, name="year")
+        outdf = pd.DataFrame(columns=index).T
+
+        outdf.loc[:, "P"] = df.groupby(["year"]).PRCP.mean().reset_index().set_index(["year"])
+        outdf.loc[:, "Tn"] = df.groupby(["year"]).TMIN.mean().reset_index().set_index(["year"])
+        outdf.loc[:, "Tx"] = df.groupby(["year"]).TMAX.mean().reset_index().set_index(["year"])
+        outdf.loc[:, "Tm"] = df.groupby(["year"]).TAVG.mean().reset_index().set_index(["year"])
+        outdf.loc[:, "Tm"] = np.where(np.isnan(outdf.Tm),(outdf.Tn+outdf.Tx)/2.,outdf.Tm)
+
+    elif duration == 'monthly':
+        df["month"] = df.DATE.apply(lambda x: int(x[5:7]))
+
+        year_iterable = list(range(1946, end_year + 1))
+        month_iterable = list(range(1, 13))
+        index = pd.MultiIndex.from_product([year_iterable, month_iterable], names=["year", "month"])
+        outdf = pd.DataFrame(columns=index).T
+
+        outdf.loc[:, "P"] = df.groupby(["year", "month"]).PRCP.mean().reset_index().set_index(["year", "month"])
+        outdf.loc[:, "Tn"] = df.groupby(["year", "month"]).TMIN.mean().reset_index().set_index(["year", "month"])
+        outdf.loc[:, "Tx"] = df.groupby(["year", "month"]).TMAX.mean().reset_index().set_index(["year", "month"])
+        outdf.loc[:, "Tm"] = df.groupby(["year", "month"]).TAVG.mean().reset_index().set_index(["year", "month"])
+        outdf.loc[:, "Tm"] = np.where(np.isnan(outdf.Tm),(outdf.Tn+outdf.Tx)/2.,outdf.Tm)
+
+    else:
+        raise ValueError('Impermissible computation interval:', duration)
+
+    # Concatenate climate metrics into 3 x (# years or # months) array
+    site_metrics = np.vstack((outdf.P.to_numpy(),
+                              outdf.Tn.to_numpy(),
+                              outdf.Tx.to_numpy(),
+                              outdf.Tm.to_numpy()))
+
+    # Convert climate metrics to z-scores if want to look more specifically at climate variability of each site
+    if use_zscores:
+        site_zscores = stats.zscore(site_metrics, axis=1, nan_policy='raise')
+        site_array = site_zscores
+
+    # Otherwise, study overall climate by using raw data values
+    else:
+        site_array = site_metrics
+
+    return site_array.T
+
+
 def create_climate_metrics_array(site_df,
                                  duration: str = 'annual',
                                  end_year: int = 2020,
@@ -287,43 +342,69 @@ def create_climate_metrics_array(site_df,
 
 
 def load_dataset_climate(
-        qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_',
+        qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/metadata/qualifying_sites_',
         end_year: int = 2020,
-        use_zscores: bool = False):
+        use_zscores: bool = False,
+        get_labels: bool = False):
     qualifying_sites_dir = qualifying_sites_path + str(end_year) + '.txt'
-    annual_data = load_dataset_climate_helper(qualifying_sites_dir, 'annual', end_year, use_zscores)
-    monthly_data = load_dataset_climate_helper(qualifying_sites_dir, 'monthly', end_year, use_zscores)
+    # annual_data = load_dataset_climate_helper(qualifying_sites_dir,
+    #                                           duration='annual',
+    #                                           end_year=end_year,
+    #                                           use_zscores=use_zscores,
+    #                                           get_labels=True)
+    monthly_data = load_dataset_climate_helper(qualifying_sites_dir,
+                                               duration='monthly',
+                                               end_year=end_year,
+                                               use_zscores=use_zscores,
+                                               get_labels=True)
+    np.save('/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/monthly_data.npy',monthly_data)
 
-    labels = None
+    if get_labels:
+        dataframe_for_label_generation = pd.DataFrame(monthly_data)
+        dataframe_for_label_generation.to_csv("/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/dataframe_for_label_generation.csv", index=False)
+        print("Data for label generation saved to:","/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/dataframe_for_label_generation.csv")
 
-    dataset_dict = dict(
-        observations=annual_data,  # or monthly data?
-        labels=labels,
-    )
+    else:
+        # label_filename = 'annual_labels_without_subclasses.csv'
+        # label_filename = 'annual_labels_with_subclasses.csv'
+        label_filename = 'monthly_labels_without_subclasses.csv'
+        # label_filename = 'monthly_labels_with_subclasses.csv'
+        labels_array = pd.read_csv('/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/'+label_filename).values
+        encoder = OneHotEncoder()
+        one_hot_labels = encoder.fit_transform(labels_array).toarray()
 
-    return dataset_dict
+        dataset_dict = dict(
+            observations=monthly_data,  # or annual data, if desired
+            labels=one_hot_labels,
+        )
+
+        return dataset_dict
 
 
 def load_dataset_climate_helper(
         qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_2020.txt',
         duration: str = 'annual',
         end_year: int = 2020,
-        use_zscores: bool = False):
+        use_zscores: bool = False,
+        get_labels: bool = False):
+
     dataset = None
 
     with open(qualifying_sites_path) as file:
         for site_csv_path in file:
             if '.csv' in site_csv_path:
                 try:
+                    print("On Site:",site_csv_path[-15:])
                     df = pd.read_csv(site_csv_path.strip(), low_memory=False)
                     site_array = create_climate_metrics_array(df, duration, end_year, use_zscores)
+                    if get_labels:
+                        site_array = create_data_for_label_generation(df, duration, end_year, use_zscores)
                     if type(dataset) is not np.ndarray:
                         dataset = site_array
                     else:
                         dataset = np.vstack((dataset, site_array))
                 except:
                     print("Invalid File: ", site_csv_path)
-
     return dataset
 
 
