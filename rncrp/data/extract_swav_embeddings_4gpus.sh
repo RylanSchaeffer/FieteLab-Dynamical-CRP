@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -p use-everything
+#SBATCH -p fiete
 #SBATCH --nodes=1
 #SBATCH -c 4
 #SBATCH --gres=gpu:4

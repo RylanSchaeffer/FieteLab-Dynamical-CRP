@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -p use-everything
+#SBATCH -p fiete
 #SBATCH -n 4
 #SBATCH --mem=48G
 #SBATCH --time=99:99:99
