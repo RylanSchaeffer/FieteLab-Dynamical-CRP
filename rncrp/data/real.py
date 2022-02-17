@@ -127,13 +127,14 @@ def load_dataset_arxiv_2022(data_dir: str = 'data',
             # 'authors': x['authors'],
             'title': x['title'],
             # 'doi': x['doi'],
-            'category': x['categories'].split(' '),
+            'category': x['categories'].split(' ')[0],  # Take only the first category
             'abstract': x['abstract'],
             'latest_date': get_latest_version(x)
         }
 
         arxiv_abstracts_df = arxiv_abstracts_dask_db.map(trim).compute()
         arxiv_abstracts_df = pd.DataFrame(arxiv_abstracts_df)
+        arxiv_abstracts_df['datetime'] = pd.to_datetime(arxiv_abstracts_df['latest_date'])
         arxiv_abstracts_df.to_csv(data_trimmed_path, index=False)
 
     else:
