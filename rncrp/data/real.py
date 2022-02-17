@@ -101,7 +101,8 @@ def load_dataset_ames_housing_2011(data_dir: str = 'data',
 
 def load_dataset_arxiv_2022(data_dir: str = 'data',
                             **kwargs,
-                            ) -> Dict[str, np.ndarray]:
+                            ) -> Dict[str, pd.DataFrame]:
+
     dataset_dir = os.path.join(data_dir, 'arxiv_2022')
     data_json_path = os.path.join(dataset_dir, 'arxiv-metadata-oai-snapshot.json')
     data_trimmed_path = os.path.join(dataset_dir, 'arxiv-metadata-trimmed.csv')
@@ -115,8 +116,7 @@ def load_dataset_arxiv_2022(data_dir: str = 'data',
         # personal computers or VM's with limited resources.
         import dask.bag as db
 
-        arxiv_abstracts_dask_db = db.read_text(
-            '../input/arxiv/arxiv-metadata-oai-snapshot.json').map(json.loads)
+        arxiv_abstracts_dask_db = db.read_text(data_json_path).map(json.loads)
 
         # get only necessary fields of the metadata file
         get_latest_version = lambda x: x['versions'][-1]['created']
@@ -131,19 +131,20 @@ def load_dataset_arxiv_2022(data_dir: str = 'data',
             'abstract': x['abstract'],
             'latest_date': get_latest_version(x)
         }
-        # filter for papers published on or after 2019-01-01
-        arxiv_abstracts_df = (arxiv_abstracts_dask_db.map(trim).compute())
+
+        arxiv_abstracts_df = arxiv_abstracts_dask_db.map(trim).compute()
+        arxiv_abstracts_df = pd.DataFrame(arxiv_abstracts_df)
         arxiv_abstracts_df.to_csv(data_trimmed_path, index=False)
 
     else:
         arxiv_abstracts_df = pd.read_csv(data_trimmed_path, index_col=False)
 
     observations = arxiv_abstracts_df.loc[:, ~arxiv_abstracts_df.columns.isin(['category'])].copy()
-    labels = arxiv_abstracts_df['category']
+    labels = arxiv_abstracts_df[['category']].copy()
 
     dataset_dict = dict(
-        observations=observations.values,
-        labels=labels.values,
+        observations=observations,
+        labels=labels,
     )
 
     return dataset_dict
@@ -1182,4 +1183,4 @@ def load_dataset_morph_environment(data_dir: str = 'data',
 
 
 if __name__ == '__main__':
-    load_dataset(dataset_name='swav_imagenet_2021')
+    load_dataset(dataset_name='arxiv_2022')
