@@ -11,16 +11,9 @@ from scipy import stats
 import sklearn as sk
 from sklearn.datasets import fetch_openml
 from sklearn.preprocessing import OneHotEncoder
-# import umap
-# import umap.plot
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from typing import Dict, List, Tuple, Union
-
-
-# import rncrp.helpers.morph_envir_preprocessing as pp
-# import rncrp.helpers.morph_envir_utilities as u
-# import rncrp.helpers.PlaceCellAnalysis as pc
 
 
 def load_dataset(dataset_name: str,
