@@ -215,7 +215,8 @@ for split in ['val']:  # 'test', 'train'
             embedding, _ = swav.model.forward(input_tensor)
 
         # Imagenet Classes: https://gist.github.com/yrevar/942d3a0ac09ec9e5eb3a
+        # The indexed-0 removes the batch dimension
         np.savez(file=os.path.join(split_dir_path, f'{batch_index:09d}.npz'),
-                 embeddings=embedding.detach().numpy(),
-                 targets=target_tensor.numpy(),
-                 images=input_tensor.numpy())
+                 embedding=embedding.detach().numpy()[0],
+                 target=target_tensor.numpy()[0],
+                 image=input_tensor.numpy()[0])

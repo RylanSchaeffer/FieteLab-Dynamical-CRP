@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -p fiete
 #SBATCH -n 4
-#SBATCH --mem=48G
+#SBATCH --mem=20G
 #SBATCH --time=99:99:99
 #SBATCH --mail-user=rylansch
 #SBATCH --mail-type=FAIL

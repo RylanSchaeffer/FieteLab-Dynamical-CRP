@@ -942,14 +942,9 @@ def load_dataset_swav_imagenet_2021(data_dir: str = 'data',
     targets = np.concatenate([
         numpy_array['targets'] for numpy_array in numpy_array_file_handles])
 
-    # All arrays should have the same prototypes, so arbitrarily take the
-    # first array's prototypes. Has shape (3000, 128)
-    prototypes = numpy_array_file_handles[0]['prototypes']
-
     dataset_dict = dict(
         observations=embeddings,
         labels=targets,
-        prototypes=prototypes,
     )
 
     if include_images:
