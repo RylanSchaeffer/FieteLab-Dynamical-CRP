@@ -8,7 +8,8 @@ import tensorflow_probability as tfp
 tfd = tfp.distributions
 import torch
 import torch.nn.functional
-from typing import Callable, Dict
+import torch.utils.data
+from typing import Callable, Dict, Union
 
 from rncrp.inference.base import BaseModel
 from rncrp.helpers.dynamics import convert_dynamics_str_to_dynamics_obj
@@ -54,13 +55,21 @@ class DynamicalCRP(BaseModel):
         self.fit_results = None
 
     def fit(self,
-            observations: np.ndarray,
+            observations: Union[np.ndarray, torch.utils.data.DataLoader],
             observations_times: np.ndarray):
 
-        num_obs, obs_dim = observations.shape
+        if isinstance(observations, np.ndarray):
+            num_obs, obs_dim = observations.shape
+            torch_observations = torch.from_numpy(observations).float()
+        elif isinstance(observations, torch.utils.data.DataLoader):
+            num_obs = len(observations)
+            obs_dim = observations.dataset[0]['observations'].shape[-1]
+            torch_observations = observations
+        else:
+            raise ValueError
+
         max_num_clusters = num_obs
 
-        torch_observations = torch.from_numpy(observations).float()
         torch_observations_times = torch.from_numpy(observations_times).float()
 
         cluster_assignment_priors = torch.zeros(size=(num_obs, max_num_clusters),
@@ -137,6 +146,10 @@ class DynamicalCRP(BaseModel):
             raise NotImplementedError
 
         for obs_idx, torch_observation in enumerate(torch_observations):
+
+            # Dataloader may return a dictionary. Select the observation from it.
+            if isinstance(torch_observation, dict):
+                torch_observation = torch_observation['observations'][0]  # Remove the batch index
 
             if obs_idx == 0:
 

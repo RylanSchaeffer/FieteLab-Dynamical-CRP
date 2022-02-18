@@ -5,10 +5,12 @@ import pandas as pd
 from sklearn.cluster import KMeans
 import sys
 import torch
+from torch.utils.data import DataLoader
 from timeit import default_timer as timer
 from typing import Dict, List, Tuple
 import wandb
 import tensorflow as tf
+from typing import Union
 
 from rncrp.inference import DPMeans, DynamicalCRP, VariationalInferenceGMM
 
@@ -79,7 +81,7 @@ def download_wandb_project_runs_results(wandb_project_path: str,
 
 
 def run_inference_alg(inference_alg_str: str,
-                      observations: np.ndarray,
+                      observations: Union[np.ndarray, DataLoader],
                       observations_times: np.ndarray,
                       gen_model_params: Dict[str, Dict[str, float]],
                       inference_alg_kwargs: Dict = None):
