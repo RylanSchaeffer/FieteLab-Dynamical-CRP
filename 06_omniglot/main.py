@@ -13,8 +13,8 @@ import rncrp.inference
 import rncrp.metrics
 import rncrp.plot
 from rncrp.single_run import *
-import rncrp.data.real
-from rncrp.data.real import *
+import rncrp.data.real_tabular
+from rncrp.data.real_tabular import *
 
 torch.set_default_tensor_type('torch.FloatTensor')
 

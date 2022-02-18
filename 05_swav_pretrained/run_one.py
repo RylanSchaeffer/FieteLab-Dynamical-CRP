@@ -13,7 +13,7 @@ import os
 import wandb
 
 # import plot
-import rncrp.data.real
+import rncrp.data.real_nontabular
 import rncrp.helpers.dynamics
 import rncrp.helpers.run
 import rncrp.metrics
@@ -25,7 +25,7 @@ config_defaults = {
     'dynamics_b': 0.,
     'alpha': 1.1,
     'beta': 0.,
-    'likelihood_kappa': 1.,
+    'likelihood_kappa': 5.,
     'n_samples': 1000,
     'repeat_idx': 0,
     'imagenet_split': 'val',
@@ -51,16 +51,20 @@ wandb.log({'inf_alg_results_path': inf_alg_results_path},
 # set seeds
 rncrp.helpers.run.set_seed(seed=config['repeat_idx'])
 
-swav_imagenet_data = rncrp.data.real.load_dataset(
-    dataset_name='swav_imagenet_2021',
-    dataset_kwargs={'split': config['imagenet_split']})
+swav_imagenet_dataloader = rncrp.data.real_nontabular.load_dataloader_swav_imagenet_2021(
+    split=config['imagenet_split'],
+    n_samples=config['n_samples'])
 
-# Permute order of observations
-num_obs = swav_imagenet_data['observations'].shape[0]
-shuffled_indices = np.random.permutation(np.arange(config['n_samples']))
-observations = swav_imagenet_data['observations'][shuffled_indices]
-true_cluster_assignments = swav_imagenet_data['labels'][shuffled_indices]
+# Construct observation times
+num_obs = len(swav_imagenet_dataloader)
 observation_times = np.arange(num_obs)
+
+# Compute true cluster assignments
+true_cluster_assignments = np.zeros(shape=num_obs)
+for batch_idx, batch_tensors in enumerate(swav_imagenet_dataloader):
+    true_cluster_assignments[batch_idx] = batch_tensors['target'].item()
+
+# Compute number of true clusters
 wandb.log({'n_clusters': len(np.unique(true_cluster_assignments))}, step=0)
 
 gen_model_params = {
@@ -81,7 +85,7 @@ gen_model_params = {
 
 inference_alg_results = rncrp.helpers.run.run_inference_alg(
     inference_alg_str=config['inference_alg_str'],
-    observations=observations,
+    observations=swav_imagenet_dataloader,
     observations_times=observation_times,
     gen_model_params=gen_model_params,
 )
@@ -94,12 +98,11 @@ inference_alg_results.update(scores)
 inference_alg_results['map_cluster_assignments'] = map_cluster_assignments
 wandb.log(scores, step=0)
 
-sum_sqrd_distances = rncrp.metrics.compute_sum_of_squared_distances_to_nearest_center(
-    X=observations,
-    centroids=inference_alg_results['inference_alg'].centroids_after_last_obs())
-inference_alg_results['training_reconstruction_error'] = sum_sqrd_distances
-wandb.log({'training_reconstruction_error': sum_sqrd_distances}, step=0)
-
+# sum_sqrd_distances = rncrp.metrics.compute_sum_of_squared_distances_to_nearest_center(
+#     X=observations,
+#     centroids=inference_alg_results['inference_alg'].centroids_after_last_obs())
+# inference_alg_results['training_reconstruction_error'] = sum_sqrd_distances
+# wandb.log({'training_reconstruction_error': sum_sqrd_distances}, step=0)
 
 data_to_store = dict(
     config=dict(config),  # Need to convert WandB config to proper dict

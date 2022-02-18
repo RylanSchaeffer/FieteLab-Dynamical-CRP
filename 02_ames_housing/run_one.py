@@ -15,7 +15,7 @@ import os
 import torch
 import wandb
 
-import rncrp.data.real
+import rncrp.data.real_tabular
 import rncrp.helpers.dynamics
 import rncrp.helpers.run
 import rncrp.metrics
