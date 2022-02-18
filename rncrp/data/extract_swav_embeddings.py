@@ -215,7 +215,7 @@ for split in ['val']:  # 'test', 'train'
             embedding, _ = swav.model.forward(input_tensor)
 
         # Imagenet Classes: https://gist.github.com/yrevar/942d3a0ac09ec9e5eb3a
-        np.savez(file=os.path.join(split_dir_path, f'{batch_index:10d}.npz'),
+        np.savez(file=os.path.join(split_dir_path, f'{batch_index:09d}.npz'),
                  embeddings=embedding.detach().numpy(),
                  targets=target_tensor.numpy(),
                  images=input_tensor.numpy())
