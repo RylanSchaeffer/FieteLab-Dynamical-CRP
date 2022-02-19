@@ -1,9 +1,10 @@
 import numpy as np
 import os
+import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms
-from typing import Dict
+from typing import Dict, Union
 
 
 class SwavImageNet2011Dataset(Dataset):
@@ -55,7 +56,6 @@ def load_dataloader_swav_imagenet_2021(data_dir: str = 'data',
                                        include_images: bool = False,
                                        n_samples: int = None,
                                        dataloader_kwargs: Dict = None):
-
     dataset_dir = os.path.join(data_dir, 'swav_imagenet_2021')
 
     dataset = SwavImageNet2011Dataset(
@@ -65,11 +65,11 @@ def load_dataloader_swav_imagenet_2021(data_dir: str = 'data',
         n_samples=n_samples)
 
     default_dataloader_kwargs = {
-            'batch_size': 1,
-            'shuffle': False,  # do the permutation in the dataset, not the dataloader
-            'num_workers': 2,
-            'drop_last': False,
-        }
+        'batch_size': 1,
+        'shuffle': False,  # do the permutation in the dataset, not the dataloader
+        'num_workers': 2,
+        'drop_last': False,
+    }
 
     # Overwrite default Dataloader kwargs if given.
     if dataloader_kwargs is not None:
@@ -81,3 +81,26 @@ def load_dataloader_swav_imagenet_2021(data_dir: str = 'data',
     )
 
     return dataloader
+
+
+def load_dataset_yilun_nav_2d_2022(data_dir: str = 'data',
+                                   **kwargs,
+                                   ) -> Dict[str, Union[np.ndarray, pd.DataFrame]]:
+
+    dataset_dir = os.path.join(data_dir, 'yilun_nav_2d_2022')
+    data_path = os.path.join(dataset_dir, 'data_traj.npz')
+
+    with np.load(data_path) as np_fp:
+        landmarks = np_fp['landmarks']  # Shape: (num envs, num landmarks, 2 for xy position)
+        points = np_fp['points']  # Shape: (num envs, num vis points, 2 for xy position)
+        room_ids = np_fp['room_ids']  # Shape: (num envs, num vis points)
+        vis_matrix = np_fp['vis_matrix']  # (num envs, num , num)
+
+    dataset_dict = dict(
+        landmarks=landmarks,
+        points=points,
+        room_ids=room_ids,
+        vis_matrix=vis_matrix,
+    )
+
+    return dataset_dict

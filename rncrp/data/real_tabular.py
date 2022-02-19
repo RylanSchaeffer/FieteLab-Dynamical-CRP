@@ -37,10 +37,10 @@ def load_dataset(dataset_name: str,
         load_dataset_fn = load_dataset_diabetes_hospitals_2014
     elif dataset_name == 'electric_grid_stability_2016':
         load_dataset_fn = load_dataset_electric_grid_stability_2016
-    elif dataset_name == 'wisconsin_breast_cancer_1995':
-        load_dataset_fn = load_dataset_wisconsin_breast_cancer_1995
     elif dataset_name == 'swav_imagenet_2021':
         load_dataset_fn = load_dataset_swav_imagenet_2021
+    elif dataset_name == 'wisconsin_breast_cancer_1995':
+        load_dataset_fn = load_dataset_wisconsin_breast_cancer_1995
     else:
         raise NotImplementedError
 
