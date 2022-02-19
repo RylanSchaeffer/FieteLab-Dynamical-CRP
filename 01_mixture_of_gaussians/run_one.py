@@ -111,6 +111,7 @@ wandb.log({'training_reconstruction_error': sum_sqrd_distances}, step=0)
 data_to_store = dict(
     config=dict(config),  # Need to convert WandB config to proper dict
     inference_alg_results=inference_alg_results,
+    mixture_model_results=mixture_model_results,
     scores=scores)
 
 joblib.dump(data_to_store,

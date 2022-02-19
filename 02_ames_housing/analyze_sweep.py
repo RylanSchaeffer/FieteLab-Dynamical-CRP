@@ -3,7 +3,7 @@ import os
 import pandas as pd
 
 from rncrp.helpers.run import download_wandb_project_runs_results
-from rncrp.plot.plot_general import plot_sweep_results_all
+
 
 exp_dir = '02_ames_housing'
 results_dir = os.path.join(exp_dir, 'results')
@@ -31,7 +31,7 @@ else:
 
 print(f"Number of runs: {sweep_results_df.shape[0]} for sweep={sweep_name}")
 
-plot_sweep_results_all(sweep_results_df=sweep_results_df,
-                       plot_dir=sweep_dir)
+
+
 
 print(f'Finished 02_ames_housing/analyze_sweep.py for sweep={sweep_name}.')

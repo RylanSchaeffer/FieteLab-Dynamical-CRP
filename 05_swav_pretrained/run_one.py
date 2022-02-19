@@ -26,7 +26,7 @@ config_defaults = {
     'alpha': 1.1,
     'beta': 0.,
     'likelihood_kappa': 5.,
-    'n_samples': 1000,
+    'n_samples': 10,
     'repeat_idx': 0,
     'imagenet_split': 'val',
 }
@@ -98,15 +98,19 @@ inference_alg_results.update(scores)
 inference_alg_results['map_cluster_assignments'] = map_cluster_assignments
 wandb.log(scores, step=0)
 
-# sum_sqrd_distances = rncrp.metrics.compute_sum_of_squared_distances_to_nearest_center(
-#     X=observations,
-#     centroids=inference_alg_results['inference_alg'].centroids_after_last_obs())
-# inference_alg_results['training_reconstruction_error'] = sum_sqrd_distances
-# wandb.log({'training_reconstruction_error': sum_sqrd_distances}, step=0)
+
+cluster_multiclass_classification_score = rncrp.metrics.compute_cluster_multiclass_classification_score(
+    cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
+    targets=true_cluster_assignments)
+wandb.log({
+    'avg_finetune_acc': cluster_multiclass_classification_score['avg_acc']},
+    step=0)
+
 
 data_to_store = dict(
     config=dict(config),  # Need to convert WandB config to proper dict
     inference_alg_results=inference_alg_results,
+    true_cluster_assignments=true_cluster_assignments,  # Save because otherwise onerous to regenerate
     scores=scores)
 
 joblib.dump(data_to_store,

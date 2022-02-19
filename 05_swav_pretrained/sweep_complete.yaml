@@ -17,7 +17,7 @@ parameters:
   alpha:
     values: [ 1., 2.5, 5., 7.5, 10., 15., 20., 25.]
   n_samples:
-    values: [ 1000 ]
+    values: [ 10000 ]
   likelihood_kappa:
     values: [1., 5., 10., 15., 20., 25., 30.]
   repeat_idx:
