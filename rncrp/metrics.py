@@ -9,7 +9,6 @@ from typing import Dict, Tuple
 def compute_predicted_clusters_scores(cluster_assignment_posteriors: np.ndarray,
                                       true_cluster_assignments: np.ndarray,
                                       ) -> Tuple[Dict[str, float], np.ndarray]:
-
     """
 
     Parameters:
@@ -102,6 +101,34 @@ def compute_cluster_linear_regression_score(cluster_assignment_posteriors: np.nd
 
     cluster_linear_regression_results = {
         'coeff_of_determination': coeff_of_determination,
+        'predicted_targets': predicted_targets,
+    }
+
+    return cluster_linear_regression_results
+
+
+def compute_cluster_multiclass_classification_score(cluster_assignment_posteriors: np.ndarray,
+                                                    targets: np.ndarray,
+                                                    fit_intercept: bool = True,
+                                                    use_vanilla: bool = True,
+                                                    use_ridge: bool = False,
+                                                    use_lasso: bool = False):
+
+    assert cluster_assignment_posteriors.shape[0] == targets.shape[0]
+    assert use_vanilla + use_lasso + use_ridge == 1
+
+    from sklearn.neural_network import MLPClassifier
+
+    mlp_classifier = MLPClassifier(
+        hidden_layer_sizes=(),  # No hidden layer
+    )
+    mlp_classifier.fit(X=cluster_assignment_posteriors, y=targets)
+    predicted_targets = mlp_classifier.predict(cluster_assignment_posteriors)
+
+    avg_acc = mlp_classifier.score(X=cluster_assignment_posteriors, y=targets)
+
+    cluster_linear_regression_results = {
+        'avg_acc': avg_acc,
         'predicted_targets': predicted_targets,
     }
 
