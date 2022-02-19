@@ -265,7 +265,8 @@ class DynamicalCRP(BaseModel):
                 time_5 = time.time()
                 print(f'Time5 - Time4: {time_5 - time_4}')
 
-        num_inferred_clusters = torch.argmax(num_clusters_posteriors).item()
+        # Add 1 because of indexing starts at 0.
+        num_inferred_clusters = 1 + torch.argmax(num_clusters_posteriors, dim=1).numpy()[-1].item()
 
         self.fit_results = dict(
             cluster_assignment_priors=cluster_assignment_priors.numpy(),
