@@ -343,7 +343,8 @@ def load_dataset_climate(
         qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/metadata/qualifying_sites_',
         end_year: int = 2020,
         use_zscores: bool = False,
-        get_labels: bool = False):
+        get_labels: bool = False) -> Dict[str, pd.DataFrame]:
+
     qualifying_sites_dir = qualifying_sites_path + str(end_year) + '.txt'
     # annual_data = load_dataset_climate_helper(qualifying_sites_dir,
     #                                           duration='annual',
@@ -389,8 +390,8 @@ def load_dataset_climate_helper(
         end_year: int = 2020,
         use_zscores: bool = False,
         get_labels: bool = False):
-    dataset = None
 
+    dataset = None
     with open(qualifying_sites_path) as file:
         for site_csv_path in file:
             if '.csv' in site_csv_path:
