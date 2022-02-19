@@ -20,7 +20,6 @@ def load_dataset(dataset_name: str,
                  dataset_kwargs: Dict = None,
                  data_dir: str = 'data',
                  ) -> Dict[str, np.ndarray]:
-
     if dataset_kwargs is None:
         dataset_kwargs = dict()
 
@@ -103,7 +102,6 @@ def load_dataset_ames_housing_2011(data_dir: str = 'data',
 def load_dataset_arxiv_2022(data_dir: str = 'data',
                             **kwargs,
                             ) -> Dict[str, pd.DataFrame]:
-
     dataset_dir = os.path.join(data_dir, 'arxiv_2022')
     data_json_path = os.path.join(dataset_dir, 'arxiv-metadata-oai-snapshot.json')
     data_trimmed_path = os.path.join(dataset_dir, 'arxiv-metadata-trimmed.csv')
@@ -218,68 +216,67 @@ def load_dataset_cancer_gene_expression_2016(data_dir: str = 'data',
 
 
 def create_data_for_label_generation(site_df,
-                                     duration: str = 'annual',
+                                     periodicity: str = 'annually',
                                      end_year: int = 2020,
-                                     use_zscores: bool = False):
+                                     use_zscores: bool = False,
+                                     ) -> pd.DataFrame:
+
+    assert periodicity in {'monthly', 'annually'}
+
     df = site_df.copy()
     df["year"] = df.DATE.apply(lambda x: int(x[:4]))
     df = df[(df.year >= 1946) & (df.year <= end_year)]
 
-    if duration == 'annual':
+    if periodicity == 'annually':
         iterable = list(range(1946, end_year + 1))
         index = pd.Index(iterable, name="year")
-        outdf = pd.DataFrame(columns=index).T
+        site_metrics_df = pd.DataFrame(columns=index).T
 
-        outdf.loc[:, "P"] = df.groupby(["year"]).PRCP.mean().reset_index().set_index(["year"])
-        outdf.loc[:, "Tn"] = df.groupby(["year"]).TMIN.mean().reset_index().set_index(["year"])
-        outdf.loc[:, "Tx"] = df.groupby(["year"]).TMAX.mean().reset_index().set_index(["year"])
-        outdf.loc[:, "Tm"] = df.groupby(["year"]).TAVG.mean().reset_index().set_index(["year"])
-        outdf.loc[:, "Tm"] = np.where(np.isnan(outdf.Tm), (outdf.Tn + outdf.Tx) / 2., outdf.Tm)
+        site_metrics_df.loc[:, "P"] = df.groupby(["year"]).PRCP.mean().reset_index().set_index(["year"])
+        site_metrics_df.loc[:, "Tn"] = df.groupby(["year"]).TMIN.mean().reset_index().set_index(["year"])
+        site_metrics_df.loc[:, "Tx"] = df.groupby(["year"]).TMAX.mean().reset_index().set_index(["year"])
+        site_metrics_df.loc[:, "Tm"] = df.groupby(["year"]).TAVG.mean().reset_index().set_index(["year"])
+        site_metrics_df.loc[:, "Tm"] = np.where(np.isnan(site_metrics_df.Tm), (site_metrics_df.Tn + site_metrics_df.Tx) / 2., site_metrics_df.Tm)
 
-    elif duration == 'monthly':
+    elif periodicity == 'monthly':
         df["month"] = df.DATE.apply(lambda x: int(x[5:7]))
 
         year_iterable = list(range(1946, end_year + 1))
         month_iterable = list(range(1, 13))
         index = pd.MultiIndex.from_product([year_iterable, month_iterable], names=["year", "month"])
-        outdf = pd.DataFrame(columns=index).T
+        site_metrics_df = pd.DataFrame(columns=index).T
 
-        outdf.loc[:, "P"] = df.groupby(["year", "month"]).PRCP.mean().reset_index().set_index(["year", "month"])
-        outdf.loc[:, "Tn"] = df.groupby(["year", "month"]).TMIN.mean().reset_index().set_index(["year", "month"])
-        outdf.loc[:, "Tx"] = df.groupby(["year", "month"]).TMAX.mean().reset_index().set_index(["year", "month"])
-        outdf.loc[:, "Tm"] = df.groupby(["year", "month"]).TAVG.mean().reset_index().set_index(["year", "month"])
-        outdf.loc[:, "Tm"] = np.where(np.isnan(outdf.Tm), (outdf.Tn + outdf.Tx) / 2., outdf.Tm)
+        site_metrics_df.loc[:, "P"] = df.groupby(["year", "month"]).PRCP.mean().reset_index().set_index(["year", "month"])
+        site_metrics_df.loc[:, "Tn"] = df.groupby(["year", "month"]).TMIN.mean().reset_index().set_index(["year", "month"])
+        site_metrics_df.loc[:, "Tx"] = df.groupby(["year", "month"]).TMAX.mean().reset_index().set_index(["year", "month"])
+        site_metrics_df.loc[:, "Tm"] = df.groupby(["year", "month"]).TAVG.mean().reset_index().set_index(["year", "month"])
+        site_metrics_df.loc[:, "Tm"] = np.where(np.isnan(site_metrics_df.Tm), (site_metrics_df.Tn + site_metrics_df.Tx) / 2., site_metrics_df.Tm)
 
     else:
-        raise ValueError('Impermissible computation interval:', duration)
-
-    # Concatenate climate metrics into 3 x (# years or # months) array
-    site_metrics = np.vstack((outdf.P.to_numpy(),
-                              outdf.Tn.to_numpy(),
-                              outdf.Tx.to_numpy(),
-                              outdf.Tm.to_numpy()))
+        raise ValueError('Impermissible computation interval:', periodicity)
 
     # Convert climate metrics to z-scores if want to look more specifically at climate variability of each site
     if use_zscores:
-        site_zscores = stats.zscore(site_metrics, axis=1, nan_policy='raise')
-        site_array = site_zscores
+        site_metrics_df = stats.zscore(site_metrics_df, axis=1, nan_policy='raise')
 
     # Otherwise, study overall climate by using raw data values
     else:
-        site_array = site_metrics
+        site_metrics_df = site_metrics_df
 
-    return site_array.T
+    return site_metrics_df
 
 
 def create_climate_metrics_array(site_df,
-                                 duration: str = 'annual',
+                                 periodicity: str = 'annually',
                                  end_year: int = 2020,
                                  use_zscores: bool = False):
+
+    assert periodicity in {'monthly', 'annually'}
     df = site_df.copy()
     df["year"] = df.DATE.apply(lambda x: int(x[:4]))
     df = df[(df.year >= 1946) & (df.year <= end_year)]
 
-    if duration == 'annual':
+    if periodicity == 'annually':
         iterable = list(range(1946, end_year + 1))
         index = pd.Index(iterable, name="year")
         outdf = pd.DataFrame(columns=index).T
@@ -294,7 +291,7 @@ def create_climate_metrics_array(site_df,
 
         site_metadata = outdf.YEAR.to_numpy()
 
-    elif duration == 'monthly':
+    elif periodicity == 'monthly':
         df["month"] = df.DATE.apply(lambda x: int(x[5:7]))
 
         year_iterable = list(range(1946, end_year + 1))
@@ -314,7 +311,7 @@ def create_climate_metrics_array(site_df,
         site_metadata = np.vstack((outdf.YEAR.to_numpy(),
                                    outdf.MONTH.to_numpy()))
     else:
-        raise ValueError('Impermissible computation interval:', duration)
+        raise ValueError('Impermissible periodicity:', periodicity)
 
     # Finish concatenating site metadata
     site_metadata = np.vstack((site_metadata,
@@ -339,75 +336,76 @@ def create_climate_metrics_array(site_df,
     return site_array.T
 
 
-def load_dataset_climate(
-        qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/metadata/qualifying_sites_',
-        end_year: int = 2020,
-        use_zscores: bool = False,
-        get_labels: bool = False) -> Dict[str, pd.DataFrame]:
+def load_dataset_climate(data_dir: str = 'data',
+                         end_year: int = 2020,
+                         use_zscores: bool = False,
+                         monthly_or_annually: str = 'monthly',
+                         with_or_without_subclasses: str = 'with',
+                         ) -> Dict[str, pd.DataFrame]:
 
-    qualifying_sites_dir = qualifying_sites_path + str(end_year) + '.txt'
-    # annual_data = load_dataset_climate_helper(qualifying_sites_dir,
-    #                                           duration='annual',
-    #                                           end_year=end_year,
-    #                                           use_zscores=use_zscores,
-    #                                           get_labels=True)
-    monthly_data = load_dataset_climate_helper(qualifying_sites_dir,
-                                               duration='monthly',
-                                               end_year=end_year,
-                                               use_zscores=use_zscores,
-                                               get_labels=True)
-    np.save('/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/monthly_data.npy', monthly_data)
+    assert monthly_or_annually in {'monthly', 'annually'}
+    assert with_or_without_subclasses in {'with', 'without'}
+    dataset_dir_path = os.path.join(data_dir, 'climate_change')
+    qualifying_sites_path = os.path.join(dataset_dir_path, f'qualifying_sites_{end_year}.txt')
+    climate_df_path = os.path.join(dataset_dir_path, 'climate_data.csv')
 
-    if get_labels:
-        dataframe_for_label_generation = pd.DataFrame(monthly_data)
-        dataframe_for_label_generation.to_csv(
-            "/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/dataframe_for_label_generation.csv",
-            index=False)
-        print("Data for label generation saved to:",
-              "/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/dataframe_for_label_generation.csv")
+    if not os.path.isfile(climate_df_path):
 
-    else:
-        # label_filename = 'annual_labels_without_subclasses.csv'
-        # label_filename = 'annual_labels_with_subclasses.csv'
-        label_filename = 'monthly_labels_without_subclasses.csv'
-        # label_filename = 'monthly_labels_with_subclasses.csv'
-        labels_array = pd.read_csv(
-            '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/' + label_filename).values
+        climate_data = load_dataset_climate_helper(qualifying_sites_path=qualifying_sites_path,
+                                                   periodicity=monthly_or_annually,
+                                                   end_year=end_year,
+                                                   use_zscores=use_zscores,
+                                                   get_labels=True)
+
+        labels_df_path = os.path.join(
+            dataset_dir_path,
+            f'{monthly_or_annually}_labels_{with_or_without_subclasses}_subclasses.csv')
+
+        labels_df = pd.read_csv(labels_df_path)
         encoder = OneHotEncoder()
-        one_hot_labels = encoder.fit_transform(labels_array).toarray()
+        one_hot_labels = encoder.fit_transform(labels_df).toarray()
+    #
+    # else:
+    #     climate
 
-        dataset_dict = dict(
-            observations=monthly_data,  # or annual data, if desired
-            labels=one_hot_labels,
-        )
+    dataset_dict = dict(
+        observations=climate_data,
+        labels=one_hot_labels,
+    )
 
-        return dataset_dict
+    return dataset_dict
 
 
 def load_dataset_climate_helper(
         qualifying_sites_path: str = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/exp2_climate/qualifying_sites_2020.txt',
-        duration: str = 'annual',
+        periodicity: str = 'annually',
         end_year: int = 2020,
         use_zscores: bool = False,
         get_labels: bool = False):
 
-    dataset = None
+    site_array_dfs = []
     with open(qualifying_sites_path) as file:
         for site_csv_path in file:
             if '.csv' in site_csv_path:
                 try:
                     print("On Site:", site_csv_path[-15:])
-                    df = pd.read_csv(site_csv_path.strip(), low_memory=False)
-                    site_array = create_climate_metrics_array(df, duration, end_year, use_zscores)
+                    site_df = pd.read_csv(site_csv_path.strip(), low_memory=False)
+                    site_array_df = create_climate_metrics_array(
+                        site_df=site_df,
+                        periodicity=periodicity,
+                        end_year=end_year,
+                        use_zscores=use_zscores)
                     if get_labels:
-                        site_array = create_data_for_label_generation(df, duration, end_year, use_zscores)
-                    if type(dataset) is not np.ndarray:
-                        dataset = site_array
-                    else:
-                        dataset = np.vstack((dataset, site_array))
+                        site_array_df = create_data_for_label_generation(
+                            site_df=site_df,
+                            periodicity=periodicity,
+                            end_year=end_year,
+                            use_zscores=use_zscores)
+                    site_array_dfs.append(site_array_df)
                 except:
                     print("Invalid File: ", site_csv_path)
-    return dataset
+    all_site_array_df = pd.DataFrame(site_array_dfs)
+    return all_site_array_df
 
 
 def load_dataset_covid_tracking_2021(data_dir: str = 'data',
@@ -920,7 +918,6 @@ def load_dataset_swav_imagenet_2021(data_dir: str = 'data',
                                     include_images: bool = False,
                                     **kwargs,
                                     ) -> Dict[str, np.ndarray]:
-
     dataset_dir = os.path.join(data_dir, 'swav_imagenet_2021')
 
     assert split in {'train', 'test', 'val'}
