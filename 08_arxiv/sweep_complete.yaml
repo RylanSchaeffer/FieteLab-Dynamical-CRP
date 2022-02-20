@@ -1,0 +1,29 @@
+program: 08_arxiv/run_one.py
+project: dcrp-arxiv-2022
+method: grid
+metric:
+  goal: minimize
+  name: training_reconstruction_error
+parameters:
+  inference_alg_str:
+    values: [
+        'Dynamical-CRP',
+    ]
+  dynamics_str:
+    values: [
+        'exp']
+  dynamics_a:
+    values: [1.]
+  dynamics_b:
+    values: [ 1. ]
+  alpha:
+    values: [ 1., 2.5, 5., 7.5, 10.]
+  beta_arg1:
+    values: [0.1, 1., 5.]
+  beta_arg2:
+    values: [ 0.1, 1., 5. ]
+  likelihood_kappa:
+    values: [1., 5., 10., 15., 20., 25., 30.]
+  repeat_idx:
+    values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
+

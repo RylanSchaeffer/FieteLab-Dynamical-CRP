@@ -102,6 +102,7 @@ def load_dataset_ames_housing_2011(data_dir: str = 'data',
 def load_dataset_arxiv_2022(data_dir: str = 'data',
                             **kwargs,
                             ) -> Dict[str, pd.DataFrame]:
+
     dataset_dir = os.path.join(data_dir, 'arxiv_2022')
     data_json_path = os.path.join(dataset_dir, 'arxiv-metadata-oai-snapshot.json')
     data_trimmed_path = os.path.join(dataset_dir, 'arxiv-metadata-trimmed.csv')
@@ -124,23 +125,25 @@ def load_dataset_arxiv_2022(data_dir: str = 'data',
         trim = lambda x: {
             # 'id': x['id'],
             # 'authors': x['authors'],
-            'title': x['title'],
+            # 'title': x['title'],
+            # 'abstract': x['abstract'],
+            'text': x['title'] + ' ' + x['abstract'],
             # 'doi': x['doi'],
             'category': x['categories'].split(' ')[0],  # Take only the first category
-            'abstract': x['abstract'],
             'latest_date': get_latest_version(x)
         }
 
         arxiv_abstracts_df = arxiv_abstracts_dask_db.map(trim).compute()
         arxiv_abstracts_df = pd.DataFrame(arxiv_abstracts_df)
         arxiv_abstracts_df['datetime'] = pd.to_datetime(arxiv_abstracts_df['latest_date'])
+        arxiv_abstracts_df.drop('latest_date', inplace=True)
         arxiv_abstracts_df.to_csv(data_trimmed_path, index=False)
 
     else:
         arxiv_abstracts_df = pd.read_csv(data_trimmed_path, index_col=False)
 
-    observations = arxiv_abstracts_df.loc[:, ~arxiv_abstracts_df.columns.isin(['category'])].copy()
     labels = arxiv_abstracts_df[['category']].copy()
+    observations = arxiv_abstracts_df.drop(columns=['category']).copy()
 
     dataset_dict = dict(
         observations=observations,
