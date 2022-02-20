@@ -384,17 +384,17 @@ class DynamicalCRP(BaseModel):
         # Term 2: mu_{nk}^T o_n / sigma_obs^2
         term_two = torch.einsum(
             'kd,d->k',
-            variational_params['means']['means'][0, :obs_idx + 1, :],
+            variational_params['means']['means'][1, :obs_idx + 1, :],
             torch_observation) / sigma_obs_squared
         assert_torch_no_nan_no_inf_is_real(term_two)
 
         # Term 3:
         term_three = - 0.5 * torch.add(
-            torch.sum(variational_params['means']['diag_covs'][0, :obs_idx + 1, :],
+            torch.sum(variational_params['means']['diag_covs'][1, :obs_idx + 1, :],
                       dim=1),  # Trace of diagonal covariance. Shape: (num obs,)
             torch.einsum('ki,ki->k',
-                         variational_params['means']['means'][0, :obs_idx + 1, :],
-                         variational_params['means']['means'][0, :obs_idx + 1, :]),  # Tr[\mu_n \mu_n^T]
+                         variational_params['means']['means'][1, :obs_idx + 1, :],
+                         variational_params['means']['means'][1, :obs_idx + 1, :]),  # Tr[\mu_n \mu_n^T]
         )
         term_three /= sigma_obs_squared
         assert_torch_no_nan_no_inf_is_real(term_three)
@@ -483,8 +483,8 @@ class DynamicalCRP(BaseModel):
         # Shape: (max num clusters, obs dim)
         # TODO: Refactor to not use TensorFlow
         tf_means = tfd.VonMisesFisher(
-            mean_direction=variational_params['means']['means'][0, :obs_idx + 1, :].numpy(),
-            concentration=variational_params['means']['concentrations'][0, :obs_idx + 1, 0].numpy()).mean()
+            mean_direction=variational_params['means']['means'][1, :obs_idx + 1, :].numpy(),
+            concentration=variational_params['means']['concentrations'][1, :obs_idx + 1, 0].numpy()).mean()
         torch_means = torch.from_numpy(tf_means.numpy())
 
         # Term 2: E[phi_{nk}]^T o_n / sigma_obs^2
@@ -497,7 +497,7 @@ class DynamicalCRP(BaseModel):
 
         term_to_softmax = term_one + term_two
         cluster_assignment_posterior_params = torch.nn.functional.softmax(
-            term_to_softmax,  # shape: (max num clusters, )
+            term_to_softmax,  # shape: (curr max num clusters i.e. obs idx, )
             dim=0)
 
         # check that Bernoulli probs are all valid
@@ -577,14 +577,14 @@ class DynamicalCRP(BaseModel):
         #     torch.from_numpy(scipy.linalg.sqrtm(gaussian_cov.detach().numpy()))
         #     for gaussian_cov in mean_covs])
 
-        variational_params['means']['diag_covs'][0, :obs_idx + 1, :] = means_diag_covs
+        variational_params['means']['diag_covs'][1, :obs_idx + 1, :] = means_diag_covs
 
         # Slowest piece
         time_2_3_1 = time.time()
         print(f'Time2.3.1 - Time2.3: {time_2_3_1 - time_2_3}')
 
         assert_torch_no_nan_no_inf_is_real(
-            variational_params['means']['diag_covs'][0, :, :])
+            variational_params['means']['diag_covs'][1, :, :])
 
         time_2_4 = time.time()
         print(f'Time2.4 - Time2.3: {time_2_4 - time_2_3}')
@@ -612,7 +612,7 @@ class DynamicalCRP(BaseModel):
         time_2_5 = time.time()
         print(f'Time2.5 - Time2.4: {time_2_5 - time_2_4}')
         assert_torch_no_nan_no_inf_is_real(new_means_means)
-        variational_params['means']['means'][0, :obs_idx + 1, :] = new_means_means
+        variational_params['means']['means'][1, :obs_idx + 1, :] = new_means_means
 
     @staticmethod
     def optimize_cluster_params_product_bernoullis(torch_observation: torch.Tensor,
@@ -649,7 +649,6 @@ class DynamicalCRP(BaseModel):
                                                 likelihood_params: Dict[str, float],
                                                 ) -> None:
 
-        # TODO: replace sigma obs with likelihood params
         likelihood_kappa = likelihood_params['likelihood_kappa']
 
         rhs = torch.add(
@@ -666,5 +665,5 @@ class DynamicalCRP(BaseModel):
         assert_torch_no_nan_no_inf_is_real(magnitudes)
         directions = rhs / magnitudes[:, None]  # Shape: (max num clusters, obs dim)
         assert_torch_no_nan_no_inf_is_real(directions)
-        variational_params['means']['concentrations'][0, :obs_idx + 1, 0] = magnitudes
-        variational_params['means']['means'][0, :obs_idx + 1, :] = directions
+        variational_params['means']['concentrations'][1, :obs_idx + 1, 0] = magnitudes
+        variational_params['means']['means'][1, :obs_idx + 1, :] = directions
