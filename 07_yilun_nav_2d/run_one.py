@@ -28,8 +28,8 @@ config_defaults = {
     'n_samples': 10,
     'repeat_idx': 0,
     'imagenet_split': 'val',
-    'beta_arg_one': 1.,
-    'beta_arg_two': 1.,
+    'beta_arg1': 1.,
+    'beta_arg2': 1.,
 }
 
 wandb.init(project='dcrp-yilun-nav2d',
@@ -70,7 +70,8 @@ env_idx = config['repeat_idx']
 observations = observations[env_idx, :, :]
 
 # Construct observation times
-num_obs = len(yilun_nav_2d_dataset)
+# Points has shape (num obs, trajectory length, 2 for xy coord)
+num_obs = yilun_nav_2d_dataset['points'].shape[1]
 observation_times = np.arange(num_obs)
 
 # Compute true cluster assignments of this environment
@@ -87,8 +88,8 @@ gen_model_params = {
         'dynamics_params': {'a': config['dynamics_a'], 'b': 1.0},
     },
     'component_prior_params': {
-        'beta_arg_one': config['beta_arg_one'],
-        'beta_arg_two': config['beta_arg_two'],
+        'beta_arg1': config['beta_arg1'],
+        'beta_arg2': config['beta_arg2'],
     },
     'likelihood_params': {
         'distribution': 'product_bernoullis',

@@ -5,6 +5,7 @@ import numpy as np
 import scipy
 import sklearn.mixture
 import tensorflow_probability as tfp
+
 tfd = tfp.distributions
 import torch
 import torch.nn.functional
@@ -134,11 +135,11 @@ class DynamicalCRP(BaseModel):
                         dtype=torch.float32)),
                 beta=dict(
                     arg1=torch.full(
-                        size=(1, max_num_clusters, obs_dim),
+                        size=(2, max_num_clusters, obs_dim),  # 2 for past & current
                         fill_value=0.,
                         dtype=torch.float32),
                     arg2=torch.full(
-                        size=(1, max_num_clusters, obs_dim),
+                        size=(2, max_num_clusters, obs_dim),  # 2 for past & current
                         fill_value=1.,
                         dtype=torch.float32,
                     )))
@@ -262,6 +263,13 @@ class DynamicalCRP(BaseModel):
                             time_3 = time.time()
                             print(f'Time3 - Time2: {time_3 - time_2}')
 
+                # Overwrite old variational parameters with curr variational parameters
+                for variable, variable_variational_params_dict in variational_params.items():
+                    if variable == 'assignments':
+                        continue
+                    for variational_param, variational_param_tensor in variable_variational_params_dict.items():
+                        variational_param_tensor[0] = variational_param_tensor[1]
+
                 cluster_assignment_posterior = variational_params['assignments']['probs'][obs_idx, :].clone()
 
                 # Step 4: Update posterior over number of clusters.
@@ -292,12 +300,19 @@ class DynamicalCRP(BaseModel):
         # Add 1 because of indexing starts at 0.
         num_inferred_clusters = 1 + torch.argmax(num_clusters_posteriors, dim=1).numpy()[-1].item()
 
+        variational_parameters = {}
+        for variable, variable_variational_params_dict in variational_params.items():
+            if variable == 'assignments':
+                continue
+            for variational_param, variational_param_tensor in variable_variational_params_dict.items():
+                variational_parameters[variational_param] = variational_param_tensor[1].numpy()
+
         self.fit_results = dict(
             cluster_assignment_priors=cluster_assignment_priors.numpy(),
             cluster_assignment_posteriors=variational_params['assignments']['probs'].detach().numpy(),
             num_clusters_posteriors=num_clusters_posteriors.numpy(),
             num_inferred_clusters=num_inferred_clusters,
-            parameters={k: v.detach().numpy() for k, v in variational_params['means'].items()},
+            parameters=variational_parameters,
         )
 
         return self.fit_results
@@ -308,30 +323,34 @@ class DynamicalCRP(BaseModel):
         """
         return self.fit_results['parameters']['means'][0]
 
-    @staticmethod
-    def initialize_cluster_params_dirichlet_multinomial(torch_observation: torch.Tensor,
+    def initialize_cluster_params_dirichlet_multinomial(self,
+                                                        torch_observation: torch.Tensor,
                                                         obs_idx: int,
                                                         variational_params: Dict[str, torch.Tensor],
                                                         epsilon: float = 10.):
-        assert_torch_no_nan_no_inf_is_real(torch_observation)
-        variational_params['concentrations'][0, obs_idx, :] = torch_observation + epsilon
+        # assert_torch_no_nan_no_inf_is_real(torch_observation)
+        # variational_params['concentrations'][0, obs_idx, :] = torch_observation + epsilon
+        raise NotImplementedError
 
     @staticmethod
     def initialize_cluster_params_multivariate_normal(torch_observation: np.ndarray,
                                                       obs_idx: int,
                                                       variational_params: Dict[str, np.ndarray]):
-        variational_params['means']['means'].data[0, obs_idx, :] = torch_observation
+
+        variational_params['means']['means'].data[:, obs_idx, :] = torch_observation
         assert_torch_no_nan_no_inf_is_real(variational_params['means']['means'])
 
-    @staticmethod
-    def initialize_cluster_params_product_bernoullis(torch_observation: np.ndarray,
+    def initialize_cluster_params_product_bernoullis(self,
+                                                     torch_observation: np.ndarray,
                                                      obs_idx: int,
                                                      variational_params: Dict[str, np.ndarray]):
 
-        # Data should already lie on sphere, so need to normalize.
-        direction = torch_observation
-        variational_params['means']['means'].data[0, obs_idx, :] = direction
-        assert_torch_no_nan_no_inf_is_real(variational_params['means']['means'])
+        variational_params['beta']['arg1'].data[:, obs_idx, :] = \
+            self.component_prior_params['beta_arg1'] + torch_observation
+        assert_torch_no_nan_no_inf_is_real(variational_params['beta']['arg1'])
+        variational_params['beta']['arg2'].data[:, obs_idx, :] = \
+            self.component_prior_params['beta_arg2'] + (1. - torch_observation)
+        assert_torch_no_nan_no_inf_is_real(variational_params['beta']['arg2'])
 
     @staticmethod
     def initialize_cluster_params_vonmises_fisher(torch_observation: np.ndarray,
@@ -340,7 +359,7 @@ class DynamicalCRP(BaseModel):
 
         # Data should already lie on sphere, so need to normalize.
         direction = torch_observation
-        variational_params['means']['means'].data[0, obs_idx, :] = direction
+        variational_params['means']['means'].data[:, obs_idx, :] = direction
         assert_torch_no_nan_no_inf_is_real(variational_params['means']['means'])
 
     @staticmethod
@@ -390,6 +409,59 @@ class DynamicalCRP(BaseModel):
         assert torch.all(0. <= cluster_assignment_posterior_params)
         assert torch.all(cluster_assignment_posterior_params <= 1.)
 
+        variational_params['assignments']['probs'][obs_idx, :obs_idx + 1] = cluster_assignment_posterior_params
+
+    @staticmethod
+    def optimize_cluster_assignments_product_bernoullis(torch_observation: torch.Tensor,
+                                                        obs_idx: int,
+                                                        vi_idx: int,
+                                                        cluster_assignment_prior: torch.Tensor,
+                                                        variational_params: Dict[str, dict],
+                                                        likelihood_params: Dict[str, float]):
+
+        # Term 1: log q(c_n = l | o_{<n})
+        # Warning: can get -inf here if probability of new cluster is 0
+        term_one = torch.log(cluster_assignment_prior[:obs_idx + 1])
+
+        # Shape: (curr max num clusters i.e. obs idx, obs dim)
+        arg1_plus_arg2 = torch.add(
+            variational_params['beta']['arg1'][1, :obs_idx + 1, :],
+            variational_params['beta']['arg2'][1, :obs_idx + 1, :])
+        digamma_arg1_plus_arg2 = torch.digamma(arg1_plus_arg2)
+        digamma_arg1_minus_digamma_arg1_plus_arg2 = torch.sub(
+            torch.digamma(variational_params['beta']['arg1'][1, :obs_idx + 1, :]),
+            digamma_arg1_plus_arg2)
+        digamma_arg2_minus_digamma_arg1_plus_arg2 = torch.sub(
+            torch.digamma(variational_params['beta']['arg2'][1, :obs_idx + 1, :]),
+            digamma_arg1_plus_arg2)
+
+        # Term 2: \sum x_{nl}
+        term_two_part_one = torch.einsum(
+            'co,o->c',
+            digamma_arg1_minus_digamma_arg1_plus_arg2,
+            torch_observation,  # Shape: (obs dim,)
+        )  # Shape: (curr max num clusters i.e. obs idx ,)
+        term_two_part_two = torch.einsum(
+            'co,o->c',
+            digamma_arg2_minus_digamma_arg1_plus_arg2,
+            1. - torch_observation,  # Shape: (obs dim, )
+        )   # Shape: (curr max num clusters i.e. obs idx ,)
+
+        # Shape: (curr max num clusters i.e. obs idx ,)
+        term_two = term_two_part_one + term_two_part_two
+        assert_torch_no_nan_no_inf_is_real(term_two)
+
+        term_to_softmax = term_one + term_two
+        cluster_assignment_posterior_params = torch.nn.functional.softmax(
+            term_to_softmax,  # shape: (max num clusters, )
+            dim=0)
+
+        # check that Bernoulli probs are all valid
+        assert_torch_no_nan_no_inf_is_real(cluster_assignment_posterior_params)
+        assert torch.all(0. <= cluster_assignment_posterior_params)
+        assert torch.all(cluster_assignment_posterior_params <= 1.)
+
+        # Shape: (curr max num clusters i.e. obs idx)
         variational_params['assignments']['probs'][obs_idx, :obs_idx + 1] = cluster_assignment_posterior_params
 
     @staticmethod
@@ -541,6 +613,33 @@ class DynamicalCRP(BaseModel):
         print(f'Time2.5 - Time2.4: {time_2_5 - time_2_4}')
         assert_torch_no_nan_no_inf_is_real(new_means_means)
         variational_params['means']['means'][0, :obs_idx + 1, :] = new_means_means
+
+    @staticmethod
+    def optimize_cluster_params_product_bernoullis(torch_observation: torch.Tensor,
+                                                   obs_idx: int,
+                                                   vi_idx: int,
+                                                   variational_params: Dict[str, dict],
+                                                   likelihood_params: Dict[str, float],
+                                                   ) -> None:
+
+        variational_params['beta']['arg1'][1, :, :] = torch.add(
+            variational_params['beta']['arg1'][0, :, :],  # previous parameter values
+            torch.einsum(
+                'c,o->co',
+                variational_params['assignments']['probs'][obs_idx],  # Shape: (max num clusters,)
+                torch_observation,  # Shape: (obs dim,)
+            )
+        )
+        assert_torch_no_nan_no_inf_is_real(variational_params['beta']['arg1'][1, :, :])
+
+        variational_params['beta']['arg2'][1, :, :] = torch.add(
+            variational_params['beta']['arg2'][0, :, :],  # previous parameter values
+            torch.einsum(
+                'c,o->co',
+                variational_params['assignments']['probs'][obs_idx],  # Shape: (max num clusters,)
+                1. - torch_observation,  # Shape: (obs dim,)
+            ))
+        assert_torch_no_nan_no_inf_is_real(variational_params['beta']['arg2'][1, :, :])
 
     @staticmethod
     def optimize_cluster_params_vonmises_fisher(torch_observation: torch.Tensor,
