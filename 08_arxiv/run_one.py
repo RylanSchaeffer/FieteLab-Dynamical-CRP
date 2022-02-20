@@ -10,6 +10,7 @@ Example usage:
 import joblib
 import os
 
+import numpy as np
 import pandas as pd
 import wandb
 
@@ -91,8 +92,14 @@ else:
         vectorizer = joblib_file_ptr['vectorizer']
 
 
+# Take only the first n_samples samples
+observations = observations[:config['n_samples']]
+observation_times = observation_times[:config['n_samples']]
+true_cluster_assignments = true_cluster_assignments[:config['n_samples']]
+
+
 # Compute number of true clusters
-wandb.log({'n_clusters': len(unique_cluster_ids)}, step=0)
+wandb.log({'n_clusters': len(np.unique(true_cluster_assignments))}, step=0)
 
 gen_model_params = {
     'mixing_params': {
