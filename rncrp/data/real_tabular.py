@@ -717,7 +717,8 @@ def load_dataset_omniglot(data_dir: str = 'data',
                           center_crop: bool = True,
                           avg_pool: bool = False,
                           feature_extractor_method: str = 'pca',
-                          shuffle=True):
+                          shuffle=True,
+                          vary_clusters=False):
     """
 
     """
@@ -737,8 +738,23 @@ def load_dataset_omniglot(data_dir: str = 'data',
         download=True,
         transform=torchvision.transforms.Compose(transforms))
 
-    # truncate dataset for now
+    # Enforce time-varying clusters
+    if vary_clusters:
+        # Randomly select 5 alphabets
+        alphabets = omniglot_dataset._alphabets.copy()
+        omniglot_dataset._alphabets = random.sample(alphabets, 5)  # randomly sample 5 alphabets
 
+        # Sample observations from the 5 alphabets, in sequential order
+        omniglot_dataset._characters: List[str] = sum(
+            ([join(a, c) for c in list_dir(join(omniglot_dataset.target_folder, a))] for a in omniglot_dataset._alphabets),
+            [])
+        omniglot_dataset._character_images = [
+            [(image, idx) for image in list_files(join(omniglot_dataset.target_folder, character), ".png")]
+            for idx, character in enumerate(omniglot_dataset._characters)]
+        omniglot_dataset._flat_character_images: List[Tuple[str, int]] = sum(omniglot_dataset._character_images, [])
+
+
+    # truncate dataset for now
     if num_data is None:
         num_data = len(omniglot_dataset._flat_character_images)
     omniglot_dataset._flat_character_images = omniglot_dataset._flat_character_images[:num_data]
