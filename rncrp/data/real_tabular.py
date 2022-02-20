@@ -718,7 +718,7 @@ def load_dataset_omniglot(data_dir: str = 'data',
                           avg_pool: bool = False,
                           feature_extractor_method: str = 'pca',
                           shuffle=True,
-                          vary_clusters=False):
+                          vary_clusters_with_time=False):
     """
 
     """
@@ -739,7 +739,7 @@ def load_dataset_omniglot(data_dir: str = 'data',
         transform=torchvision.transforms.Compose(transforms))
 
     # Enforce time-varying clusters
-    if vary_clusters:
+    if vary_clusters_with_time:
         # Randomly select 5 alphabets
         alphabets = omniglot_dataset._alphabets.copy()
         omniglot_dataset._alphabets = random.sample(alphabets, 5)  # randomly sample 5 alphabets
