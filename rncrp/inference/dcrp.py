@@ -106,7 +106,7 @@ class DynamicalCRP(BaseModel):
             A_prefactor = np.sqrt(self.gen_model_params['component_prior_params']['centroids_prior_cov_prefactor']
                                   + self.gen_model_params['likelihood_params']['likelihood_cov_prefactor'])
             A_diag_covs = (A_prefactor * torch.ones(obs_dim).float()[None, None, :]).repeat(
-                1, max_num_clusters, 1)
+                2, max_num_clusters, 1)
 
             variational_params = dict(
                 assignments=dict(
@@ -116,7 +116,7 @@ class DynamicalCRP(BaseModel):
                         dtype=torch.float32)),
                 means=dict(
                     means=torch.full(
-                        size=(1, max_num_clusters, obs_dim),
+                        size=(2, max_num_clusters, obs_dim),
                         fill_value=0.,
                         dtype=torch.float32),
                     diag_covs=A_diag_covs))
@@ -158,11 +158,11 @@ class DynamicalCRP(BaseModel):
                         dtype=torch.float32)),
                 means=dict(
                     means=torch.full(
-                        size=(1, max_num_clusters, obs_dim),
+                        size=(2, max_num_clusters, obs_dim),
                         fill_value=0.,
                         dtype=torch.float32),
                     concentrations=torch.full(
-                        size=(1, max_num_clusters, 1),
+                        size=(2, max_num_clusters, 1),
                         fill_value=1.,
                         dtype=torch.float32,
                     )))
@@ -321,7 +321,7 @@ class DynamicalCRP(BaseModel):
         """
         Returns array of shape (num features, feature dimension)
         """
-        return self.fit_results['parameters']['means'][0]
+        return self.fit_results['parameters']['means']
 
     def initialize_cluster_params_dirichlet_multinomial(self,
                                                         torch_observation: torch.Tensor,
