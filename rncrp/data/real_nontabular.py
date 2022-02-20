@@ -91,10 +91,12 @@ def load_dataset_yilun_nav_2d_2022(data_dir: str = 'data',
     data_path = os.path.join(dataset_dir, 'data_traj.npz')
 
     with np.load(data_path) as np_fp:
+        # WARNING: for no reason, the number of landmarks is the same as the number of vis points
+        # Don't screw up the dimensions!
         landmarks = np_fp['landmarks']  # Shape: (num envs, num landmarks, 2 for xy position)
         points = np_fp['points']  # Shape: (num envs, num vis points, 2 for xy position)
         room_ids = np_fp['room_ids']  # Shape: (num envs, num vis points)
-        vis_matrix = np_fp['vis_matrix']  # (num envs, num , num)
+        vis_matrix = np_fp['vis_matrix']  # Shape: (num envs, num vis points, num landmarks)
 
     dataset_dict = dict(
         landmarks=landmarks,
