@@ -43,6 +43,26 @@ def plot_sweep_results_all(sweep_results_df: pd.DataFrame,
         print(f'Plotted {str(plot_fn)}')
 
 
+def plot_cluster_multiclass_classification_score(sweep_results_df: pd.DataFrame,
+                                                 plot_dir: str):
+
+    sns.lineplot(data=sweep_results_df,
+                 x='alpha',
+                 y='avg_finetune_acc',
+                 hue='inference_alg_str',
+                 palette=algorithm_color_map)
+    plt.xlabel(r'$\alpha$')
+    plt.legend()
+    # plt.ylim(0., 1.05)
+    plt.tight_layout()
+    plt.savefig(os.path.join(plot_dir,
+                             f'avg_finetune_multiclass_acc_by_alpha.png'),
+                bbox_inches='tight',
+                dpi=300)
+    # plt.show()
+    plt.close()
+
+
 def plot_num_clusters_by_alpha_colored_by_alg(
         sweep_results_df: pd.DataFrame,
         plot_dir: str):

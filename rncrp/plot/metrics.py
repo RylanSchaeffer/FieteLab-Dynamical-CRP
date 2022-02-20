@@ -136,7 +136,6 @@ def plot_score_best_by_alg(inf_algs_results_df: pd.DataFrame,
                            plot_dir: str,
                            score: str = 'neg_log_posterior_predictive',
                            title: str = None):
-
     assert score in inf_algs_results_df.columns.values
 
     best_score_inf_algs_results_df = inf_algs_results_df.groupby('inference_alg').agg({
@@ -177,7 +176,6 @@ def plot_score_best_by_alg(inf_algs_results_df: pd.DataFrame,
 
 def plot_runtime_by_alpha_beta(inf_algs_results_df: pd.DataFrame,
                                plot_dir: str):
-
     inf_algs_results_df['alpha_rounded'] = np.round(inf_algs_results_df['alpha'],
                                                     decimals=3)
 
@@ -212,3 +210,4 @@ def plot_runtime_by_alpha_beta(inf_algs_results_df: pd.DataFrame,
                 dpi=300)
     # plt.show()
     plt.close()
+
