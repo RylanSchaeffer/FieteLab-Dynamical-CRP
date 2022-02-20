@@ -175,6 +175,11 @@ def sample_mixture_model(num_obs: int = 100,
             component_prior_params = {
                 'kappa': 1.,
             }
+        elif component_prior_str == 'dirichlet-multinomial':
+            component_prior_params = {
+                'alpha': 1.,
+                'num_trials': 100,
+            }
         else:
             raise NotImplementedError
 
@@ -226,6 +231,32 @@ def sample_mixture_model(num_obs: int = 100,
             tfd.VonMisesFisher(
                 mean_direction=mus[assigned_cluster],
                 concentration=kappas[assigned_cluster]).sample().numpy()
+            for assigned_cluster in cluster_assignments])
+
+    elif component_prior_str == 'dirichlet-multinomial':
+
+        assert component_prior_params['alpha'] > 0
+        assert component_prior_params['num_trials'] > 0
+
+        tfd = tfp.distributions
+
+        # Shape (num_components, )
+        num_trials = component_prior_params['num_trials'] * np.ones(num_components)
+
+        # All K classes equally likely to be drawn (here K = num_components)
+        # Shape: (num_components, obs_dim)
+        alphas = component_prior_params['alpha'] * np.ones((num_components, obs_dim))
+
+        components = dict(component_prior_str=component_prior_str,
+                          total_counts=num_trials,
+                          concentrations=alphas)
+
+        # Shape: num_obs x obs_dim
+        observations = np.array([
+            tfd.DirichletMultinomial(
+                total_count=num_trials[assigned_cluster],
+                concentration=alphas[assigned_cluster],
+                allow_nan_stats=False).sample().numpy()
             for assigned_cluster in cluster_assignments])
 
     else:
