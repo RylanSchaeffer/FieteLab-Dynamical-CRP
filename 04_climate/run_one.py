@@ -60,7 +60,7 @@ gen_model_params = {
         # 'dynamics_str': config['dynamics_str'],
         # 'dynamics_params': mixture_model_results['dynamics_params']
     },
-    'feature_prior_params': {
+    'component_prior_params': {
     },
     'likelihood_params': {
         'distribution': 'vonmises_fisher',

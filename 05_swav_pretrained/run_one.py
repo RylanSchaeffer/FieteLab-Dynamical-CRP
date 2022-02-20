@@ -74,7 +74,7 @@ gen_model_params = {
         'dynamics_str': config['dynamics_str'],
         'dynamics_params': {'a': config['dynamics_a'], 'b': 0.},
     },
-    'feature_prior_params': {
+    'component_prior_params': {
         # 'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor']
     },
     'likelihood_params': {

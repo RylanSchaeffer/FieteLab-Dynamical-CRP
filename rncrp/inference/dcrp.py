@@ -39,7 +39,7 @@ class DynamicalCRP(BaseModel):
             dynamics_str=self.mixing_params['dynamics_str'],
             dynamics_params=self.mixing_params['dynamics_params'],
             implementation_mode='torch')
-        self.feature_prior_params = gen_model_params['feature_prior_params']
+        self.component_prior_params = gen_model_params['component_prior_params']
         self.likelihood_params = gen_model_params['likelihood_params']
         self.model_str = model_str
         self.num_coord_ascent_steps_per_obs = num_coord_ascent_steps_per_obs
@@ -78,13 +78,31 @@ class DynamicalCRP(BaseModel):
         num_clusters_posteriors = torch.zeros(size=(num_obs, max_num_clusters),
                                               dtype=torch.float32)
 
-        if self.likelihood_params['distribution'] == 'multivariate_normal':
+        if self.likelihood_params['distribution'] == 'dirichlet_multinomial':
+
+            # initialize_cluster_params_fn = self.initialize_cluster_params_dirichlet_multinomial
+            # optimize_cluster_assignments_fn = self.optimize_cluster_assignments_dirichlet_multinomial
+            # optimize_cluster_params_fn = self.optimize_cluster_params_dirichlet_multinomial
+            #
+            # variational_params = dict(
+            #     assignments=torch.full(
+            #         size=(max_num_latents, obs_dim),
+            #         fill_value=0.,
+            #         dtype=torch.float32),
+            #     concentrations=torch.full(size=(max_num_latents, obs_dim),
+            #                               fill_value=np.nan,
+            #                               dtype=torch.float32,
+            #                               requires_grad=True))
+
+            raise NotImplementedError
+
+        elif self.likelihood_params['distribution'] == 'multivariate_normal':
 
             initialize_cluster_params_fn = self.initialize_cluster_params_multivariate_normal
             optimize_cluster_assignments_fn = self.optimize_cluster_assignments_multivariate_normal
             optimize_cluster_params_fn = self.optimize_cluster_params_multivariate_normal
 
-            A_prefactor = np.sqrt(self.gen_model_params['feature_prior_params']['centroids_prior_cov_prefactor']
+            A_prefactor = np.sqrt(self.gen_model_params['component_prior_params']['centroids_prior_cov_prefactor']
                                   + self.gen_model_params['likelihood_params']['likelihood_cov_prefactor'])
             A_diag_covs = (A_prefactor * torch.ones(obs_dim).float()[None, None, :]).repeat(
                 1, max_num_clusters, 1)
@@ -102,23 +120,29 @@ class DynamicalCRP(BaseModel):
                         dtype=torch.float32),
                     diag_covs=A_diag_covs))
 
-        elif self.likelihood_params['distribution'] == 'dirichlet_multinomial':
+        elif self.likelihood_params['distribution'] == 'product_bernoullis':
 
-            # initialize_cluster_params_fn = self.initialize_cluster_params_dirichlet_multinomial
-            # optimize_cluster_assignments_fn = self.optimize_cluster_assignments_dirichlet_multinomial
-            # optimize_cluster_params_fn = self.optimize_cluster_params_dirichlet_multinomial
-            #
-            # variational_params = dict(
-            #     assignments=torch.full(
-            #         size=(max_num_latents, obs_dim),
-            #         fill_value=0.,
-            #         dtype=torch.float32),
-            #     concentrations=torch.full(size=(max_num_latents, obs_dim),
-            #                               fill_value=np.nan,
-            #                               dtype=torch.float32,
-            #                               requires_grad=True))
+            initialize_cluster_params_fn = self.initialize_cluster_params_product_bernoullis
+            optimize_cluster_assignments_fn = self.optimize_cluster_assignments_product_bernoullis
+            optimize_cluster_params_fn = self.optimize_cluster_params_product_bernoullis
 
-            raise NotImplementedError
+            variational_params = dict(
+                assignments=dict(
+                    probs=torch.full(
+                        size=(num_obs, max_num_clusters),
+                        fill_value=0.,
+                        dtype=torch.float32)),
+                beta=dict(
+                    arg1=torch.full(
+                        size=(1, max_num_clusters, obs_dim),
+                        fill_value=0.,
+                        dtype=torch.float32),
+                    arg2=torch.full(
+                        size=(1, max_num_clusters, obs_dim),
+                        fill_value=1.,
+                        dtype=torch.float32,
+                    )))
+
         elif self.likelihood_params['distribution'] == 'vonmises_fisher':
 
             initialize_cluster_params_fn = self.initialize_cluster_params_vonmises_fisher
@@ -297,6 +321,16 @@ class DynamicalCRP(BaseModel):
                                                       obs_idx: int,
                                                       variational_params: Dict[str, np.ndarray]):
         variational_params['means']['means'].data[0, obs_idx, :] = torch_observation
+        assert_torch_no_nan_no_inf_is_real(variational_params['means']['means'])
+
+    @staticmethod
+    def initialize_cluster_params_product_bernoullis(torch_observation: np.ndarray,
+                                                     obs_idx: int,
+                                                     variational_params: Dict[str, np.ndarray]):
+
+        # Data should already lie on sphere, so need to normalize.
+        direction = torch_observation
+        variational_params['means']['means'].data[0, obs_idx, :] = direction
         assert_torch_no_nan_no_inf_is_real(variational_params['means']['means'])
 
     @staticmethod

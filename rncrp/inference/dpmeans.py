@@ -43,7 +43,7 @@ class DPMeans(BaseModel):
         self.gen_model_params = gen_model_params
         self.mixing_params = gen_model_params['mixing_params']
         assert self.mixing_params['lambda'] > 0.
-        self.feature_prior_params = gen_model_params['feature_prior_params']
+        self.component_prior_params = gen_model_params['component_prior_params']
         self.likelihood_params = gen_model_params['likelihood_params']
 
         # if max_iter = 1, then this is "online."

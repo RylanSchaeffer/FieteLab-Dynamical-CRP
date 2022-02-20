@@ -4,7 +4,7 @@ for the specified inference algorithm and model parameters.
 
 Example usage:
 
-07_yilun_nav_2d_2022/run_one.py
+07_yilun_nav_2d/run_one.py
 """
 
 import joblib
@@ -20,15 +20,16 @@ import rncrp.metrics
 
 config_defaults = {
     'inference_alg_str': 'Dynamical-CRP',
-    'dynamics_str': 'step',
+    'dynamics_str': 'exp',
     'dynamics_a': 1.,
-    'dynamics_b': 0.,
+    'dynamics_b': 1.,
     'alpha': 1.1,
     'beta': 0.,
-    'likelihood_kappa': 5.,
     'n_samples': 10,
     'repeat_idx': 0,
     'imagenet_split': 'val',
+    'beta_arg_one': 1.,
+    'beta_arg_two': 1.,
 }
 
 wandb.init(project='dcrp-yilun-nav2d',
@@ -40,7 +41,7 @@ for key, value in config.items():
     print(key, ' : ', value)
 
 # determine paths
-exp_dir = '07_yilun_nav_2d_2022'
+exp_dir = '07_yilun_nav_2d'
 results_dir_path = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir_path, exist_ok=True)
 inf_alg_results_path = os.path.join(results_dir_path,
@@ -51,16 +52,29 @@ wandb.log({'inf_alg_results_path': inf_alg_results_path},
 # set seeds
 rncrp.helpers.run.set_seed(seed=config['repeat_idx'])
 
-nav_2d_dataset = rncrp.data.real_nontabular.load_dataset_yilun_nav_2d_2022()
+yilun_nav_2d_dataset = rncrp.data.real_nontabular.load_dataset_yilun_nav_2d_2022()
+
+# Observations should be the points (xy coordinates) concatenated with
+# the visibility of landmarks
+
+# TODO: I think we need to make points (i.e. the spatial location) a Gaussian
+# Shape: (num envs, num vis points, num landmarks + 2 for xy position)
+# observations = np.concatenate(
+#     [nav_2d_dataset['points'], nav_2d_dataset['vis_matrix']],
+#     axis=2)
+# Take the
+observations = yilun_nav_2d_dataset['vis_matrix']
+
+# Take the repeat-index's environment
+env_idx = config['repeat_idx']
+observations = observations[env_idx, :, :]
 
 # Construct observation times
-num_obs = len(nav_2d_dataset)
+num_obs = len(yilun_nav_2d_dataset)
 observation_times = np.arange(num_obs)
 
-# Compute true cluster assignments
-true_cluster_assignments = np.zeros(shape=num_obs)
-for batch_idx, batch_tensors in enumerate(nav_2d_dataset):
-    true_cluster_assignments[batch_idx] = batch_tensors['target'].item()
+# Compute true cluster assignments of this environment
+true_cluster_assignments = yilun_nav_2d_dataset['room_ids'][env_idx, :]
 
 # Compute number of true clusters
 wandb.log({'n_clusters': len(np.unique(true_cluster_assignments))}, step=0)
@@ -70,20 +84,20 @@ gen_model_params = {
         'alpha': config['alpha'],
         'beta': config['beta'],
         'dynamics_str': config['dynamics_str'],
-        'dynamics_params': {'a': config['dynamics_a'], 'b': 0.},
+        'dynamics_params': {'a': config['dynamics_a'], 'b': 1.0},
     },
-    'feature_prior_params': {
-        # 'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor']
+    'component_prior_params': {
+        'beta_arg_one': config['beta_arg_one'],
+        'beta_arg_two': config['beta_arg_two'],
     },
     'likelihood_params': {
-        'distribution': 'vonmises_fisher',
-        'likelihood_kappa': config['likelihood_kappa']
+        'distribution': 'product_bernoullis',
     }
 }
 
 inference_alg_results = rncrp.helpers.run.run_inference_alg(
     inference_alg_str=config['inference_alg_str'],
-    observations=nav_2d_dataset,
+    observations=observations,
     observations_times=observation_times,
     gen_model_params=gen_model_params,
 )
@@ -95,12 +109,6 @@ scores, map_cluster_assignments = rncrp.metrics.compute_predicted_clusters_score
 inference_alg_results.update(scores)
 inference_alg_results['map_cluster_assignments'] = map_cluster_assignments
 wandb.log(scores, step=0)
-
-# sum_sqrd_distances = rncrp.metrics.compute_sum_of_squared_distances_to_nearest_center(
-#     X=observations,
-#     centroids=inference_alg_results['inference_alg'].centroids_after_last_obs())
-# inference_alg_results['training_reconstruction_error'] = sum_sqrd_distances
-# wandb.log({'training_reconstruction_error': sum_sqrd_distances}, step=0)
 
 data_to_store = dict(
     config=dict(config),  # Need to convert WandB config to proper dict

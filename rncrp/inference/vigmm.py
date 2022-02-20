@@ -25,7 +25,7 @@ class VariationalInferenceGMM(BaseModel):
         self.mixing_params = gen_model_params['mixing_params']
         assert self.mixing_params['alpha'] > 0.
         assert self.mixing_params['beta'] == 0.
-        self.feature_prior_params = gen_model_params['feature_prior_params']
+        self.component_prior_params = gen_model_params['component_prior_params']
         self.likelihood_params = gen_model_params['likelihood_params']
         self.max_iter = max_iter
         self.num_initializations = num_initializations

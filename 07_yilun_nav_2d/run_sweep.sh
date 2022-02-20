@@ -9,10 +9,10 @@
 
 # Run this, then pipe sweep ID to each individual run
 # source rncrp_venv/bin/activate
-# wandb sweep 05_swav_pretrained/sweep_complete.yaml
+# wandb sweep 07_yilun_nav_2d/sweep_complete.yaml
 
 for i in {1..10}
 do
-  sbatch 05_swav_pretrained/run_one.sh nhj1s21j
+  sbatch 07_yilun_nav_2d/run_one.sh nhj1s21j
   sleep 5
 done
