@@ -1,6 +1,6 @@
 # Streaming Inference for Infinite Non-Stationary Clustering
 
-### Authors: Rylan Schaeffer, Gabrielle Kaili-May Liu, Ila Rani Fiete
+### Authors: Rylan Schaeffer, Gabrielle Kaili-May Liu, Yilun Du, Ila Rani Fiete
 
 -----
 
