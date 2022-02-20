@@ -44,7 +44,7 @@ def plot_customer_assignments_analytical_vs_monte_carlo(sampled_customer_assignm
     sns.heatmap(avg_sampled_customer_assignments_by_customer,
                 ax=ax,
                 mask=np.isnan(avg_sampled_customer_assignments_by_customer),
-                cmap='jet',
+                cmap='Spectral', #'jet',
                 vmin=cutoff,
                 vmax=1.,
                 norm=LogNorm())
@@ -59,7 +59,7 @@ def plot_customer_assignments_analytical_vs_monte_carlo(sampled_customer_assignm
     sns.heatmap(analytical_customer_assignments_by_customer,
                 ax=ax,
                 mask=np.isnan(analytical_customer_assignments_by_customer),
-                cmap='jet',
+                cmap='Spectral', #'jet',
                 vmin=cutoff,
                 vmax=1.,
                 norm=LogNorm(),
@@ -103,7 +103,7 @@ def plot_num_tables_analytical_vs_monte_carlo(sampled_num_tables_by_customer: np
     sns.heatmap(avg_sampled_num_tables_by_customer,
                 ax=ax,
                 mask=np.isnan(avg_sampled_num_tables_by_customer),
-                cmap='jet',
+                cmap='Spectral', #'jet',
                 norm=LogNorm(vmin=cutoff, vmax=1., ),
                 )
 
@@ -117,7 +117,7 @@ def plot_num_tables_analytical_vs_monte_carlo(sampled_num_tables_by_customer: np
     sns.heatmap(analytical_num_tables_by_customer,
                 ax=ax,
                 mask=np.isnan(analytical_num_tables_by_customer),
-                cmap='jet',
+                cmap='Spectral', #'jet',
                 norm=LogNorm(vmin=cutoff, vmax=1., ),
                 )
     ax.set_title(rf'Analytical ($\alpha=${alpha})')  # , $\beta=${beta}
@@ -258,7 +258,7 @@ def plot_recursion_visualization(analytical_customer_tables_by_alpha,
             data=cum_customer_seating_probs[:, :max_table_idx],
             ax=ax,
             cbar_kws=dict(label=r'$\sum_{t^{\prime} = 1}^{t-1} p(z_{t\prime} = k)$'),
-            cmap='jet',
+            cmap='Spectral', #'jet',
             mask=np.isnan(cum_customer_seating_probs[:, :max_table_idx]),
             norm=LogNorm(vmin=cutoff),
         )
@@ -278,7 +278,7 @@ def plot_recursion_visualization(analytical_customer_tables_by_alpha,
             data=table_distributions_by_T_array[:, :max_table_idx],
             ax=ax,
             cbar_kws=dict(label='$p(K_t = k)$'),
-            cmap='jet',
+            cmap='Spectral', #'jet',
             mask=np.isnan(table_distributions_by_T_array[:, :max_table_idx]),
             norm=LogNorm(vmin=cutoff, ),
         )
@@ -294,7 +294,7 @@ def plot_recursion_visualization(analytical_customer_tables_by_alpha,
             data=analytical_customer_tables[:, :max_table_idx],
             ax=ax,
             cbar_kws=dict(label='$p(z_t)$'),
-            cmap='jet',
+            cmap='Spectral', #'jet',
             mask=np.isnan(analytical_customer_tables[:, :max_table_idx]),
             norm=LogNorm(vmin=cutoff, ),
         )
