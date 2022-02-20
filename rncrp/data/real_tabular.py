@@ -220,6 +220,15 @@ def create_data_for_label_generation(site_df,
                                      end_year: int = 2020,
                                      use_zscores: bool = False,
                                      ) -> pd.DataFrame:
+    """
+    Function to create and format dataframe for input to ClimClass Koppen Geiger label generation in R.
+
+    Required columns:
+    - P (precipitation)
+    - Tn (min temp)
+    - Tx (max temp)
+    - Tm (mean temp; taken to be mean of min and max temps if not given)
+    """
 
     assert periodicity in {'monthly', 'annually'}
 
@@ -255,13 +264,13 @@ def create_data_for_label_generation(site_df,
     else:
         raise ValueError('Impermissible computation interval:', periodicity)
 
-    # Convert climate metrics to z-scores if want to look more specifically at climate variability of each site
-    if use_zscores:
-        site_metrics_df = stats.zscore(site_metrics_df, axis=1, nan_policy='raise')
-
-    # Otherwise, study overall climate by using raw data values
-    else:
-        site_metrics_df = site_metrics_df
+    # # Convert climate metrics to z-scores if want to look more specifically at climate variability of each site
+    # if use_zscores:
+    #     site_metrics_df = stats.zscore(site_metrics_df, axis=1, nan_policy='raise')
+    #
+    # # Otherwise, study overall climate by using raw data values
+    # else:
+    #     site_metrics_df = site_metrics_df
 
     return site_metrics_df
 
@@ -270,6 +279,15 @@ def create_climate_metrics_array(site_df,
                                  periodicity: str = 'annually',
                                  end_year: int = 2020,
                                  use_zscores: bool = False):
+    """
+    - Generate an array of monthly- or annually-averaged climate metrics for a site
+        given its GHCN-Daily dataframe.
+    - Convert climate metrics to zscores, if desired, to look at climate variability
+        rather than overall climate type.
+    - Output array dimensions:
+        Annual averaging: num_years x 7
+        Monthly averaging: num_months x 8
+    """
 
     assert periodicity in {'monthly', 'annually'}
     df = site_df.copy()
@@ -382,6 +400,12 @@ def load_dataset_climate_helper(
         end_year: int = 2020,
         use_zscores: bool = False,
         get_labels: bool = False):
+    """
+    Generate an array of annually- or monthly-averaged climate metrics for each site and vertically stack.
+    Output dimension:
+        Annual averaging: (num_sites x num_years) x 7
+        Monthly averaging: (num_sites x num_months) x 8
+    """
 
     site_array_dfs = []
     with open(qualifying_sites_path) as file:
