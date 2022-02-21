@@ -11,7 +11,6 @@ plt.rcParams["font.family"] = ["Times New Roman"]
 plt.rcParams["font.size"] = 16  # was previously 22
 sns.set_style("whitegrid")
 
-
 alphas_color_map = {
     1.1: 'tab:blue',
     10.78: 'tab:orange',
@@ -41,13 +40,13 @@ def plot_customer_assignments_analytical_vs_monte_carlo(sampled_customer_assignm
     avg_sampled_customer_assignments_by_customer[cutoff_idx] = np.nan
 
     ax = axes[0]
+    norm = LogNorm(vmin=cutoff, vmax=1.)
     sns.heatmap(avg_sampled_customer_assignments_by_customer,
                 ax=ax,
                 mask=np.isnan(avg_sampled_customer_assignments_by_customer),
-                cmap='Spectral', #'jet',
-                vmin=cutoff,
-                vmax=1.,
-                norm=LogNorm())
+                cmap='Spectral',  # 'jet',
+                norm=norm,
+                )
 
     ax.set_title(rf'Monte Carlo ($\alpha=${alpha})')  # , $\beta=${beta}
     ax.set_ylabel(r'Customer Index')
@@ -56,13 +55,12 @@ def plot_customer_assignments_analytical_vs_monte_carlo(sampled_customer_assignm
     ax = axes[1]
     cutoff_idx = analytical_customer_assignments_by_customer < cutoff
     analytical_customer_assignments_by_customer[cutoff_idx] = np.nan
+    norm = LogNorm(vmin=cutoff, vmax=1.)
     sns.heatmap(analytical_customer_assignments_by_customer,
                 ax=ax,
                 mask=np.isnan(analytical_customer_assignments_by_customer),
-                cmap='Spectral', #'jet',
-                vmin=cutoff,
-                vmax=1.,
-                norm=LogNorm(),
+                cmap='Spectral',  # 'jet',
+                norm=norm,
                 )
     ax.set_title(rf'Analytical ($\alpha=${alpha})')  # , $\beta=${beta}
     ax.set_xlabel(r'Table Index')
@@ -70,6 +68,7 @@ def plot_customer_assignments_analytical_vs_monte_carlo(sampled_customer_assignm
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])  # left, bottom right, top in normalized coordinates
 
     # for some reason, on OpenMind, colorbar ticks disappear without calling plt.show() first
+    print(plot_dir)
     fig.savefig(os.path.join(plot_dir, f'customer_assignments_monte_carlo_vs_analytical.png'),
                 bbox_inches='tight',
                 dpi=300)
@@ -83,7 +82,6 @@ def plot_num_tables_analytical_vs_monte_carlo(sampled_num_tables_by_customer: np
                                               beta: float,
                                               plot_dir: str,
                                               dynamics_latex_str: str):
-
     # plot customer assignments, comparing analytics versus monte carlo estimates
     fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
 
@@ -103,7 +101,7 @@ def plot_num_tables_analytical_vs_monte_carlo(sampled_num_tables_by_customer: np
     sns.heatmap(avg_sampled_num_tables_by_customer,
                 ax=ax,
                 mask=np.isnan(avg_sampled_num_tables_by_customer),
-                cmap='Spectral', #'jet',
+                cmap='Spectral',  # 'jet',
                 norm=LogNorm(vmin=cutoff, vmax=1., ),
                 )
 
@@ -117,7 +115,7 @@ def plot_num_tables_analytical_vs_monte_carlo(sampled_num_tables_by_customer: np
     sns.heatmap(analytical_num_tables_by_customer,
                 ax=ax,
                 mask=np.isnan(analytical_num_tables_by_customer),
-                cmap='Spectral', #'jet',
+                cmap='Spectral',  # 'jet',
                 norm=LogNorm(vmin=cutoff, vmax=1., ),
                 )
     ax.set_title(rf'Analytical ($\alpha=${alpha})')  # , $\beta=${beta}
@@ -258,7 +256,7 @@ def plot_recursion_visualization(analytical_customer_tables_by_alpha,
             data=cum_customer_seating_probs[:, :max_table_idx],
             ax=ax,
             cbar_kws=dict(label=r'$\sum_{t^{\prime} = 1}^{t-1} p(z_{t\prime} = k)$'),
-            cmap='Spectral', #'jet',
+            cmap='Spectral',  # 'jet',
             mask=np.isnan(cum_customer_seating_probs[:, :max_table_idx]),
             norm=LogNorm(vmin=cutoff),
         )
@@ -278,7 +276,7 @@ def plot_recursion_visualization(analytical_customer_tables_by_alpha,
             data=table_distributions_by_T_array[:, :max_table_idx],
             ax=ax,
             cbar_kws=dict(label='$p(K_t = k)$'),
-            cmap='Spectral', #'jet',
+            cmap='Spectral',  # 'jet',
             mask=np.isnan(table_distributions_by_T_array[:, :max_table_idx]),
             norm=LogNorm(vmin=cutoff, ),
         )
@@ -294,7 +292,7 @@ def plot_recursion_visualization(analytical_customer_tables_by_alpha,
             data=analytical_customer_tables[:, :max_table_idx],
             ax=ax,
             cbar_kws=dict(label='$p(z_t)$'),
-            cmap='Spectral', #'jet',
+            cmap='Spectral',  # 'jet',
             mask=np.isnan(analytical_customer_tables[:, :max_table_idx]),
             norm=LogNorm(vmin=cutoff, ),
         )
