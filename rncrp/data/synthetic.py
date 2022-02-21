@@ -287,7 +287,7 @@ def sample_rncrp(num_mc_samples: int,
                  beta: float,
                  dynamics_str: str,
                  dynamics_params: Dict[str, float] = None
-                 ) -> Dict[str, np.ndarray]:
+                 ) -> Dict[str, Union[np.ndarray, rncrp.helpers.dynamics.Dynamics]]:
     assert alpha > 0.
     assert beta >= 0.
 
