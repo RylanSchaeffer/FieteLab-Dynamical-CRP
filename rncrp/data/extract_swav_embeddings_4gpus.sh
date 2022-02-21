@@ -6,7 +6,7 @@
 #SBATCH --mem=16G
 #SBATCH --job-name=swav_4gpus
 #SBATCH --time=99:99:99
-#SBATCH --mail-user=rylansch
+#SBATCH --mail-user=$USER
 #SBATCH --mail-type=FAIL
 
 # write the executed command to the slurm output file for easy reproduction
