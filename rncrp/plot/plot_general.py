@@ -112,12 +112,10 @@ def plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg(sweep_result
         versus the number of observations, averaged over multiple datasets.
     """
 
-    n_samples = 1000
     fig, ax = plt.subplots(figsize=(5, 4))
-    sns.set_style("darkgrid")
 
     sweep_results_df['Inferred to True Cluster Ratio'] = sweep_results_df['Num Inferred Clusters']/sweep_results_df['Num True Clusters']
-    sweep_results_df['obs_idx'] = (np.array(sweep_results_df.index)) % n_samples + 1
+    sweep_results_df['obs_idx'] = (np.array(sweep_results_df.index)) % sweep_results_df['n_samples'][0] + 1
 
     g = sns.lineplot(data=sweep_results_df,
                      x='obs_idx',
@@ -138,12 +136,12 @@ def plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg(sweep_result
 
     plt.grid()
     plt.tight_layout()
-    plt.savefig(os.path.join(plot_dir, 'inferred_to_observed_true_cluster_ratio_plot.png'),
+    plt.savefig(os.path.join(plot_dir, 'plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg.png'),
                 bbox_inches='tight',
                 dpi=300)
     # plt.show()
     plt.close()
-    print("FIGURE SAVED TO:", plot_dir + '/inferred_to_observed_true_cluster_ratio_plot.png')
+    print("FIGURE SAVED TO:", plot_dir + '/plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg.png')
 
 
 def plot_ratio_observed_to_total_true_clusters_vs_num_obs_alg(sweep_results_df: pd.DataFrame,
@@ -153,12 +151,10 @@ def plot_ratio_observed_to_total_true_clusters_vs_num_obs_alg(sweep_results_df: 
         versus the number of observations, averaged over multiple datasets.
     """
 
-    n_samples = 1000
     fig, ax = plt.subplots(figsize=(5, 4))
-    sns.set_style("darkgrid")
 
     sweep_results_df['Observed to Total True Cluster Ratio'] = sweep_results_df['Num True Clusters']/sweep_results_df['n_clusters']
-    sweep_results_df['obs_idx'] = (np.array(sweep_results_df.index)) % n_samples + 1
+    sweep_results_df['obs_idx'] = (np.array(sweep_results_df.index)) % sweep_results_df['n_samples'][0] + 1
 
     g = sns.lineplot(data=sweep_results_df,
                      x='obs_idx',
@@ -179,12 +175,12 @@ def plot_ratio_observed_to_total_true_clusters_vs_num_obs_alg(sweep_results_df: 
 
     plt.grid()
     plt.tight_layout()
-    plt.savefig(os.path.join(plot_dir, 'observed_to_total_cluster_ratio_plot.png'),
+    plt.savefig(os.path.join(plot_dir, 'plot_ratio_observed_to_total_true_clusters_vs_num_obs_alg.png'),
                 bbox_inches='tight',
                 dpi=300)
     # plt.show()
     plt.close()
-    print("FIGURE SAVED TO:", plot_dir + '/observed_to_total_cluster_ratio_plot.png')
+    print("FIGURE SAVED TO:", plot_dir + '/plot_ratio_observed_to_total_true_clusters_vs_num_obs_alg.png')
 
 
 def plot_runtime_by_alpha_colored_by_alg(
