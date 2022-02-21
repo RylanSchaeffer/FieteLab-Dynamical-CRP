@@ -31,12 +31,10 @@ parameters:
   n_samples:
     values: [1000]
   n_features:
-    values: [3, 10, 15]
-  n_clusters:
-    values: [5, 15, 25]
+    values: [5, 10, 15]
   centroids_prior_cov_prefactor:
     values: [5., 10., 50.]
   likelihood_cov_prefactor:
-    values: [1., 5., 10., 20.]
+    values: [1., 3., 5.]
   repeat_idx:
     values: [0]

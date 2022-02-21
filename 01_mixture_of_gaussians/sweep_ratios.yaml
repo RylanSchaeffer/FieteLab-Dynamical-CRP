@@ -33,8 +33,6 @@ parameters:
     values: [1000]
   n_features: # data dimension
     values: [3, 10, 15]
-  n_clusters:
-    values: [25] #[5, 15, 25]
   centroids_prior_cov_prefactor:
     values: [5.] #[5., 10., 50.]
   likelihood_cov_prefactor:
