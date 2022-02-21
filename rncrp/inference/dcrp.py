@@ -103,8 +103,11 @@ class DynamicalCRP(BaseModel):
             optimize_cluster_assignments_fn = self.optimize_cluster_assignments_multivariate_normal
             optimize_cluster_params_fn = self.optimize_cluster_params_multivariate_normal
 
-            A_prefactor = np.sqrt(self.gen_model_params['component_prior_params']['centroids_prior_cov_prefactor']
-                                  + self.gen_model_params['likelihood_params']['likelihood_cov_prefactor'])
+            # TODO: What is the right covariance initialization? Isn't it just
+            # A_prefactor = self.gen_model_params['component_prior_params']['centroids_prior_cov_prefactor'] \
+            #               + self.gen_model_params['likelihood_params']['likelihood_cov_prefactor']
+            A_prefactor = self.gen_model_params['likelihood_params']['likelihood_cov_prefactor']
+            # Shape: (2 for old and new, max num clusters, obs dim)
             A_diag_covs = (A_prefactor * torch.ones(obs_dim).float()[None, None, :]).repeat(
                 2, max_num_clusters, 1)
 
@@ -395,8 +398,7 @@ class DynamicalCRP(BaseModel):
             torch.einsum('ki,ki->k',
                          variational_params['means']['means'][1, :obs_idx + 1, :],
                          variational_params['means']['means'][1, :obs_idx + 1, :]),  # Tr[\mu_n \mu_n^T]
-        )
-        term_three /= sigma_obs_squared
+        ) / sigma_obs_squared
         assert_torch_no_nan_no_inf_is_real(term_three)
 
         term_to_softmax = term_one + term_two + term_three
@@ -445,7 +447,7 @@ class DynamicalCRP(BaseModel):
             'co,o->c',
             digamma_arg2_minus_digamma_arg1_plus_arg2,
             1. - torch_observation,  # Shape: (obs dim, )
-        )   # Shape: (curr max num clusters i.e. obs idx ,)
+        )  # Shape: (curr max num clusters i.e. obs idx ,)
 
         # Shape: (curr max num clusters i.e. obs idx ,)
         term_two = term_two_part_one + term_two_part_two
@@ -558,11 +560,12 @@ class DynamicalCRP(BaseModel):
 
         # Step 1: Compute updated covariances
         # Take I_{D \times D} and repeat to add a batch dimension
-        # Resulting object has shape (max num clusters, obs_dim,)
+        # Shape (max num clusters, obs_dim,)
         repeated_diag_eyes = torch.ones(obs_dim).reshape(1, obs_dim).repeat(max_num_clusters, 1)
         weighted_diag_eyes = torch.multiply(
             variational_params['assignments']['probs'][obs_idx, :obs_idx + 1, None],  # shape (obs idx, 1)
-            repeated_diag_eyes) / sigma_obs_squared
+            repeated_diag_eyes,  # shape (obs idx, 1)
+        ) / sigma_obs_squared
         mean_diag_precisions = torch.add(prev_means_diag_precisions, weighted_diag_eyes)
         means_diag_covs = 1. / mean_diag_precisions
 
@@ -576,7 +579,6 @@ class DynamicalCRP(BaseModel):
         # new_means_stddevs = torch.stack([
         #     torch.from_numpy(scipy.linalg.sqrtm(gaussian_cov.detach().numpy()))
         #     for gaussian_cov in mean_covs])
-
         variational_params['means']['diag_covs'][1, :obs_idx + 1, :] = means_diag_covs
 
         # Slowest piece
@@ -598,15 +600,15 @@ class DynamicalCRP(BaseModel):
 
         # Need to add 1 when repeating because obs_idx starts at 0.
         term_two = torch.einsum(
-            'b, bd->bd',
-            variational_params['assignments']['probs'][obs_idx, :obs_idx + 1],
-            torch_observation.reshape(1, obs_dim).repeat(obs_idx + 1, 1),
+            'k, kd->kd',
+            variational_params['assignments']['probs'][obs_idx, :obs_idx + 1],  # Shape: (curr max num clusters, )
+            torch_observation.reshape(1, obs_dim).repeat(obs_idx + 1, 1),  # Shape: (curr max num clusters, obs dim)
         ) / sigma_obs_squared
 
         new_means_means = torch.einsum(
-            'bi, bi->bi',
-            means_diag_covs,  # shape: (obs idx, obs dim,)
-            torch.add(term_one, term_two),  # shape: (obs idx, obs dim)
+            'bi, bi->bi',  # Technically, should be matrix multiplication, but we have diagonal matrix
+            means_diag_covs,  # shape: (curr max num clusters, obs dim,)
+            torch.add(term_one, term_two),  # shape: (curr max num clusters, obs dim)
         )
 
         time_2_5 = time.time()
