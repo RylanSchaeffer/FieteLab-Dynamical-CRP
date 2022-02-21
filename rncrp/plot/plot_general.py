@@ -45,7 +45,6 @@ def plot_sweep_results_all(sweep_results_df: pd.DataFrame,
 
 def plot_cluster_multiclass_classification_score_by_alpha_by_alg(sweep_results_df: pd.DataFrame,
                                                                  plot_dir: str):
-
     sns.lineplot(data=sweep_results_df,
                  x='alpha',
                  y='avg_finetune_acc',
@@ -61,6 +60,7 @@ def plot_cluster_multiclass_classification_score_by_alpha_by_alg(sweep_results_d
                 dpi=300)
     # plt.show()
     plt.close()
+
 
 def plot_num_clusters_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
                                               plot_dir: str):
@@ -114,7 +114,8 @@ def plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg(sweep_result
 
     fig, ax = plt.subplots(figsize=(5, 4))
 
-    sweep_results_df['Inferred to True Cluster Ratio'] = sweep_results_df['Num Inferred Clusters']/sweep_results_df['Num True Clusters']
+    sweep_results_df['Inferred to True Cluster Ratio'] = sweep_results_df['Num Inferred Clusters'] / sweep_results_df[
+        'Num True Clusters']
     sweep_results_df['obs_idx'] = (np.array(sweep_results_df.index)) % sweep_results_df['n_samples'][0] + 1
 
     g = sns.lineplot(data=sweep_results_df,
@@ -127,7 +128,7 @@ def plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg(sweep_result
                      palette=algorithm_color_map)
 
     handles, labels = g.get_legend_handles_labels()
-    g.legend(handles=handles[1:], labels=labels[1:]) # Remove "quantity" from legend title
+    g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
     g.get_legend().set_title('Data Dimension')
 
     plt.xlabel('Number of Observations')
@@ -145,7 +146,7 @@ def plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg(sweep_result
 
 
 def plot_ratio_observed_to_total_true_clusters_vs_num_obs_alg(sweep_results_df: pd.DataFrame,
-                                                                 plot_dir: str):
+                                                              plot_dir: str):
     """
     Plot the ratio (number of observed true clusters so far) / (total number of true clusters)
         versus the number of observations, averaged over multiple datasets.
@@ -153,7 +154,8 @@ def plot_ratio_observed_to_total_true_clusters_vs_num_obs_alg(sweep_results_df: 
 
     fig, ax = plt.subplots(figsize=(5, 4))
 
-    sweep_results_df['Observed to Total True Cluster Ratio'] = sweep_results_df['Num True Clusters']/sweep_results_df['n_clusters']
+    sweep_results_df['Observed to Total True Cluster Ratio'] = sweep_results_df['Num True Clusters'] / sweep_results_df[
+        'n_clusters']
     sweep_results_df['obs_idx'] = (np.array(sweep_results_df.index)) % sweep_results_df['n_samples'][0] + 1
 
     g = sns.lineplot(data=sweep_results_df,
@@ -166,7 +168,7 @@ def plot_ratio_observed_to_total_true_clusters_vs_num_obs_alg(sweep_results_df: 
                      palette=algorithm_color_map)
 
     handles, labels = g.get_legend_handles_labels()
-    g.legend(handles=handles[1:], labels=labels[1:]) # Remove "quantity" from legend title
+    g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
     g.get_legend().set_title('Data Dimension')
 
     plt.xlabel('Number of Observations')
@@ -284,7 +286,7 @@ def plot_scores_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
                      y=score_column,
                      hue='inference_alg_str',
                      palette=algorithm_color_map,
-                     err_style="bars",)
+                     err_style="bars", )
         plt.xlabel(r'Data Dimension')
         plt.legend()
         # plt.ylim(0., 1.05)
