@@ -40,11 +40,12 @@ def plot_customer_assignments_analytical_vs_monte_carlo(sampled_customer_assignm
     avg_sampled_customer_assignments_by_customer[cutoff_idx] = np.nan
 
     ax = axes[0]
+    norm = LogNorm(vmin=cutoff, vmax=1.)
     sns.heatmap(avg_sampled_customer_assignments_by_customer,
                 ax=ax,
                 mask=np.isnan(avg_sampled_customer_assignments_by_customer),
                 cmap='Spectral',  # 'jet',
-                norm=LogNorm(vmin=cutoff, vmax=1.),
+                norm=norm,
                 )
 
     ax.set_title(rf'Monte Carlo ($\alpha=${alpha})')  # , $\beta=${beta}
@@ -54,11 +55,12 @@ def plot_customer_assignments_analytical_vs_monte_carlo(sampled_customer_assignm
     ax = axes[1]
     cutoff_idx = analytical_customer_assignments_by_customer < cutoff
     analytical_customer_assignments_by_customer[cutoff_idx] = np.nan
+    norm = LogNorm(vmin=cutoff, vmax=1.)
     sns.heatmap(analytical_customer_assignments_by_customer,
                 ax=ax,
                 mask=np.isnan(analytical_customer_assignments_by_customer),
                 cmap='Spectral',  # 'jet',
-                norm=LogNorm(vmin=cutoff, vmax=1.),
+                norm=norm,
                 )
     ax.set_title(rf'Analytical ($\alpha=${alpha})')  # , $\beta=${beta}
     ax.set_xlabel(r'Table Index')
@@ -66,6 +68,7 @@ def plot_customer_assignments_analytical_vs_monte_carlo(sampled_customer_assignm
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])  # left, bottom right, top in normalized coordinates
 
     # for some reason, on OpenMind, colorbar ticks disappear without calling plt.show() first
+    print(plot_dir)
     fig.savefig(os.path.join(plot_dir, f'customer_assignments_monte_carlo_vs_analytical.png'),
                 bbox_inches='tight',
                 dpi=300)
