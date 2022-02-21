@@ -105,8 +105,8 @@ def plot_num_clusters_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
     plt.close()
 
 
-def plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_alg(sweep_results_df: pd.DataFrame,
-                                                                 plot_dir: str):
+def plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg(sweep_results_df: pd.DataFrame,
+                                                                    plot_dir: str):
     """
     Plot the ratio (number of inferred clusters so far) / (number of true clusters seen so far)
         versus the number of observations, averaged over multiple datasets.
