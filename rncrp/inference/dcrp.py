@@ -225,12 +225,12 @@ class DynamicalCRP(BaseModel):
                     cluster_assignment_prior[negative_indices] = 0.
                     assert torch.all(cluster_assignment_prior >= 0.)
 
-                    # Record latent prior.
+                # Record latent prior.
+                assert_torch_no_nan_no_inf_is_real(cluster_assignment_prior)
                 cluster_assignment_priors[obs_idx, :len(cluster_assignment_prior)] = cluster_assignment_prior
 
                 # Step 2(i): Initialize assignments at prior.
                 variational_params['assignments']['probs'][obs_idx, :] = cluster_assignment_prior
-                assert_torch_no_nan_no_inf_is_real(variational_params['assignments']['probs'])
 
                 # Step 2(ii): Create parameter for potential new cluster.
                 initialize_cluster_params_fn(torch_observation=torch_observation,
@@ -248,14 +248,6 @@ class DynamicalCRP(BaseModel):
                     else:
                         with torch.no_grad():
                             time_1 = time.time()
-                            optimize_cluster_params_fn(
-                                torch_observation=torch_observation,
-                                obs_idx=obs_idx,
-                                vi_idx=vi_idx,
-                                variational_params=variational_params,
-                                likelihood_params=self.gen_model_params['likelihood_params'])
-                            time_2 = time.time()
-                            print(f'Time2 - Time1: {time_2 - time_1}')
                             optimize_cluster_assignments_fn(
                                 torch_observation=torch_observation,
                                 obs_idx=obs_idx,
@@ -263,7 +255,15 @@ class DynamicalCRP(BaseModel):
                                 cluster_assignment_prior=cluster_assignment_prior,
                                 variational_params=variational_params,
                                 likelihood_params=self.gen_model_params['likelihood_params'])
+                            time_2 = time.time()
+                            optimize_cluster_params_fn(
+                                torch_observation=torch_observation,
+                                obs_idx=obs_idx,
+                                vi_idx=vi_idx,
+                                variational_params=variational_params,
+                                likelihood_params=self.gen_model_params['likelihood_params'])
                             time_3 = time.time()
+                            print(f'Time2 - Time1: {time_2 - time_1}')
                             print(f'Time3 - Time2: {time_3 - time_2}')
 
                 # Overwrite old variational parameters with curr variational parameters
