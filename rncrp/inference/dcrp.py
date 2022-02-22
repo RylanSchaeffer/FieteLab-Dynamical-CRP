@@ -266,9 +266,9 @@ class DynamicalCRP(BaseModel):
                             # print(f'Time2 - Time1: {time_2 - time_1}')
                             # print(f'Time3 - Time2: {time_3 - time_2}')
 
-                    print(torch_observations[:obs_idx + 1])
-                    print(variational_params['assignments']['probs'][obs_idx, :obs_idx+1])
-                    print(variational_params['means']['means'][1, obs_idx, :obs_idx+1])
+                    # print(torch_observations[:obs_idx + 1])
+                    # print(variational_params['assignments']['probs'][obs_idx, :obs_idx+1])
+                    # print(variational_params['means']['means'][1, obs_idx, :obs_idx+1])
 
                 # Overwrite old variational parameters with curr variational parameters
                 for variable, variable_variational_params_dict in variational_params.items():
