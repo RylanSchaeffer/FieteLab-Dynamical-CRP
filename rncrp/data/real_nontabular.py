@@ -96,13 +96,17 @@ def load_dataset_yilun_nav_2d_2022(data_dir: str = 'data',
         landmarks = np_fp['landmarks']  # Shape: (num envs, num landmarks, 2 for xy position)
         points = np_fp['points']  # Shape: (num envs, num vis points, 2 for xy position)
         room_ids = np_fp['room_ids']  # Shape: (num envs, num vis points)
+        room_lists = np_fp['room_lists']  # Shape: (num envs, 5, 4)
         vis_matrix = np_fp['vis_matrix']  # Shape: (num envs, num vis points, num landmarks)
+        edges = np_fp['edges']  # Shape: (num envs, 5)
 
     dataset_dict = dict(
         landmarks=landmarks,
         points=points,
         room_ids=room_ids,
         vis_matrix=vis_matrix,
+        edges=edges,
+        room_lists=room_lists,
     )
 
     return dataset_dict

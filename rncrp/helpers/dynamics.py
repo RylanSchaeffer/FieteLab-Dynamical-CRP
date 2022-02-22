@@ -74,9 +74,7 @@ class LinearFirstOrderNumpy(Dynamics):
         assert time_start < time_end
         time_delta = time_end - time_start
         exp_change = np.exp(- self.params['b'] * time_delta / self.params['a'])
-        N_end = exp_change * self._state['N']
-        self._state = {
-            'N': N_end}
+        self._state['N'] = exp_change * self._state['N']
         return self._state
 
     def update_state(self,
@@ -120,9 +118,7 @@ class LinearFirstOrderTorch(Dynamics):
         assert time_start < time_end
         time_delta = time_end - time_start
         exp_change = torch.exp(- self.params['b'] * time_delta / self.params['a'])
-        N_end = exp_change * self._state['N']
-        self._state = {
-            'N': N_end}
+        self._state['N'] = exp_change * self._state['N']
         return self._state
 
     def update_state(self,
