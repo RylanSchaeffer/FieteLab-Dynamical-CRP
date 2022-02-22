@@ -9,7 +9,7 @@ exp_dir = '07_yilun_nav_2d'
 results_dir = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir, exist_ok=True)
 wandb_sweep_path = "rylan/dcrp-yilun-nav2d"
-sweep_name = 'yooy4r3l'
+sweep_name = '751j5e81'
 sweep_dir = os.path.join(results_dir, sweep_name)
 os.makedirs(sweep_dir, exist_ok=True)
 sweep_results_df_path = os.path.join(sweep_dir, f'sweep={sweep_name}_results.csv')
@@ -26,10 +26,9 @@ else:
 
 print(f"Number of runs: {sweep_results_df.shape[0]} for sweep={sweep_name}")
 
-raise NotImplementedError
-# plot_yilun_nav_2d.plot_analyze_all_inf_algs_results(
-#     all_inf_algs_results_df=sweep_results_df,
-#     plot_dir=sweep_dir,
-# )
-#
-# print(f'Finished 05_swav_pretrained/plot_sweep.py for sweep={sweep_name}.')
+plot_yilun_nav_2d.plot_analyze_all_inf_algs_results(
+    all_inf_algs_results_df=sweep_results_df,
+    plot_dir=sweep_dir,
+)
+
+print(f'07_yilun_nav_2d/plot_sweep.py for sweep={sweep_name}.')

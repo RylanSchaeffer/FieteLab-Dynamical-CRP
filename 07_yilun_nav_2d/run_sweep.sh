@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -p fiete
+#SBATCH -p normal
 #SBATCH -n 1                    # two cores
 #SBATCH --mem=1G                # RAM
 #SBATCH --time=99:99:99         # total run time limit (HH:MM:SS)
@@ -13,6 +13,6 @@
 
 for i in {1..10}
 do
-  sbatch 07_yilun_nav_2d/run_one.sh nhj1s21j
+  sbatch 07_yilun_nav_2d/run_one.sh 751j5e81
   sleep 5
 done
