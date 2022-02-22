@@ -13,14 +13,16 @@ def generate_and_save_data_for_cluster_ratio_plotting(all_inf_algs_results_df: p
     inferred_to_true_data_paths_array = []
     observed_to_total_true_data_paths_array = []
 
+    # count = 0
     for dynamics_str, sweep_subset_results_df in all_inf_algs_results_df.groupby('dynamics_str'):
         sweep_dynamics_str_dir = os.path.join(plot_dir, dynamics_str)
         os.makedirs(sweep_dynamics_str_dir, exist_ok=True)
         for param_tuple, df_by_n_features in sweep_subset_results_df.groupby(['alpha',
-                                                                              'n_clusters',
                                                                               'likelihood_cov_prefactor',
                                                                               'centroids_prior_cov_prefactor',
                                                                               'inference_alg_str']):
+            # if count==2:
+            #     break
 
             if param_tuple[-1] == 'Dynamical-CRP':
                 param_tuple_dir = '_'.join(str(x) for x in param_tuple)
@@ -30,13 +32,12 @@ def generate_and_save_data_for_cluster_ratio_plotting(all_inf_algs_results_df: p
                 all_inferred_to_true_data_array = []
                 all_observed_to_total_true_data_array = []
 
-                for joblib_and_n_features_tuple, df_by_n_features_and_joblib_id in df_by_n_features.groupby(['inf_alg_results_path',
-                                                                                                             'n_features']):
+                for joblib_and_n_features, filtered_df in df_by_n_features.groupby(['inf_alg_results_path',
+                                                                                              'n_features']):
 
-                    # df_by_n_features_and_joblib_id has 1 row
-                    data_dim = joblib_and_n_features_tuple[1]
+                    data_dim = joblib_and_n_features[1]
 
-                    joblib_subpath = joblib_and_n_features_tuple[0]
+                    joblib_subpath = joblib_and_n_features[0]
                     joblib_file = joblib.load('/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/'+joblib_subpath)
 
                     # Obtain number of inferred clusters
@@ -66,14 +67,15 @@ def generate_and_save_data_for_cluster_ratio_plotting(all_inf_algs_results_df: p
                     all_inferred_to_true_data_array.append(inferred_to_true_data_df)
                     all_observed_to_total_true_data_array.append(observed_to_total_true_data_df)
 
-                concatenated_inferred_to_true_df = pd.concat(all_inferred_to_true_data_array)
-                concatenated_observed_to_total_true_df = pd.concat(all_observed_to_total_true_data_array)
+                concatenated_inferred_to_true_df = pd.concat(all_inferred_to_true_data_array, ignore_index=True)
+                concatenated_observed_to_total_true_df = pd.concat(all_observed_to_total_true_data_array, ignore_index=True)
 
                 concatenated_inferred_to_true_df.to_pickle(cluster_ratio_plot_dir+'/concatenated_inferred_to_true_df.pkl')
                 concatenated_observed_to_total_true_df.to_pickle(cluster_ratio_plot_dir+'/concatenated_observed_to_total_true_df.pkl')
 
                 inferred_to_true_data_paths_array.append(cluster_ratio_plot_dir+'/concatenated_inferred_to_true_df.pkl')
                 observed_to_total_true_data_paths_array.append(cluster_ratio_plot_dir+'/concatenated_observed_to_total_true_df.pkl')
+                # count += 1
 
     np.save('inferred_to_true_data_paths_array.npy',np.array(inferred_to_true_data_paths_array))
     np.save('observed_to_total_true_data_paths_array.npy', np.array(observed_to_total_true_data_paths_array))

@@ -115,7 +115,7 @@ def plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg(sweep_result
     inferred_to_true_data_paths_array = np.load('/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/inferred_to_true_data_paths_array.npy')
 
     # Retrieve and plot stored dataframe of cluster ratios for each setting of
-    # (alpha, n_clusters, likelihood_cov_prefactor, centroids_prior_cov_prefactor, inference_alg_str)
+    # (alpha, n_clusters, likelihood_cov_prefactor, centroids_prior_cov_prefactor)
 
     for file_path in inferred_to_true_data_paths_array:
 
