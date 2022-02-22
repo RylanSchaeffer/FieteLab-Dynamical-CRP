@@ -201,7 +201,7 @@ class DynamicalCRP(BaseModel):
                 # Step 1(i): Run dynamics.
                 cluster_assignment_prior = self.dynamics.run_dynamics(
                     time_start=torch_observations_times[obs_idx - 1],
-                    time_end=torch_observations_times[obs_idx])['N']
+                    time_end=torch_observations_times[obs_idx])['N'].clone()
 
                 # Step 1(ii): Add new table probability.
                 cluster_assignment_prior[1:obs_idx + 1] += self.mixing_params['alpha'] * \
@@ -263,8 +263,12 @@ class DynamicalCRP(BaseModel):
                                 variational_params=variational_params,
                                 likelihood_params=self.gen_model_params['likelihood_params'])
                             time_3 = time.time()
-                            print(f'Time2 - Time1: {time_2 - time_1}')
-                            print(f'Time3 - Time2: {time_3 - time_2}')
+                            # print(f'Time2 - Time1: {time_2 - time_1}')
+                            # print(f'Time3 - Time2: {time_3 - time_2}')
+
+                    print(torch_observations[:obs_idx + 1])
+                    print(variational_params['assignments']['probs'][obs_idx, :obs_idx+1])
+                    print(variational_params['means']['means'][1, obs_idx, :obs_idx+1])
 
                 # Overwrite old variational parameters with curr variational parameters
                 for variable, variable_variational_params_dict in variational_params.items():
@@ -290,7 +294,7 @@ class DynamicalCRP(BaseModel):
                     prev_num_clusters_posterior)
 
                 time_4 = time.time()
-                print(f'Time4 - Time3: {time_4 - time_3}')
+                # print(f'Time4 - Time3: {time_4 - time_3}')
 
                 # Step 5: Update dynamics state using new cluster assignment posterior.
                 self.dynamics.update_state(
@@ -298,7 +302,7 @@ class DynamicalCRP(BaseModel):
                     time=torch_observations_times[obs_idx])
 
                 time_5 = time.time()
-                print(f'Time5 - Time4: {time_5 - time_4}')
+                # print(f'Time5 - Time4: {time_5 - time_4}')
 
         # Add 1 because of indexing starts at 0.
         num_inferred_clusters = 1 + torch.argmax(num_clusters_posteriors, dim=1).numpy()[-1].item()
@@ -548,29 +552,30 @@ class DynamicalCRP(BaseModel):
         sigma_obs_squared = likelihood_params['likelihood_cov_prefactor']
         assert sigma_obs_squared > 0.
 
-        prev_means_means = variational_params['means']['means'][0, :obs_idx + 1, :].clone()
+        # Exclude newest observation (don't want those parameters changing)
+        prev_means_means = variational_params['means']['means'][0, :obs_idx, :].clone()
 
         time_2_1 = time.time()
-        prev_means_diag_precisions = 1. / variational_params['means']['diag_covs'][0, :obs_idx + 1, :]
+        prev_means_diag_precisions = 1. / variational_params['means']['diag_covs'][0, :obs_idx, :]
         time_2_2 = time.time()
-        print(f'Time2.2 - Time2.1: {time_2_2 - time_2_1}')
+        # print(f'Time2.2 - Time2.1: {time_2_2 - time_2_1}')
 
         obs_dim = torch_observation.shape[0]
         max_num_clusters = prev_means_means.shape[0]
 
         # Step 1: Compute updated covariances
         # Take I_{D \times D} and repeat to add a batch dimension
-        # Shape (max num clusters, obs_dim,)
+        # Shape (curr max num clusters - 1, obs_dim,)
         repeated_diag_eyes = torch.ones(obs_dim).reshape(1, obs_dim).repeat(max_num_clusters, 1)
         weighted_diag_eyes = torch.multiply(
-            variational_params['assignments']['probs'][obs_idx, :obs_idx + 1, None],  # shape (obs idx, 1)
+            variational_params['assignments']['probs'][obs_idx, :obs_idx, None],  # shape (obs idx, 1)
             repeated_diag_eyes,  # shape (obs idx, 1)
         ) / sigma_obs_squared
         mean_diag_precisions = torch.add(prev_means_diag_precisions, weighted_diag_eyes)
         means_diag_covs = 1. / mean_diag_precisions
 
         time_2_3 = time.time()
-        print(f'Time2.3 - Time2.2: {time_2_3 - time_2_2}')
+        # print(f'Time2.3 - Time2.2: {time_2_3 - time_2_2}')
 
         # No update on pytorch matrix square root
         # https://github.com/pytorch/pytorch/issues/9983#issuecomment-907530049
@@ -579,17 +584,17 @@ class DynamicalCRP(BaseModel):
         # new_means_stddevs = torch.stack([
         #     torch.from_numpy(scipy.linalg.sqrtm(gaussian_cov.detach().numpy()))
         #     for gaussian_cov in mean_covs])
-        variational_params['means']['diag_covs'][1, :obs_idx + 1, :] = means_diag_covs
+        variational_params['means']['diag_covs'][1, :obs_idx, :] = means_diag_covs
 
         # Slowest piece
         time_2_3_1 = time.time()
-        print(f'Time2.3.1 - Time2.3: {time_2_3_1 - time_2_3}')
+        # print(f'Time2.3.1 - Time2.3: {time_2_3_1 - time_2_3}')
 
         assert_torch_no_nan_no_inf_is_real(
             variational_params['means']['diag_covs'][1, :, :])
 
         time_2_4 = time.time()
-        print(f'Time2.4 - Time2.3: {time_2_4 - time_2_3}')
+        # print(f'Time2.4 - Time2.3: {time_2_4 - time_2_3}')
 
         # Step 2: Use updated covariances to compute updated means
         # Sigma_{n-1,l}^{-1} \mu_{n-1, l}
@@ -601,20 +606,20 @@ class DynamicalCRP(BaseModel):
         # Need to add 1 when repeating because obs_idx starts at 0.
         term_two = torch.einsum(
             'k, kd->kd',
-            variational_params['assignments']['probs'][obs_idx, :obs_idx + 1],  # Shape: (curr max num clusters, )
-            torch_observation.reshape(1, obs_dim).repeat(obs_idx + 1, 1),  # Shape: (curr max num clusters, obs dim)
+            variational_params['assignments']['probs'][obs_idx, :obs_idx],  # Shape: (curr max num clusters - 1, )
+            torch_observation.reshape(1, obs_dim).repeat(obs_idx, 1),  # Shape: (curr max num clusters -1 , obs dim)
         ) / sigma_obs_squared
 
         new_means_means = torch.einsum(
             'bi, bi->bi',  # Technically, should be matrix multiplication, but we have diagonal matrix
-            means_diag_covs,  # shape: (curr max num clusters, obs dim,)
-            torch.add(term_one, term_two),  # shape: (curr max num clusters, obs dim)
+            means_diag_covs,  # shape: (curr max num clusters -1, obs dim,)
+            torch.add(term_one, term_two),  # shape: (curr max num clusters -1, obs dim)
         )
 
         time_2_5 = time.time()
-        print(f'Time2.5 - Time2.4: {time_2_5 - time_2_4}')
+        # print(f'Time2.5 - Time2.4: {time_2_5 - time_2_4}')
         assert_torch_no_nan_no_inf_is_real(new_means_means)
-        variational_params['means']['means'][1, :obs_idx + 1, :] = new_means_means
+        variational_params['means']['means'][1, :obs_idx, :] = new_means_means
 
     @staticmethod
     def optimize_cluster_params_product_bernoullis(torch_observation: torch.Tensor,

@@ -119,7 +119,7 @@ class LinearFirstOrderTorch(Dynamics):
                      time_end: float) -> Dict[str, torch.Tensor]:
         assert time_start < time_end
         time_delta = time_end - time_start
-        exp_change = np.exp(- self.params['b'] * time_delta / self.params['a'])
+        exp_change = torch.exp(- self.params['b'] * time_delta / self.params['a'])
         N_end = exp_change * self._state['N']
         self._state = {
             'N': N_end}
