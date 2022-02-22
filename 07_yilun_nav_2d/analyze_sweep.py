@@ -40,24 +40,27 @@ plot_yilun_nav_2d.plot_analyze_all_inf_algs_results(
 yilun_nav_2d_dataset = rncrp.data.real_nontabular.load_dataset_yilun_nav_2d_2022()
 
 # We tested multiple hyperparameters for each environment. We want to plot each run.
-for _, one_run_series in sweep_results_df.iterrows():
-    one_run_results = joblib.load(one_run_series['inf_alg_results_path'])
+for dynamics_str, sweep_subset_results_df in sweep_results_df.groupby('dynamics_str'):
+    sweep_dynamics_str_dir = os.path.join(sweep_dir, dynamics_str)
+    os.makedirs(sweep_dynamics_str_dir, exist_ok=True)
+    for _, one_run_series in sweep_subset_results_df.iterrows():
+        one_run_results = joblib.load(one_run_series['inf_alg_results_path'])
 
-    # Convert e.g. '07_yilun_nav_2d/results/id=at3k1tjn.joblib' to e.g. 'id=at3k1tjn'
-    joblib_file_name = one_run_series['inf_alg_results_path'].split('/')[-1][:-7]
+        # Convert e.g. '07_yilun_nav_2d/results/id=at3k1tjn.joblib' to e.g. 'id=at3k1tjn'
+        joblib_file_name = one_run_series['inf_alg_results_path'].split('/')[-1][:-7]
 
-    one_run_config = one_run_results['config']
-    one_run_cluster_assignment_posteriors = one_run_results['inference_alg_results'][
-        'cluster_assignment_posteriors']
+        one_run_config = one_run_results['config']
+        one_run_cluster_assignment_posteriors = one_run_results['inference_alg_results'][
+            'cluster_assignment_posteriors']
 
-    plot_yilun_nav_2d.plot_room_clusters_on_one_run(
-        yilun_nav_2d_dataset=yilun_nav_2d_dataset,
-        cluster_assignment_posteriors=one_run_cluster_assignment_posteriors,
-        run_config=one_run_config,
-        file_name=joblib_file_name,
-        plot_dir=sweep_dir,
-        env_idx=one_run_series['repeat_idx'],
-    )
+        plot_yilun_nav_2d.plot_room_clusters_on_one_run(
+            yilun_nav_2d_dataset=yilun_nav_2d_dataset,
+            cluster_assignment_posteriors=one_run_cluster_assignment_posteriors,
+            run_config=one_run_config,
+            file_name=joblib_file_name,
+            plot_dir=sweep_dynamics_str_dir,
+            env_idx=one_run_series['repeat_idx'],
+        )
 
 
 print(f'Finished 07_yilun_nav_2d/plot_sweep.py for sweep={sweep_name}.')

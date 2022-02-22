@@ -192,10 +192,11 @@ def plot_room_clusters_on_one_run(yilun_nav_2d_dataset: Dict[str, np.ndarray],
     plt.setp(plt.gca().get_yticklabels(), visible=False)
     plt.title(rf"D-CRP($\alpha$={run_config['alpha']}), Comp Prior: Beta({run_config['beta_arg1']}, {run_config['beta_arg2']})")
     # plt.show()
-    file_name += f"_env={env_idx}_a={run_config['alpha']}_b1={run_config['beta_arg1']}_b2={run_config['beta_arg2']}"
+    file_name += f"_env={env_idx}_dyn={run_config['dynamics_str']}_a={run_config['alpha']}_b1={run_config['beta_arg1']}_b2={run_config['beta_arg2']}"
     plt.savefig(os.path.join(plot_dir, f'{file_name}.png'),
                 bbox_inches='tight',
                 dpi=300)
+    print(f'Plotted and saved {file_name}')
     # plt.show()
     plt.close()
 
