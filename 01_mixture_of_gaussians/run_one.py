@@ -69,6 +69,10 @@ mixture_model_results = rncrp.data.synthetic.sample_mixture_model(
     component_prior_params={'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor'],
                             'likelihood_cov_prefactor': config['likelihood_cov_prefactor']})
 
+wandb.log(
+    {'n_clusters': len(np.unique(mixture_model_results['cluster_assignments']))},
+    step=0)
+
 gen_model_params = {
     'mixing_params': {
         'alpha': config['alpha'],
