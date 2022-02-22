@@ -44,7 +44,13 @@ for dynamics_str, sweep_subset_results_df in sweep_results_df.groupby('dynamics_
     sweep_dynamics_str_dir = os.path.join(sweep_dir, dynamics_str)
     os.makedirs(sweep_dynamics_str_dir, exist_ok=True)
     for _, one_run_series in sweep_subset_results_df.iterrows():
-        one_run_results = joblib.load(one_run_series['inf_alg_results_path'])
+        try:
+            one_run_results = joblib.load(one_run_series['inf_alg_results_path'])
+        except TypeError:
+            # Somehow, the W&B path is NaN. This throws a
+            # TypeError: integer argument expected, got float.
+            # Just skip these.
+            continue
 
         # Convert e.g. '07_yilun_nav_2d/results/id=at3k1tjn.joblib' to e.g. 'id=at3k1tjn'
         joblib_file_name = one_run_series['inf_alg_results_path'].split('/')[-1][:-7]
