@@ -6,30 +6,6 @@ from typing import Dict
 from rncrp.inference.base import BaseModel
 
 
-def _init_centroids_dpmeans(X: np.ndarray,
-                            max_distance_param: float):
-    n_samples, n_features = X.shape
-
-    # We can have (up to) as many clusters as samples
-    chosen_center_indices = np.full(shape=n_samples,
-                                    fill_value=False,
-                                    dtype=np.bool)
-
-    # Always take the first observation as a center, since no centroids exist
-    # to compare against.
-    chosen_center_indices[0] = True
-
-    # Consequently, we start with the first observation
-    for obs_idx in range(1, n_samples):
-        x = X[obs_idx, np.newaxis, :]  # Shape: (1, sample dim)
-        distances_x_to_centers = cdist(x, X[chosen_center_indices, :])
-        if np.min(distances_x_to_centers) > max_distance_param:
-            chosen_center_indices[obs_idx] = True
-
-    chosen_centers = X[chosen_center_indices, :].copy()
-    return chosen_centers
-
-
 class DPMeans(BaseModel):
 
     def __init__(self,
@@ -75,13 +51,14 @@ class DPMeans(BaseModel):
 
         max_distance_param = self.mixing_params['lambda']
 
-        centers_init = _init_centroids_dpmeans(
-            X=observations,
-            max_distance_param=max_distance_param)
+        # centers_init = _init_centroids_dpmeans(
+        #     X=observations,
+        #     max_distance_param=max_distance_param)
 
         centers = np.zeros_like(observations)
-        num_centers = centers_init.shape[0]
-        centers[:num_centers, :] = centers_init
+        num_centers = 0
+        # num_centers = centers_init.shape[0]
+        # centers[:num_centers, :] = centers_init
 
         cluster_assignments = np.full(num_obs, fill_value=-1, dtype=np.int)
 
@@ -90,7 +67,7 @@ class DPMeans(BaseModel):
 
             print(f'Num centers: {num_centers}')
 
-            no_datum_reassigned = True
+            datum_reassigned = False
 
             # Assign data to centers.
             for obs_idx in range(num_obs):
@@ -102,7 +79,8 @@ class DPMeans(BaseModel):
 
                 # If smallest distance greater than cutoff max_distance_param,
                 # then we create a new cluster.
-                if np.min(distances) > max_distance_param:
+                # First condition handles the first time we create a cluster.
+                if distances.shape[1] == 0 or np.min(distances) > max_distance_param:
 
                     # centroid of new cluster = new sample
                     centers[num_centers, :] = observations[obs_idx, :]
@@ -118,13 +96,13 @@ class DPMeans(BaseModel):
 
                 # Check whether this datum is being assigned to a new center.
                 if cluster_assignments[obs_idx] != new_assigned_cluster:
-                    no_datum_reassigned = False
+                    datum_reassigned = True
 
                 # Record the observation's assignment
                 cluster_assignments[obs_idx] = new_assigned_cluster
 
             # If no data was assigned to a different cluster, then we've converged.
-            if iter_idx > 0 and no_datum_reassigned:
+            if iter_idx > 0 and not datum_reassigned:
                 break
 
             # Update centers based on assigned data.
