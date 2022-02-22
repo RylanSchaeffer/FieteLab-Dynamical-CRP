@@ -5,12 +5,14 @@ import pandas as pd
 from rncrp.helpers.run import download_wandb_project_runs_results
 import plot_mixture_of_gaussians
 
-exp_dir = '01_mixture_of_gaussians'
+exp_dir = '/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/01_mixture_of_gaussians'
 results_dir = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir, exist_ok=True)
 wandb_sweep_path = "rylan/dcrp-mixture-of-gaussians"
-sweep_name = '21qv861x'
-sweep_dir = os.path.join(results_dir, sweep_name)
+sweep_name = '9nwhhmit'
+output_dir = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/01_mixture_of_gaussians/results' # remove later
+sweep_dir = os.path.join(output_dir, sweep_name) # remove later
+# sweep_dir = os.path.join(results_dir, sweep_name)
 os.makedirs(sweep_dir, exist_ok=True)
 sweep_results_df_path = os.path.join(sweep_dir, f'sweep={sweep_name}_results.csv')
 
