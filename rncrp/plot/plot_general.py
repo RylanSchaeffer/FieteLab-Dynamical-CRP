@@ -112,76 +112,40 @@ def plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg(sweep_result
     Plot the ratio (number of inferred clusters so far) / (number of true clusters seen so far)
         versus the number of observations, averaged over multiple datasets.
     """
+    inferred_to_true_data_paths_array = np.load('/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/inferred_to_true_data_paths_array.npy')
 
-    for param_tuple, df_by_n_features in sweep_results_df.groupby(['alpha',
-                                                                  'n_clusters',
-                                                                  'likelihood_cov_prefactor',
-                                                                  'centroids_prior_cov_prefactor',
-                                                                  'inference_alg_str']):
+    # Retrieve and plot stored dataframe of cluster ratios for each setting of
+    # (alpha, n_clusters, likelihood_cov_prefactor, centroids_prior_cov_prefactor, inference_alg_str)
 
-        if param_tuple[-1] == 'Dynamical-CRP':
-            param_tuple_dir = '_'.join(str(x) for x in param_tuple)
-            cluster_ratio_plot_dir = os.path.join(plot_dir, param_tuple_dir)
-            os.makedirs(cluster_ratio_plot_dir, exist_ok=True)
+    for file_path in inferred_to_true_data_paths_array:
 
-            array_of_all_data = []
+        concatenated_inferred_to_true_df = pd.read_pickle(file_path)
+        cluster_ratio_plot_dir = file_path[:-37] # Obtain path to save the plot
 
-            for joblib_and_n_features_tuple, df_by_n_features_and_joblib_id in df_by_n_features.groupby(['inf_alg_results_path',
-                                                                                                         'n_features']):
+        g = sns.lineplot(data=concatenated_inferred_to_true_df,
+                         x='obs_idx',
+                         y='cluster_ratio',
+                         hue='data_dim',
+                         ci='sd',
+                         legend='full',)
+                         # palette=algorithm_color_map)
 
-                # df_by_n_features_and_joblib_id has 1 row
-                data_dim = joblib_and_n_features_tuple[1]
+        handles, labels = g.get_legend_handles_labels()
+        g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
+        g.get_legend().set_title('Data Dimension')
 
-                joblib_subpath = joblib_and_n_features_tuple[0]
-                joblib_file = joblib.load('/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/'+joblib_subpath)
+        plt.xlabel('Number of Observations')
+        plt.ylabel('Num Inferred Clusters / Num True Clusters')
+        plt.ylim(bottom=0.)
 
-                # Obtain number of inferred clusters
-                cluster_assignment_posteriors = joblib_file['inference_alg_results']['cluster_assignment_posteriors']
-                # cluster_assignment_priors = joblib_file['inference_alg_results']['cluster_assignment_priors']
-                inferred_cluster_assignments = cluster_assignment_posteriors.argmax(axis=1)
-                inferred_clusters_so_far = np.array([len(np.unique(inferred_cluster_assignments[:i+1])) for i in range(len(inferred_cluster_assignments))])
-
-                # Obtain number of observed true clusters
-                true_cluster_assignments = joblib_file['mixture_model_results']['cluster_assignments']
-                true_clusters_seen_so_far = np.array([len(np.unique(true_cluster_assignments[:i+1])) for i in range(len(true_cluster_assignments))])
-
-                # Generate data for plotting
-                seq_length = cluster_assignment_posteriors.shape[0]
-                obs_indices = 1 + np.arange(seq_length)
-                data_to_plot = pd.DataFrame.from_dict({
-                    'obs_idx': obs_indices,
-                    'data_dim': np.array([data_dim]*seq_length),
-                    'cluster_ratio': inferred_clusters_so_far / true_clusters_seen_so_far,
-                })
-
-                array_of_all_data.append(data_to_plot)
-
-            concatenated_dataframe_to_plot = pd.concat(array_of_all_data)
-
-            g = sns.lineplot(data=concatenated_dataframe_to_plot,
-                             x='obs_idx',
-                             y='cluster_ratio',
-                             hue='data_dim',
-                             ci='sd',
-                             legend='full',)
-                             # palette=algorithm_color_map)
-
-            handles, labels = g.get_legend_handles_labels()
-            g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
-            g.get_legend().set_title('Data Dimension')
-
-            plt.xlabel('Number of Observations')
-            plt.ylabel('Num Inferred Clusters / Num True Clusters')
-            plt.ylim(bottom=0.)
-
-            plt.grid()
-            plt.tight_layout()
-            plt.savefig(os.path.join(cluster_ratio_plot_dir, 'plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg.png'),
-                        bbox_inches='tight',
-                        dpi=300)
-            # plt.show()
-            plt.close()
-            print("FIGURE SAVED TO:", cluster_ratio_plot_dir + '/plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg.png')
+        plt.grid()
+        plt.tight_layout()
+        plt.savefig(os.path.join(cluster_ratio_plot_dir, 'plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg.png'),
+                    bbox_inches='tight',
+                    dpi=300)
+        # plt.show()
+        plt.close()
+        print("FIGURE SAVED TO:", cluster_ratio_plot_dir + '/plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg.png')
 
 
 def plot_ratio_observed_to_total_true_clusters_vs_num_obs_by_alg(sweep_results_df: pd.DataFrame,
@@ -190,69 +154,40 @@ def plot_ratio_observed_to_total_true_clusters_vs_num_obs_by_alg(sweep_results_d
     Plot the ratio (number of observed true clusters so far) / (total number of true clusters)
         versus the number of observations, averaged over multiple datasets.
     """
+    observed_to_total_true_data_paths_array = np.load('/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/observed_to_total_true_data_paths_array.npy')
 
-    for param_tuple, df_by_n_features in sweep_results_df.groupby(['alpha',
-                                                                   'n_clusters',
-                                                                   'likelihood_cov_prefactor',
-                                                                   'centroids_prior_cov_prefactor',
-                                                                   'inference_alg_str']):
+    # Retrieve and plot stored dataframe of cluster ratios for each setting of
+    # (alpha, n_clusters, likelihood_cov_prefactor, centroids_prior_cov_prefactor, inference_alg_str)
 
-        if param_tuple[-1] == 'Dynamical-CRP':
-            param_tuple_dir = '_'.join(str(x) for x in param_tuple)
-            cluster_ratio_plot_dir = os.path.join(plot_dir, param_tuple_dir)
-            os.makedirs(cluster_ratio_plot_dir, exist_ok=True)
+    for file_path in observed_to_total_true_data_paths_array:
 
-            array_of_all_data = []
+        concatenated_observed_to_total_true_df = pd.read_pickle(file_path)
+        cluster_ratio_plot_dir = file_path[:-43] # Obtain path to save the plot
 
-            for joblib_and_n_features_tuple, df_by_n_features_and_joblib_id in df_by_n_features.groupby(['inf_alg_results_path',
-                                                                                                         'n_features']):
+        g = sns.lineplot(data=concatenated_observed_to_total_true_df,
+                         x='obs_idx',
+                         y='cluster_ratio',
+                         hue='data_dim',
+                         ci='sd',
+                         legend='full',)
+                         # palette=algorithm_color_map)
 
-                data_dim = joblib_and_n_features_tuple[1]
+        handles, labels = g.get_legend_handles_labels()
+        g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
+        g.get_legend().set_title('Data Dimension')
 
-                joblib_subpath = joblib_and_n_features_tuple[0]
-                joblib_file = joblib.load('/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/'+joblib_subpath)
+        plt.xlabel('Number of Observations')
+        plt.ylabel('Observed Num True Clusters /\nTotal Num True Clusters')
+        plt.ylim(bottom=0.)
 
-                # Obtain number of observed true clusters
-                true_cluster_assignments = joblib_file['mixture_model_results']['cluster_assignments']
-                true_clusters_seen_so_far = np.array([len(np.unique(true_cluster_assignments[:i+1])) for i in range(len(true_cluster_assignments))])
-
-                # Generate data for plotting
-                seq_length = true_cluster_assignments.shape[0]
-                obs_indices = 1 + np.arange(seq_length)
-                data_to_plot = pd.DataFrame.from_dict({
-                    'obs_idx': obs_indices,
-                    'data_dim': np.array([data_dim]*seq_length),
-                    'cluster_ratio': true_clusters_seen_so_far / max(true_clusters_seen_so_far),
-                })
-
-                array_of_all_data.append(data_to_plot)
-
-            concatenated_dataframe_to_plot = pd.concat(array_of_all_data)
-
-            g = sns.lineplot(data=concatenated_dataframe_to_plot,
-                             x='obs_idx',
-                             y='cluster_ratio',
-                             hue='data_dim',
-                             ci='sd',
-                             legend='full',
-                             palette=algorithm_color_map)
-
-            handles, labels = g.get_legend_handles_labels()
-            g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
-            g.get_legend().set_title('Data Dimension')
-
-            plt.xlabel('Number of Observations')
-            plt.ylabel('Observed Num True Clusters /\nTotal Num True Clusters')
-            plt.ylim(bottom=0.)
-
-            plt.grid()
-            plt.tight_layout()
-            plt.savefig(os.path.join(plot_dir, 'plot_ratio_observed_to_total_true_clusters_vs_num_obs_by_alg.png'),
-                        bbox_inches='tight',
-                        dpi=300)
-            # plt.show()
-            plt.close()
-            print("FIGURE SAVED TO:", plot_dir + '/plot_ratio_observed_to_total_true_clusters_vs_num_obs_by_alg.png')
+        plt.grid()
+        plt.tight_layout()
+        plt.savefig(os.path.join(cluster_ratio_plot_dir, 'plot_ratio_observed_to_total_true_clusters_vs_num_obs_by_alg.png'),
+                    bbox_inches='tight',
+                    dpi=300)
+        # plt.show()
+        plt.close()
+        print("FIGURE SAVED TO:", cluster_ratio_plot_dir + '/plot_ratio_observed_to_total_true_clusters_vs_num_obs_by_alg.png')
 
 
 def plot_runtime_by_alpha_colored_by_alg(
