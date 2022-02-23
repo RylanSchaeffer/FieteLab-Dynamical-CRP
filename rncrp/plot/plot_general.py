@@ -142,7 +142,7 @@ def plot_num_clusters_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
     plt.legend()
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir,
-                             f'num_clusters_by_alpha.png'),
+                             f'num_clusters_by_snr.png'),
                 bbox_inches='tight',
                 dpi=300)
     # plt.show()
