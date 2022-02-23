@@ -25,11 +25,9 @@ config_defaults = {
     'dynamics_b': 1.,
     'alpha': 1.1,
     'beta': 0.,
-    'n_samples': 10,
-    'repeat_idx': 0,
-    'imagenet_split': 'val',
     'beta_arg1': 1.,
-    'beta_arg2': 1.,
+    'beta_arg2': 5.,
+    'repeat_idx': 0,
 }
 
 wandb.init(project='dcrp-yilun-nav2d',
