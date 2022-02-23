@@ -51,6 +51,7 @@ def plot_cluster_multiclass_classification_score_by_alpha_by_alg(sweep_results_d
                  hue='inference_alg_str',
                  palette=algorithm_color_map)
     plt.xlabel(r'$\alpha$')
+    plt.ylabel('Finetune Accuracy')
     plt.legend()
     # plt.ylim(0., 1.05)
     plt.tight_layout()
@@ -66,6 +67,49 @@ def plot_num_clusters_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
                                               plot_dir: str):
     sns.lineplot(data=sweep_results_df,
                  x='alpha',
+                 y='Num Inferred Clusters',
+                 hue='inference_alg_str',
+                 palette=algorithm_color_map)
+
+    # Can't figure out how to add another line to Seaborn, so manually adding
+    # the next line of Num True Clusters.
+    num_true_clusters_by_lambda = \
+        sweep_results_df[['alpha', 'n_clusters']].groupby('alpha').agg({
+            'n_clusters': ['mean', 'sem']
+        })['n_clusters']
+
+    means = num_true_clusters_by_lambda['mean'].values
+    sems = num_true_clusters_by_lambda['sem'].values
+    plt.plot(
+        num_true_clusters_by_lambda.index.values,
+        means,
+        label='Num True Clusters',
+        color='k',
+    )
+    plt.fill_between(
+        x=num_true_clusters_by_lambda.index.values,
+        y1=means - sems,
+        y2=means + sems,
+        alpha=0.3,
+        linewidth=0,
+        color='k')
+
+    plt.yscale('log')
+    plt.xlabel(r'$\alpha$')
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(plot_dir,
+                             f'num_clusters_by_alpha.png'),
+                bbox_inches='tight',
+                dpi=300)
+    # plt.show()
+    plt.close()
+
+
+def plot_num_clusters_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
+                                            plot_dir: str):
+    sns.lineplot(data=sweep_results_df,
+                 x='snr',
                  y='Num Inferred Clusters',
                  hue='inference_alg_str',
                  palette=algorithm_color_map)
