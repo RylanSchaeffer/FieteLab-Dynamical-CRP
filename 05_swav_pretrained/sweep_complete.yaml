@@ -19,7 +19,7 @@ parameters:
   n_samples:
     values: [ 10000 ]
   likelihood_kappa:
-    values: [1., 5., 10., 15., 25., 30., 50., 75., 100., 150.]
+    values: [1., 5., 10., 20., 40., 80., 120.]
   repeat_idx:
     values: [0]
   imagenet_split:

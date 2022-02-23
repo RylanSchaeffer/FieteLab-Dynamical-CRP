@@ -106,7 +106,8 @@ class DynamicalCRP(BaseModel):
             # TODO: What is the right covariance initialization? Isn't it just
             # A_prefactor = self.gen_model_params['component_prior_params']['centroids_prior_cov_prefactor'] \
             #               + self.gen_model_params['likelihood_params']['likelihood_cov_prefactor']
-            A_prefactor = self.gen_model_params['likelihood_params']['likelihood_cov_prefactor']
+            # A_prefactor = self.gen_model_params['likelihood_params']['likelihood_cov_prefactor']
+            A_prefactor = 1.
             # Shape: (2 for old and new, max num clusters, obs dim)
             A_diag_covs = (A_prefactor * torch.ones(obs_dim).float()[None, None, :]).repeat(
                 2, max_num_clusters, 1)
