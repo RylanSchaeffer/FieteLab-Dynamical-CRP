@@ -138,7 +138,7 @@ def plot_num_clusters_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
         color='k')
 
     plt.yscale('log')
-    plt.xlabel(r'$\alpha$')
+    plt.xlabel(r'SNR')
     plt.legend()
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir,
