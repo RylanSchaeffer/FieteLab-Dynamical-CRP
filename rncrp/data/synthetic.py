@@ -144,11 +144,11 @@ def sample_mixture_model(num_obs: int = 100,
 
     # Sample cluster assignments.
     if mixing_prior_str == 'rncrp':
-        monte_carlo_rncrp_results = sample_rncrp(num_mc_samples=1,
-                                                 num_customer=num_obs,
-                                                 **mixing_distribution_params)
+        monte_carlo_rncrp_results = sample_dcrp(num_mc_samples=1,
+                                                num_customer=num_obs,
+                                                **mixing_distribution_params)
         cluster_assignments = monte_carlo_rncrp_results[
-            'customer_assignments_by_customer'][0]  # take first MC sample, arbitrarily
+            'customer_assignments_by_customer'][0]  # take first/only MC sample
         observations_times = monte_carlo_rncrp_results['customer_times']
         dynamics_params = monte_carlo_rncrp_results['dynamics'].params
     elif mixing_prior_str == 'discrete':
@@ -281,13 +281,13 @@ def sample_mixture_model(num_obs: int = 100,
     return mixture_model_result
 
 
-def sample_rncrp(num_mc_samples: int,
-                 num_customer: int,
-                 alpha: float,
-                 beta: float,
-                 dynamics_str: str,
-                 dynamics_params: Dict[str, float] = None
-                 ) -> Dict[str, Union[np.ndarray, rncrp.helpers.dynamics.Dynamics]]:
+def sample_dcrp(num_mc_samples: int,
+                num_customer: int,
+                alpha: float,
+                beta: float,
+                dynamics_str: str,
+                dynamics_params: Dict[str, float] = None
+                ) -> Dict[str, Union[np.ndarray, rncrp.helpers.dynamics.Dynamics]]:
     assert alpha > 0.
     assert beta >= 0.
 
