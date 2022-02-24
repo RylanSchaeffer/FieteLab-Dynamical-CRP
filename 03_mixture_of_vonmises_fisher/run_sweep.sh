@@ -10,8 +10,8 @@
 # source rncrp_venv/bin/activate
 # wandb sweep 03_mixture_of_vonmises_fisher/sweep_complete.yaml
 
-for i in {1..2}
+for i in {1..12}
 do
-  sbatch 03_mixture_of_vonmises_fisher/run_one.sh 2yd5qdao
+  sbatch 03_mixture_of_vonmises_fisher/run_one.sh z7kx5ng9
   sleep 5
 done

@@ -12,6 +12,6 @@
 
 for i in {1..10}
 do
-  sbatch 07_yilun_nav_2d/run_one.sh gbm1j8ea
+  sbatch 07_yilun_nav_2d/run_one.sh t8qr1ntx
   sleep 5
 done

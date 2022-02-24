@@ -84,11 +84,19 @@ def load_dataloader_swav_imagenet_2021(data_dir: str = 'data',
 
 
 def load_dataset_yilun_nav_2d_2022(data_dir: str = 'data',
+                                   narrow_hallways: bool = False,
+                                   finite_vision: bool = False,
                                    **kwargs,
                                    ) -> Dict[str, Union[np.ndarray, pd.DataFrame]]:
 
     dataset_dir = os.path.join(data_dir, 'yilun_nav_2d_2022')
-    data_path = os.path.join(dataset_dir, 'data_traj.npz')
+    if narrow_hallways:
+        if finite_vision:
+            data_path = os.path.join(dataset_dir, 'data_traj_narrow_hallways_limited_vision.npz')
+        else:
+            data_path = os.path.join(dataset_dir, 'data_traj_narrow_hallways.npz')
+    else:
+        data_path = os.path.join(dataset_dir, 'data_traj.npz')
 
     with np.load(data_path) as np_fp:
         # WARNING: for no reason, the number of landmarks is the same as the number of vis points
