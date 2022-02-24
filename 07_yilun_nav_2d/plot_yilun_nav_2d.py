@@ -141,7 +141,6 @@ def convert_segments(room_list, edges):
 def plot_room_clusters_on_one_run(yilun_nav_2d_dataset: Dict[str, np.ndarray],
                                   cluster_assignment_posteriors: np.ndarray,
                                   run_config: Dict[str, dict],
-                                  file_name: str,
                                   plot_dir: str,
                                   env_idx: int):
 
@@ -192,7 +191,13 @@ def plot_room_clusters_on_one_run(yilun_nav_2d_dataset: Dict[str, np.ndarray],
     plt.setp(plt.gca().get_yticklabels(), visible=False)
     plt.title(rf"D-CRP($\alpha$={run_config['alpha']}), Comp Prior: Beta({run_config['beta_arg1']}, {run_config['beta_arg2']})")
     # plt.show()
-    file_name += f"_env={env_idx}_dyn={run_config['dynamics_str']}_a={run_config['alpha']}_b1={run_config['beta_arg1']}_b2={run_config['beta_arg2']}"
+    file_name = f"dyn={run_config['dynamics_str']}_a={run_config['dynamics_a']}_b={run_config['dynamics_b']}" \
+                f"_alpha={run_config['alpha']}_b1={run_config['beta_arg1']}_b2={run_config['beta_arg2']}" \
+                f"_env={env_idx}"
+    if run_config['narrow_hallways']:
+        file_name += '_narrowhallways'
+    if run_config['finite_vision']:
+        file_name += '_finitevision'
     plt.savefig(os.path.join(plot_dir, f'{file_name}.png'),
                 bbox_inches='tight',
                 dpi=300)

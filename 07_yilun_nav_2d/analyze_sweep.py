@@ -11,7 +11,7 @@ exp_dir = '07_yilun_nav_2d'
 results_dir = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir, exist_ok=True)
 wandb_sweep_path = "rylan/dcrp-yilun-nav2d"
-sweep_name = '7xim9xzj'
+sweep_name = '3apq9gum'
 sweep_dir = os.path.join(results_dir, sweep_name)
 os.makedirs(sweep_dir, exist_ok=True)
 sweep_results_df_path = os.path.join(sweep_dir, f'sweep={sweep_name}_results.csv')
@@ -63,7 +63,6 @@ for dynamics_str, sweep_subset_results_df in sweep_results_df.groupby('dynamics_
             yilun_nav_2d_dataset=yilun_nav_2d_dataset,
             cluster_assignment_posteriors=one_run_cluster_assignment_posteriors,
             run_config=one_run_config,
-            file_name=joblib_file_name,
             plot_dir=sweep_dynamics_str_dir,
             env_idx=one_run_series['repeat_idx'],
         )
