@@ -2,8 +2,8 @@ import numpy as np
 import os
 import pandas as pd
 
-from rncrp.helpers.run import download_wandb_project_runs_results
-from rncrp.plot import plot_all
+from rncrp.helpers.analyze import download_wandb_project_runs_results, generate_and_save_data_for_cluster_ratio_plotting
+from rncrp.plot import plot_general
 
 exp_dir = 'exp2_climate'
 results_dir = os.path.join(exp_dir, 'results')
@@ -23,6 +23,10 @@ if not os.path.isfile(sweep_results_df_path):
 
 else:
     sweep_results_df = pd.read_csv(sweep_results_df_path, index_col=False)
+
+# Generate data for cluster ratio plots
+# generate_and_save_data_for_cluster_ratio_plotting(all_inf_algs_results_df=sweep_results_df,
+#                                                   plot_dir=sweep_dir)
 
 plot_all(sweep_results_df=sweep_results_df,
          plot_dir=sweep_dir)
