@@ -110,7 +110,7 @@ class DynamicalCRP(BaseModel):
             A_prefactor = 1.
             # Shape: (2 for old and new, max num clusters, obs dim)
             A_diag_covs = (A_prefactor * torch.ones(obs_dim).float()[None, None, :]).repeat(
-                2, max_num_clusters, 1)
+                2, max_num_clusters, 1) / obs_dim
 
             variational_params = dict(
                 assignments=dict(
