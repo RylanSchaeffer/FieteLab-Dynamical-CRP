@@ -17,7 +17,7 @@ class VariationalInferenceGMM(BaseModel):
                  gen_model_params: Dict[str, Dict[str, float]],
                  model_str: str = 'VI-GMM',
                  plot_dir: str = None,
-                 max_iter: int = 8,  # same as DP-Means
+                 max_iter: int = 100,
                  num_initializations: int = 1,
                  **kwargs,
                  ):
