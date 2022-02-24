@@ -4,7 +4,7 @@ import os
 import pandas as pd
 
 import rncrp.data.real_nontabular
-from rncrp.helpers.run import download_wandb_project_runs_results
+from rncrp.helpers.analyze import download_wandb_project_runs_results, generate_and_save_data_for_cluster_ratio_plotting
 import plot_yilun_nav_2d
 
 exp_dir = '07_yilun_nav_2d'
@@ -28,6 +28,9 @@ else:
 
 print(f"Number of runs: {sweep_results_df.shape[0]} for sweep={sweep_name}")
 
+# Generate data for cluster ratio plots
+generate_and_save_data_for_cluster_ratio_plotting(all_inf_algs_results_df=sweep_results_df,
+                                                  plot_dir=sweep_dir)
 
 # Plot W&B data
 plot_yilun_nav_2d.plot_analyze_all_inf_algs_results(
