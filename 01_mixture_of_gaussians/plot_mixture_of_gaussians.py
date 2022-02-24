@@ -26,7 +26,7 @@ def plot_analyze_all_inf_algs_results(all_inf_algs_results_df: pd.DataFrame,
             rncrp.plot.plot_general.plot_scores_by_alpha_colored_by_alg,
             rncrp.plot.plot_general.plot_scores_by_dimension_colored_by_alg,
             rncrp.plot.plot_general.plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg,
-            rncrp.plot.plot_general.plot_ratio_observed_to_total_true_clusters_vs_num_obs_by_alg,,
+            rncrp.plot.plot_general.plot_ratio_observed_to_total_true_clusters_vs_num_obs_by_alg,
         ]
 
         if dynamics_str == 'step':
