@@ -5,6 +5,7 @@ import os
 import pandas as pd
 import seaborn as sns
 from typing import Dict, List
+import joblib
 
 plt.rcParams["font.family"] = ["Times New Roman"]
 plt.rcParams["font.size"] = 16  # was previously 22
@@ -171,91 +172,96 @@ def plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg(sweep_result
     Plot the ratio (number of inferred clusters so far) / (number of true clusters seen so far)
         versus the number of observations, averaged over multiple datasets.
     """
+    inferred_to_true_data_paths_array = np.load(
+        '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/inferred_to_true_data_paths_array.npy')
 
-    fig, ax = plt.subplots(figsize=(5, 4))
+    # Retrieve and plot stored dataframe of cluster ratios for each setting of
+    # (alpha, n_clusters, likelihood_cov_prefactor, centroids_prior_cov_prefactor)
 
-    sweep_results_df['Inferred to True Cluster Ratio'] = sweep_results_df['Num Inferred Clusters'] / sweep_results_df[
-        'Num True Clusters']
-    sweep_results_df['obs_idx'] = (np.array(sweep_results_df.index)) % sweep_results_df['n_samples'][0] + 1
+    for file_path in inferred_to_true_data_paths_array:
 
-    g = sns.lineplot(data=sweep_results_df,
-                     x='obs_idx',
-                     y='Inferred to True Cluster Ratio',
-                     hue='n_features',
-                     ci='sd',
-                     ax=ax,
-                     legend='full',
-                     palette=algorithm_color_map)
+        concatenated_inferred_to_true_df = pd.read_pickle(file_path)
+        cluster_ratio_plot_dir = file_path[:-37]  # Obtain path to save the plot
 
-    handles, labels = g.get_legend_handles_labels()
-    g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
-    g.get_legend().set_title('Data Dimension')
+        g = sns.lineplot(data=concatenated_inferred_to_true_df,
+                         x='obs_idx',
+                         y='cluster_ratio',
+                         hue='data_dim',
+                         ci='sd',
+                         legend='full', )
+        # palette=algorithm_color_map)
 
-    plt.xlabel('Number of Observations')
-    plt.ylabel('Num Inferred Clusters / Num True Clusters')
-    plt.ylim(bottom=0.)
+        handles, labels = g.get_legend_handles_labels()
+        g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
+        g.get_legend().set_title('Data Dimension')
 
-    if title_str is not None:
-        plt.title(title_str)
+        plt.xlabel('Number of Observations')
+        plt.ylabel('Num Inferred Clusters / Num True Clusters')
+        plt.ylim(bottom=0.)
 
-    plt.grid()
-    plt.tight_layout()
-    plt.savefig(os.path.join(plot_dir, 'plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg.png'),
-                bbox_inches='tight',
-                dpi=300)
-    # plt.show()
-    plt.close()
-    print("FIGURE SAVED TO:", plot_dir + '/plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg.png')
+        if title_str is not None:
+            plt.title(title_str)
+
+        plt.grid()
+        plt.tight_layout()
+        plt.savefig(
+            os.path.join(cluster_ratio_plot_dir, 'plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg.png'),
+            bbox_inches='tight',
+            dpi=300)
+        # plt.show()
+        plt.close()
 
 
-def plot_ratio_observed_to_total_true_clusters_vs_num_obs_alg(sweep_results_df: pd.DataFrame,
-                                                              plot_dir: str,
-                                                              title_str: str = None):
+def plot_ratio_observed_to_total_true_clusters_vs_num_obs_by_alg(sweep_results_df: pd.DataFrame,
+                                                                 plot_dir: str,
+                                                                 title_str: str = None):
     """
     Plot the ratio (number of observed true clusters so far) / (total number of true clusters)
         versus the number of observations, averaged over multiple datasets.
     """
+    observed_to_total_true_data_paths_array = np.load(
+        '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/observed_to_total_true_data_paths_array.npy')
 
-    fig, ax = plt.subplots(figsize=(5, 4))
+    # Retrieve and plot stored dataframe of cluster ratios for each setting of
+    # (alpha, n_clusters, likelihood_cov_prefactor, centroids_prior_cov_prefactor, inference_alg_str)
 
-    sweep_results_df['Observed to Total True Cluster Ratio'] = sweep_results_df['Num True Clusters'] / sweep_results_df[
-        'n_clusters']
-    sweep_results_df['obs_idx'] = (np.array(sweep_results_df.index)) % sweep_results_df['n_samples'][0] + 1
+    for file_path in observed_to_total_true_data_paths_array:
 
-    g = sns.lineplot(data=sweep_results_df,
-                     x='obs_idx',
-                     y='Observed to Total True Cluster Ratio',
-                     hue='n_features',
-                     ci='sd',
-                     ax=ax,
-                     legend='full',
-                     palette=algorithm_color_map)
+        concatenated_observed_to_total_true_df = pd.read_pickle(file_path)
+        cluster_ratio_plot_dir = file_path[:-43]  # Obtain path to save the plot
 
-    handles, labels = g.get_legend_handles_labels()
-    g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
-    g.get_legend().set_title('Data Dimension')
+        g = sns.lineplot(data=concatenated_observed_to_total_true_df,
+                         x='obs_idx',
+                         y='cluster_ratio',
+                         hue='data_dim',
+                         ci='sd',
+                         legend='full', )
+        # palette=algorithm_color_map)
 
-    plt.xlabel('Number of Observations')
-    plt.ylabel('Observed Num True Clusters /\nTotal Num True Clusters')
-    plt.ylim(bottom=0.)
+        handles, labels = g.get_legend_handles_labels()
+        g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
+        g.get_legend().set_title('Data Dimension')
 
-    if title_str is not None:
-        plt.title(title_str)
+        plt.xlabel('Number of Observations')
+        plt.ylabel('Observed Num True Clusters /\nTotal Num True Clusters')
+        plt.ylim(bottom=0.)
 
-    plt.grid()
-    plt.tight_layout()
-    plt.savefig(os.path.join(plot_dir, 'plot_ratio_observed_to_total_true_clusters_vs_num_obs_alg.png'),
-                bbox_inches='tight',
-                dpi=300)
-    # plt.show()
-    plt.close()
-    print("FIGURE SAVED TO:", plot_dir + '/plot_ratio_observed_to_total_true_clusters_vs_num_obs_alg.png')
+        if title_str is not None:
+            plt.title(title_str)
+
+        plt.grid()
+        plt.tight_layout()
+        plt.savefig(
+            os.path.join(cluster_ratio_plot_dir, 'plot_ratio_observed_to_total_true_clusters_vs_num_obs_by_alg.png'),
+            bbox_inches='tight',
+            dpi=300)
+        # plt.show()
+        plt.close()
 
 
 def plot_runtime_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
-        plot_dir: str,
-        title_str: str = None):
-
+                                         plot_dir: str,
+                                         title_str: str = None):
     sns.lineplot(data=sweep_results_df,
                  x='alpha',
                  y='Runtime',
