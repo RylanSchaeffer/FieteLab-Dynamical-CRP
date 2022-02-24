@@ -19,31 +19,6 @@ algorithm_color_map = {
 }
 
 
-def plot_sweep_results_all(sweep_results_df: pd.DataFrame,
-                           plot_dir: str = 'results'):
-    os.makedirs(plot_dir, exist_ok=True)
-
-    plot_fns = [
-        plot_num_clusters_by_alpha_colored_by_alg,
-        plot_runtime_by_alpha_colored_by_alg,
-        plot_runtime_by_dimension_colored_by_alg,
-        plot_scores_by_snr_colored_by_alg,
-        plot_scores_by_alpha_colored_by_alg,
-        plot_scores_by_dimension_colored_by_alg,
-    ]
-
-    for plot_fn in plot_fns:
-        # try:
-        plot_fn(sweep_results_df=sweep_results_df,
-                plot_dir=plot_dir)
-        # except Exception as e:
-        #     print(f'Exception: {e}')
-
-        # Close all figure windows to not interfere with next plots
-        plt.close('all')
-        print(f'Plotted {str(plot_fn)}')
-
-
 def plot_cluster_multiclass_classification_score_by_alpha_by_alg(sweep_results_df: pd.DataFrame,
                                                                  plot_dir: str,
                                                                  title_str: str = None):
