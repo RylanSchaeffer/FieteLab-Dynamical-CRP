@@ -10,8 +10,8 @@
 # source rncrp_venv/bin/activate
 # wandb sweep 07_yilun_nav_2d/sweep_complete.yaml
 
-for i in {1..10}
+for i in {1..12}
 do
-  sbatch 07_yilun_nav_2d/run_one.sh t8qr1ntx
+  sbatch 07_yilun_nav_2d/run_one.sh ixh4crea
   sleep 5
 done

@@ -13,6 +13,6 @@
 
 for i in {1..10}
 do
-  sbatch 01_mixture_of_gaussians/run_one.sh psmahisk
+  sbatch 01_mixture_of_gaussians/run_one.sh 9kplnw7y
   sleep 5
 done
