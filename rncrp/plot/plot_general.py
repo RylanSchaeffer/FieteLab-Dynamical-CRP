@@ -44,7 +44,8 @@ def plot_sweep_results_all(sweep_results_df: pd.DataFrame,
 
 
 def plot_cluster_multiclass_classification_score_by_alpha_by_alg(sweep_results_df: pd.DataFrame,
-                                                                 plot_dir: str):
+                                                                 plot_dir: str,
+                                                                 title_str: str = None):
     sns.lineplot(data=sweep_results_df,
                  x='alpha',
                  y='avg_finetune_acc',
@@ -53,6 +54,10 @@ def plot_cluster_multiclass_classification_score_by_alpha_by_alg(sweep_results_d
     plt.xlabel(r'$\alpha$')
     plt.ylabel('Finetune Accuracy')
     plt.legend()
+
+    if title_str is not None:
+        plt.title(title_str)
+
     # plt.ylim(0., 1.05)
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir,
@@ -64,7 +69,8 @@ def plot_cluster_multiclass_classification_score_by_alpha_by_alg(sweep_results_d
 
 
 def plot_num_clusters_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
-                                              plot_dir: str):
+                                              plot_dir: str,
+                                              title_str: str = None):
     sns.lineplot(data=sweep_results_df,
                  x='alpha',
                  y='Num Inferred Clusters',
@@ -97,6 +103,10 @@ def plot_num_clusters_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
     plt.yscale('log')
     plt.xlabel(r'$\alpha$')
     plt.legend()
+
+    if title_str is not None:
+        plt.title(title_str)
+
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir,
                              f'num_clusters_by_alpha.png'),
@@ -107,7 +117,8 @@ def plot_num_clusters_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
 
 
 def plot_num_clusters_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
-                                            plot_dir: str):
+                                            plot_dir: str,
+                                            title_str: str = None):
     sns.lineplot(data=sweep_results_df,
                  x='snr',
                  y='Num Inferred Clusters',
@@ -139,6 +150,10 @@ def plot_num_clusters_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
 
     plt.yscale('log')
     plt.xlabel(r'SNR')
+
+    if title_str is not None:
+        plt.title(title_str)
+
     plt.legend()
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir,
@@ -150,7 +165,8 @@ def plot_num_clusters_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
 
 
 def plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg(sweep_results_df: pd.DataFrame,
-                                                                    plot_dir: str):
+                                                                    plot_dir: str,
+                                                                    title_str: str = None):
     """
     Plot the ratio (number of inferred clusters so far) / (number of true clusters seen so far)
         versus the number of observations, averaged over multiple datasets.
@@ -179,6 +195,9 @@ def plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg(sweep_result
     plt.ylabel('Num Inferred Clusters / Num True Clusters')
     plt.ylim(bottom=0.)
 
+    if title_str is not None:
+        plt.title(title_str)
+
     plt.grid()
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir, 'plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg.png'),
@@ -190,7 +209,8 @@ def plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg(sweep_result
 
 
 def plot_ratio_observed_to_total_true_clusters_vs_num_obs_alg(sweep_results_df: pd.DataFrame,
-                                                              plot_dir: str):
+                                                              plot_dir: str,
+                                                              title_str: str = None):
     """
     Plot the ratio (number of observed true clusters so far) / (total number of true clusters)
         versus the number of observations, averaged over multiple datasets.
@@ -219,6 +239,9 @@ def plot_ratio_observed_to_total_true_clusters_vs_num_obs_alg(sweep_results_df: 
     plt.ylabel('Observed Num True Clusters /\nTotal Num True Clusters')
     plt.ylim(bottom=0.)
 
+    if title_str is not None:
+        plt.title(title_str)
+
     plt.grid()
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir, 'plot_ratio_observed_to_total_true_clusters_vs_num_obs_alg.png'),
@@ -229,9 +252,10 @@ def plot_ratio_observed_to_total_true_clusters_vs_num_obs_alg(sweep_results_df: 
     print("FIGURE SAVED TO:", plot_dir + '/plot_ratio_observed_to_total_true_clusters_vs_num_obs_alg.png')
 
 
-def plot_runtime_by_alpha_colored_by_alg(
-        sweep_results_df: pd.DataFrame,
-        plot_dir: str):
+def plot_runtime_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
+        plot_dir: str,
+        title_str: str = None):
+
     sns.lineplot(data=sweep_results_df,
                  x='alpha',
                  y='Runtime',
@@ -239,6 +263,10 @@ def plot_runtime_by_alpha_colored_by_alg(
                  palette=algorithm_color_map)
     plt.yscale('log')
     plt.xlabel(r'$\alpha$')
+
+    if title_str is not None:
+        plt.title(title_str)
+
     plt.legend()
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir,
@@ -249,9 +277,9 @@ def plot_runtime_by_alpha_colored_by_alg(
     plt.close()
 
 
-def plot_runtime_by_dimension_colored_by_alg(
-        sweep_results_df: pd.DataFrame,
-        plot_dir: str):
+def plot_runtime_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
+                                             plot_dir: str,
+                                             title_str: str = None):
     sns.lineplot(data=sweep_results_df,
                  x='n_features',
                  y='Runtime',
@@ -260,6 +288,10 @@ def plot_runtime_by_dimension_colored_by_alg(
                  err_style='bars')
     plt.yscale('log')
     plt.xlabel(r'Data Dimension')
+
+    if title_str is not None:
+        plt.title(title_str)
+
     plt.legend()
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir,
@@ -270,9 +302,9 @@ def plot_runtime_by_dimension_colored_by_alg(
     plt.close()
 
 
-def plot_scores_by_snr_colored_by_alg(
-        sweep_results_df: pd.DataFrame,
-        plot_dir: str):
+def plot_scores_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
+                                      plot_dir: str,
+                                      title_str: str = None):
     scores_columns = [col for col in sweep_results_df.columns.values
                       if 'Score' in col]
 
@@ -285,6 +317,10 @@ def plot_scores_by_snr_colored_by_alg(
         plt.xscale('log')
         plt.xlabel(r'SNR')
         plt.legend()
+
+        if title_str is not None:
+            plt.title(title_str)
+
         # plt.ylim(0., 1.05)
         plt.tight_layout()
         plt.savefig(os.path.join(plot_dir,
@@ -295,9 +331,9 @@ def plot_scores_by_snr_colored_by_alg(
         plt.close()
 
 
-def plot_scores_by_alpha_colored_by_alg(
-        sweep_results_df: pd.DataFrame,
-        plot_dir: str):
+def plot_scores_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
+                                        plot_dir: str,
+                                        title_str: str = None):
     scores_columns = [col for col in sweep_results_df.columns.values
                       if 'Score' in col]
 
@@ -309,6 +345,9 @@ def plot_scores_by_alpha_colored_by_alg(
                      palette=algorithm_color_map)
         plt.xlabel(r'$\alpha$')
         plt.legend()
+        if title_str is not None:
+            plt.title(title_str)
+
         # plt.ylim(0., 1.05)
         plt.tight_layout()
         plt.savefig(os.path.join(plot_dir,
@@ -320,7 +359,8 @@ def plot_scores_by_alpha_colored_by_alg(
 
 
 def plot_scores_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
-                                            plot_dir: str):
+                                            plot_dir: str,
+                                            title_str: str = None):
     scores_columns = [col for col in sweep_results_df.columns.values
                       if 'Score' in col]
 
@@ -333,6 +373,10 @@ def plot_scores_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
                      err_style="bars", )
         plt.xlabel(r'Data Dimension')
         plt.legend()
+
+        if title_str is not None:
+            plt.title(title_str)
+
         # plt.ylim(0., 1.05)
         plt.tight_layout()
         plt.savefig(os.path.join(plot_dir,

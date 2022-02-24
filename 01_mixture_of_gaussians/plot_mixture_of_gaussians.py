@@ -29,10 +29,22 @@ def plot_analyze_all_inf_algs_results(all_inf_algs_results_df: pd.DataFrame,
             # rncrp.plot.plot_general.plot_ratio_observed_to_total_true_clusters_vs_num_obs_alg,
         ]
 
+        if dynamics_str == 'step':
+            title_str = r'$\Theta(\Delta)$'
+        elif dynamics_str == 'exp':
+            title_str = r'$\exp(-\Delta)$'
+        elif dynamics_str == 'sinusoid':
+            title_str = r'$\cos(\Delta)$'
+        elif dynamics_str == 'hyperbolic':
+            title_str = r'$\frac{1}{1 + \Delta}$'
+        else:
+            title_str = None
+
         for plot_fn in plot_fns:
             # try:
             plot_fn(sweep_results_df=sweep_subset_results_df,
-                    plot_dir=sweep_dynamics_str_dir)
+                    plot_dir=sweep_dynamics_str_dir,
+                    title_str=title_str)
             # except Exception as e:
             #     print(f'Exception: {e}')
 
