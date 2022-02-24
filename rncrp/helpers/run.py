@@ -104,7 +104,8 @@ def run_inference_alg(inference_alg_str: str,
             raise ValueError('Invalid DP Means')
 
         if 'lambda' not in gen_model_params['mixing_params']:
-            gen_model_params['mixing_params']['lambda'] = 1. / gen_model_params['mixing_params']['alpha']
+            # 20 is arbitrary. Just want a reasonable range.
+            gen_model_params['mixing_params']['lambda'] = 20. / gen_model_params['mixing_params']['alpha']
 
         inference_alg = DPMeans(
             gen_model_params=gen_model_params,

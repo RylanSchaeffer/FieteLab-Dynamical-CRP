@@ -3,7 +3,6 @@
 #SBATCH -n 1                    # two cores
 #SBATCH --mem=1G                # RAM
 #SBATCH --time=99:99:99         # total run time limit (HH:MM:SS)
-#SBATCH --mail-user=rylansch
 #SBATCH --mail-type=FAIL
 
 
@@ -14,6 +13,6 @@
 
 for i in {1..10}
 do
-  sbatch 01_mixture_of_gaussians/run_one.sh udk26q5q
+  sbatch 01_mixture_of_gaussians/run_one.sh 9kplnw7y
   sleep 5
 done

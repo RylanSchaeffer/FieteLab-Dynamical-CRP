@@ -25,11 +25,11 @@ config_defaults = {
     'dynamics_b': 1.,
     'alpha': 1.1,
     'beta': 0.,
-    'n_samples': 10,
-    'repeat_idx': 0,
-    'imagenet_split': 'val',
     'beta_arg1': 1.,
-    'beta_arg2': 1.,
+    'beta_arg2': 5.,
+    'repeat_idx': 0,
+    'narrow_hallways': True,
+    'finite_vision': True,
 }
 
 wandb.init(project='dcrp-yilun-nav2d',
@@ -52,7 +52,10 @@ wandb.log({'inf_alg_results_path': inf_alg_results_path},
 # set seeds
 rncrp.helpers.run.set_seed(seed=config['repeat_idx'])
 
-yilun_nav_2d_dataset = rncrp.data.real_nontabular.load_dataset_yilun_nav_2d_2022()
+yilun_nav_2d_dataset = rncrp.data.real_nontabular.load_dataset_yilun_nav_2d_2022(
+    narrow_hallways=config['narrow_hallways'],
+    finite_vision=config['finite_vision'],
+)
 
 # Observations should be the points (xy coordinates) concatenated with
 # the visibility of landmarks

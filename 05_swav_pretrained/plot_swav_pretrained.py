@@ -17,8 +17,9 @@ def plot_analyze_all_inf_algs_results(all_inf_algs_results_df: pd.DataFrame,
 
         plot_fns = [
             plot_cluster_multiclass_classification_score_by_alpha_cross_kappa,
-            plot_normalized_mutual_information_by_alpha_cross_kappa,
+            plot_adjusted_mutual_information_by_alpha_cross_kappa,
             rncrp.plot.plot_general.plot_num_clusters_by_alpha_colored_by_alg,
+            rncrp.plot.plot_general.plot_num_clusters_by_snr_colored_by_alg,
             rncrp.plot.plot_general.plot_runtime_by_alpha_colored_by_alg,
             rncrp.plot.plot_general.plot_scores_by_snr_colored_by_alg,
             rncrp.plot.plot_general.plot_scores_by_alpha_colored_by_alg,
@@ -65,7 +66,7 @@ def plot_cluster_multiclass_classification_score_by_alpha_cross_kappa(
     plt.close()
 
 
-def plot_normalized_mutual_information_by_alpha_cross_kappa(
+def plot_adjusted_mutual_information_by_alpha_cross_kappa(
         sweep_results_df: pd.DataFrame,
         plot_dir: str):
 
@@ -76,7 +77,7 @@ def plot_normalized_mutual_information_by_alpha_cross_kappa(
 
     sns.lineplot(data=sweep_results_df[sweep_results_df['inference_alg_str'] == 'Dynamical-CRP'],
                  x='alpha',
-                 y='Normalized Mutual Info Score',
+                 y='Adjusted Mutual Info Score',
                  hue='likelihood_kappa',
                  legend='full',  # Ensures hue is treated as continuum & not binned.
                  )
@@ -86,7 +87,7 @@ def plot_normalized_mutual_information_by_alpha_cross_kappa(
     # plt.ylim(0., 1.05)
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir,
-                             f'normalized_mutual_information_by_alpha_cross_kappa.png'),
+                             f'adjusted_mutual_information_by_alpha_cross_kappa.png'),
                 bbox_inches='tight',
                 dpi=300)
     # plt.show()

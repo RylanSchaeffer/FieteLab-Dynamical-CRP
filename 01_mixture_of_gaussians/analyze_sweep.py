@@ -85,10 +85,8 @@ exp_dir = '/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/01_mixture_of
 results_dir = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir, exist_ok=True)
 wandb_sweep_path = "rylan/dcrp-mixture-of-gaussians"
-sweep_name = '9nwhhmit'
-# sweep_dir = os.path.join(results_dir, sweep_name)
-output_dir = '/om2/user/gkml/FieteLab-Recursive-Nonstationary-CRP/01_mixture_of_gaussians/results' # remove later
-sweep_dir = os.path.join(output_dir, sweep_name)
+sweep_name = '9kplnw7y'
+sweep_dir = os.path.join(results_dir, sweep_name)
 os.makedirs(sweep_dir, exist_ok=True)
 sweep_results_df_path = os.path.join(sweep_dir, f'sweep={sweep_name}_results.csv')
 
@@ -99,7 +97,7 @@ if not os.path.isfile(sweep_results_df_path):
 
     # Compute SNR := rho / sigma
     sweep_results_df['snr'] = sweep_results_df['centroids_prior_cov_prefactor'] \
-                                              / sweep_results_df['likelihood_cov_prefactor']
+                              / sweep_results_df['likelihood_cov_prefactor']
 
     sweep_results_df.to_csv(sweep_results_df_path, index=False)
 

@@ -9,7 +9,7 @@ exp_dir = '05_swav_pretrained'
 results_dir = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir, exist_ok=True)
 wandb_sweep_path = "rylan/dcrp-swav-pretrained"
-sweep_name = 'nhj1s21j'
+sweep_name = 'bia0srmy'
 sweep_dir = os.path.join(results_dir, sweep_name)
 os.makedirs(sweep_dir, exist_ok=True)
 sweep_results_df_path = os.path.join(sweep_dir, f'sweep={sweep_name}_results.csv')

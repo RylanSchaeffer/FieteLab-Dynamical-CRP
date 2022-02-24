@@ -24,13 +24,13 @@ config_defaults = {
     # 'inference_alg_str': 'VI-GMM',
     # 'inference_alg_str': 'DP-Means (Offline)',
     'inference_alg_str': 'Dynamical-CRP',
-    'dynamics_str': 'step',
+    'dynamics_str': 'exp',
     'dynamics_a': 1.,
     'dynamics_b': 1.,
     'dynamics_c': 1.,
     'dynamics_omega': np.pi / 2.,
     'n_samples': 100,
-    'n_features': 10,
+    'n_features': 2,
     'alpha': 1.1,
     'beta': 0.,
     'centroids_prior_cov_prefactor': 50.,
@@ -68,6 +68,10 @@ mixture_model_results = rncrp.data.synthetic.sample_mixture_model(
     component_prior_str='gaussian',
     component_prior_params={'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor'],
                             'likelihood_cov_prefactor': config['likelihood_cov_prefactor']})
+
+wandb.log(
+    {'n_clusters': len(np.unique(mixture_model_results['cluster_assignments']))},
+    step=0)
 
 gen_model_params = {
     'mixing_params': {

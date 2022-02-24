@@ -9,7 +9,7 @@ exp_dir = '03_mixture_of_vonmises_fisher'
 results_dir = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir, exist_ok=True)
 wandb_sweep_path = "rylan/dcrp-mixture-of-vonmises-fisher"
-sweep_name = 'simx0pgt'
+sweep_name = 'z7kx5ng9'
 sweep_dir = os.path.join(results_dir, sweep_name)
 os.makedirs(sweep_dir, exist_ok=True)
 sweep_results_df_path = os.path.join(sweep_dir, f'sweep={sweep_name}_results.csv')

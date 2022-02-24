@@ -1,9 +1,8 @@
 #!/bin/bash
-#SBATCH -p fiete
+#SBATCH -p normal
 #SBATCH -n 1                    # two cores
 #SBATCH --mem=1G                # RAM
 #SBATCH --time=99:99:99         # total run time limit (HH:MM:SS)
-#SBATCH --mail-user=rylansch
 #SBATCH --mail-type=FAIL
 
 
@@ -11,8 +10,8 @@
 # source rncrp_venv/bin/activate
 # wandb sweep 07_yilun_nav_2d/sweep_complete.yaml
 
-for i in {1..10}
+for i in {1..12}
 do
-  sbatch 07_yilun_nav_2d/run_one.sh nhj1s21j
+  sbatch 07_yilun_nav_2d/run_one.sh ixh4crea
   sleep 5
 done

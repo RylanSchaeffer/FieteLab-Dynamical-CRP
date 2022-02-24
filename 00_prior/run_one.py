@@ -20,7 +20,7 @@ from typing import Dict
 
 
 import plot
-from rncrp.data.synthetic import sample_rncrp
+from rncrp.data.synthetic import sample_dcrp
 from rncrp.helpers.dynamics import convert_dynamics_str_to_dynamics_obj
 from rncrp.helpers.run import set_seed
 
@@ -259,7 +259,7 @@ def sample_monte_carlo_rncrp_and_save(num_customer: int,
         f'monte_carlo_samples={num_mc_sample}.joblib')
 
     if not os.path.isfile(monte_carlo_rncrp_path):
-        monte_carlo_rncrp_results = sample_rncrp(
+        monte_carlo_rncrp_results = sample_dcrp(
             num_mc_samples=num_mc_sample,
             num_customer=num_customer,
             alpha=alpha,

@@ -20,15 +20,14 @@ import rncrp.metrics
 
 config_defaults = {
     'inference_alg_str': 'Dynamical-CRP',
-    'dynamics_str': 'hyperbolic',
-    'dynamics_a': 1.,
-    'dynamics_b': 1.,
-    'dynamics_c': 1.,
-    'dynamics_omega': np.pi / 2.,
+    'dynamics_str': 'step',
+    # 'dynamics_a': 1.,
+    # 'dynamics_b': 1.,
+    # 'dynamics_c': 1.,
+    # 'dynamics_omega': np.pi / 2.,
     'n_samples': 27,
     'n_features': 10,
-    'n_clusters': 40,
-    'alpha': 0.1,
+    'alpha': 1.1,
     'beta': 0.,
     'likelihood_kappa': 1.,
     'repeat_idx': 0,
@@ -64,6 +63,10 @@ mixture_model_results = rncrp.data.synthetic.sample_mixture_model(
     component_prior_str='vonmises_fisher',
     component_prior_params={'likelihood_kappa': config['likelihood_kappa']})
 
+wandb.log(
+    {'n_clusters': len(np.unique(mixture_model_results['cluster_assignments']))},
+    step=0)
+
 gen_model_params = {
     'mixing_params': {
         'alpha': config['alpha'],
@@ -72,7 +75,6 @@ gen_model_params = {
         'dynamics_params': mixture_model_results['dynamics_params']
     },
     'component_prior_params': {
-        # 'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor']
     },
     'likelihood_params': {
         'distribution': 'vonmises_fisher',

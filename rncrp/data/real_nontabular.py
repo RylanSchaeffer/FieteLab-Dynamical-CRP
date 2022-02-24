@@ -84,11 +84,19 @@ def load_dataloader_swav_imagenet_2021(data_dir: str = 'data',
 
 
 def load_dataset_yilun_nav_2d_2022(data_dir: str = 'data',
+                                   narrow_hallways: bool = False,
+                                   finite_vision: bool = False,
                                    **kwargs,
                                    ) -> Dict[str, Union[np.ndarray, pd.DataFrame]]:
 
     dataset_dir = os.path.join(data_dir, 'yilun_nav_2d_2022')
-    data_path = os.path.join(dataset_dir, 'data_traj.npz')
+    if narrow_hallways:
+        if finite_vision:
+            data_path = os.path.join(dataset_dir, 'data_traj_narrow_hallways_limited_vision.npz')
+        else:
+            data_path = os.path.join(dataset_dir, 'data_traj_narrow_hallways.npz')
+    else:
+        data_path = os.path.join(dataset_dir, 'data_traj.npz')
 
     with np.load(data_path) as np_fp:
         # WARNING: for no reason, the number of landmarks is the same as the number of vis points
@@ -96,13 +104,17 @@ def load_dataset_yilun_nav_2d_2022(data_dir: str = 'data',
         landmarks = np_fp['landmarks']  # Shape: (num envs, num landmarks, 2 for xy position)
         points = np_fp['points']  # Shape: (num envs, num vis points, 2 for xy position)
         room_ids = np_fp['room_ids']  # Shape: (num envs, num vis points)
+        room_lists = np_fp['room_lists']  # Shape: (num envs, 5, 4)
         vis_matrix = np_fp['vis_matrix']  # Shape: (num envs, num vis points, num landmarks)
+        edges = np_fp['edges']  # Shape: (num envs, 5)
 
     dataset_dict = dict(
         landmarks=landmarks,
         points=points,
         room_ids=room_ids,
         vis_matrix=vis_matrix,
+        edges=edges,
+        room_lists=room_lists,
     )
 
     return dataset_dict

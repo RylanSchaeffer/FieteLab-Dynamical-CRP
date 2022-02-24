@@ -1,9 +1,8 @@
 #!/bin/bash
 #SBATCH -p fiete
-#SBATCH -n 2                    # two cores
-#SBATCH --mem=10G               # RAM
+#SBATCH -n 1                    # two cores
+#SBATCH --mem=8G                # RAM
 #SBATCH --time=99:99:99         # total run time limit (HH:MM:SS)
-#SBATCH --mail-user=rylansch
 #SBATCH --mail-type=FAIL
 
 id=${1}
