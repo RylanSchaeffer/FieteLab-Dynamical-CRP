@@ -103,11 +103,12 @@ class DynamicalCRP(BaseModel):
             optimize_cluster_assignments_fn = self.optimize_cluster_assignments_multivariate_normal
             optimize_cluster_params_fn = self.optimize_cluster_params_multivariate_normal
 
-            # TODO: What is the right covariance initialization? Isn't it just
+            # TODO: What is the right covariance initialization? How should this be determined?
+            # Currently set as an arbitrary choice
             # A_prefactor = self.gen_model_params['component_prior_params']['centroids_prior_cov_prefactor'] \
             #               + self.gen_model_params['likelihood_params']['likelihood_cov_prefactor']
             # A_prefactor = self.gen_model_params['likelihood_params']['likelihood_cov_prefactor']
-            A_prefactor = 1.
+            A_prefactor = 10.
             # Shape: (2 for old and new, max num clusters, obs dim)
             A_diag_covs = (A_prefactor * torch.ones(obs_dim).float()[None, None, :]).repeat(
                 2, max_num_clusters, 1) / obs_dim
@@ -167,7 +168,7 @@ class DynamicalCRP(BaseModel):
                         dtype=torch.float32),
                     concentrations=torch.full(
                         size=(2, max_num_clusters, 1),
-                        fill_value=1.,
+                        fill_value=10. / obs_dim,
                         dtype=torch.float32,
                     )))
 
