@@ -136,11 +136,14 @@ def generate_and_save_data_for_cluster_ratio_plotting(all_inf_algs_results_df: p
     else:
         # Load dataframes
         num_inferred_clusters_div_num_true_clusters_by_obs_idx_df = pd.read_csv(
-            num_inferred_clusters_div_num_true_clusters_by_obs_idx_df_path)
+            num_inferred_clusters_div_num_true_clusters_by_obs_idx_df_path,
+            index_col=False)
         num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df = pd.read_csv(
-            num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df_path)
+            num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df_path,
+            index_col=False)
         num_true_clusters_div_total_num_true_clusters_by_obs_idx_df = pd.read_csv(
-            num_true_clusters_div_total_num_true_clusters_by_obs_idx_df_path)
+            num_true_clusters_div_total_num_true_clusters_by_obs_idx_df_path,
+            index_col=False)
 
     cluster_ratio_dfs_results = dict(
         num_inferred_clusters_div_num_true_clusters_by_obs_idx_df=num_inferred_clusters_div_num_true_clusters_by_obs_idx_df,
