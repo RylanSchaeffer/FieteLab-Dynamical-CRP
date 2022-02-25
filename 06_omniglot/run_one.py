@@ -12,7 +12,7 @@ import numpy as np
 import os
 import wandb
 
-# import plot
+
 import rncrp.data.real_nontabular
 import rncrp.helpers.dynamics
 import rncrp.helpers.run
@@ -51,41 +51,32 @@ rncrp.helpers.run.set_seed(seed=config['repeat_idx'])
 omniglot_data = rncrp.data.real_nontabular.load_dataset_omniglot(
     data_dir='data',
     num_data=config['n_samples'],
-    center_crop=center_crop,
-    avg_pool=avg_pool,
     feature_extractor_method='vae',
     shuffle=False)
 
-observations = yilun_nav_2d_dataset['vis_matrix']
+observations = omniglot_data['images']
 
-# Take the repeat-index's environment
-env_idx = config['repeat_idx']
-observations = observations[env_idx, :, :]
+true_cluster_assignments = omniglot_data['labels']
+
+# Log number of true clusters
+wandb.log({'n_clusters': len(np.unique(true_cluster_assignments))}, step=0)
+
 
 # Construct observation times
-# Points has shape (num obs, trajectory length, 2 for xy coord)
-num_obs = yilun_nav_2d_dataset['points'].shape[1]
+num_obs = observations.shape[0]
 observation_times = np.arange(num_obs)
-
-# Compute true cluster assignments of this environment
-true_cluster_assignments = yilun_nav_2d_dataset['room_ids'][env_idx, :]
-
-# Compute number of true clusters
-wandb.log({'n_clusters': len(np.unique(true_cluster_assignments))}, step=0)
 
 gen_model_params = {
     'mixing_params': {
         'alpha': config['alpha'],
         'beta': config['beta'],
         'dynamics_str': config['dynamics_str'],
-        'dynamics_params': {'a': config['dynamics_a'], 'b': 1.0},
+        'dynamics_params': {'omega': config['dynamics_omega']},
     },
     'component_prior_params': {
-        'beta_arg1': config['beta_arg1'],
-        'beta_arg2': config['beta_arg2'],
     },
     'likelihood_params': {
-        'distribution': 'product_bernoullis',
+        'distribution': 'multivariate_normal',
     }
 }
 

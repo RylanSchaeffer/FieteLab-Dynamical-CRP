@@ -99,8 +99,8 @@ def load_dataset_omniglot(data_dir: str = 'data',
     assert feature_extractor_method in {'pca', 'cnn', 'vae', 'vae_old', None}
 
     if feature_extractor_method == 'vae':
-        vae_data = np.load(os.path.join(os.getcwd(),
-                                        'data/omniglot_vae/omniglot_data.npz'))
+        vae_data = np.load(os.path.join(data_dir,
+                                        'omniglot_vae/omniglot_data.npz'))
         labels = vae_data['targets']
         # indices_to_sort_labels = np.argsort(labels)
         indices_to_sort_labels = np.random.choice(

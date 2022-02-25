@@ -19,7 +19,6 @@ from sympy.functions.combinatorial.numbers import stirling
 from typing import Dict
 
 
-import plot
 from rncrp.data.synthetic import sample_dcrp
 from rncrp.helpers.dynamics import convert_dynamics_str_to_dynamics_obj
 from rncrp.helpers.run import set_seed

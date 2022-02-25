@@ -12,6 +12,6 @@
 
 for i in {1..12}
 do
-  sbatch 03_mixture_of_vonmises_fisher/run_one.sh gacu1usf
+  sbatch 03_mixture_of_vonmises_fisher/run_one.sh 78skuwh5
   sleep 5
 done
