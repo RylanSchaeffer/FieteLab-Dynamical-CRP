@@ -62,13 +62,4 @@ for dynamics_str, sweep_subset_results_df in sweep_results_df.groupby('dynamics_
         one_run_cluster_assignment_posteriors = one_run_results['inference_alg_results'][
             'cluster_assignment_posteriors']
 
-        plot_omniglot.plot_room_clusters_on_one_run(
-            yilun_nav_2d_dataset=yilun_nav_2d_dataset,
-            cluster_assignment_posteriors=one_run_cluster_assignment_posteriors,
-            run_config=one_run_config,
-            plot_dir=sweep_dynamics_str_dir,
-            env_idx=one_run_series['repeat_idx'],
-        )
-
-
-print(f'Finished 07_yilun_nav_2d/plot_sweep.py for sweep={sweep_name}.')
+print(f'Finished 06_omniglot/plot_sweep.py for sweep={sweep_name}.')

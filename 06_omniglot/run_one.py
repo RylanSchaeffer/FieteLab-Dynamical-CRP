@@ -20,16 +20,12 @@ import rncrp.metrics
 
 config_defaults = {
     'inference_alg_str': 'Dynamical-CRP',
-    'dynamics_str': 'exp',
-    'dynamics_a': 1.,
-    'dynamics_b': 1.,
+    'dynamics_str': 'sinusoid',
+    'dynamics_omega': 1.,
     'alpha': 1.1,
     'beta': 0.,
-    'beta_arg1': 1.,
-    'beta_arg2': 5.,
+    'n_samples': 10,
     'repeat_idx': 0,
-    'narrow_hallways': True,
-    'finite_vision': True,
 }
 
 wandb.init(project='dcrp-omniglot',
@@ -52,11 +48,13 @@ wandb.log({'inf_alg_results_path': inf_alg_results_path},
 # set seeds
 rncrp.helpers.run.set_seed(seed=config['repeat_idx'])
 
-yilun_nav_2d_dataset = rncrp.data.real_nontabular.load_dataset_yilun_nav_2d_2022(
-    narrow_hallways=config['narrow_hallways'],
-    finite_vision=config['finite_vision'],
-)
-
+omniglot_data = rncrp.data.real_nontabular.load_dataset_omniglot(
+    data_dir='data',
+    num_data=config['n_samples'],
+    center_crop=center_crop,
+    avg_pool=avg_pool,
+    feature_extractor_method='vae',
+    shuffle=False)
 
 observations = yilun_nav_2d_dataset['vis_matrix']
 
@@ -114,4 +112,4 @@ data_to_store = dict(
 joblib.dump(data_to_store,
             filename=inf_alg_results_path)
 
-print('Finished run.')
+print('Finished 06_omniglot/run_one.py.')
