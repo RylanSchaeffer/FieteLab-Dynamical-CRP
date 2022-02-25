@@ -54,7 +54,6 @@ def download_wandb_project_runs_results(wandb_project_path: str,
 
 def generate_and_save_data_for_cluster_ratio_plotting(all_inf_algs_results_df: pd.DataFrame,
                                                       exp_dir_path: str):
-
     sweep_id = all_inf_algs_results_df.loc[0, 'Sweep']
     sweep_results_dir = os.path.join(exp_dir_path, sweep_id)
     os.makedirs(sweep_results_dir, exist_ok=True)
@@ -77,10 +76,20 @@ def generate_and_save_data_for_cluster_ratio_plotting(all_inf_algs_results_df: p
             or not os.path.isfile(num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df_path) \
             or not os.path.isfile(num_true_clusters_div_total_num_true_clusters_by_obs_idx_df_path):
 
+        num_failed_loads = 0
+
         for inf_alg_results_joblib_path in all_inf_algs_results_df['inf_alg_results_path']:
 
-            joblib_file = joblib.load(os.path.join(exp_dir_path,
-                                                   inf_alg_results_joblib_path))
+            try:
+                joblib_file = joblib.load(os.path.join(exp_dir_path,
+                                                       inf_alg_results_joblib_path))
+            except TypeError:
+                # Sometimes, the W&B path is NaN; don't know why. This throws a
+                # TypeError: join() argument must be str or bytes, not 'float'
+                # Just log these and continue
+                print(f'Error: could not load {inf_alg_results_joblib_path}')
+                num_failed_loads += 1
+                continue
 
             # Obtain number of inferred clusters
             cluster_assignment_posteriors = joblib_file['inference_alg_results'][
@@ -132,6 +141,8 @@ def generate_and_save_data_for_cluster_ratio_plotting(all_inf_algs_results_df: p
         num_true_clusters_div_total_num_true_clusters_by_obs_idx_df.to_csv(
             num_true_clusters_div_total_num_true_clusters_by_obs_idx_df_path,
             index=False)
+
+        print(f'Fraction of failed loads: {num_failed_loads / len(all_inf_algs_results_df)}')
 
     else:
         # Load dataframes
