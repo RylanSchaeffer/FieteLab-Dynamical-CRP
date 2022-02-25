@@ -1,0 +1,30 @@
+program: 06_omniglot/run_one.py
+project: dcrp-omniglot
+method: grid
+metric:
+  goal: minimize
+  name: training_reconstruction_error
+parameters:
+  inference_alg_str:
+    values: [
+        'Dynamical-CRP',
+    ]
+  dynamics_str:
+    values: [
+        'sinusoid',
+    ]
+  dynamics_omega:
+    values: [ 1. ]
+  alpha:
+    values: [2.]
+  beta_arg1:
+    values: [ 0.5, 1. ]
+  beta_arg2:
+    values: [2., 3., 4.]
+  repeat_idx:
+    values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  narrow_hallways:
+    values: [true]
+  finite_vision:
+    values: [true]
+
