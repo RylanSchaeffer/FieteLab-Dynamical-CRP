@@ -5,7 +5,6 @@ from rncrp.helpers.analyze import download_wandb_project_runs_results, \
     generate_and_save_data_for_cluster_ratio_plotting
 import plot_mixture_of_gaussians
 
-
 exp_dir = '/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/01_mixture_of_gaussians'
 results_dir = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir, exist_ok=True)
@@ -32,8 +31,9 @@ else:
 
 print(f"Number of runs: {sweep_results_df.shape[0]} for sweep={sweep_name}")
 
-generate_and_save_data_for_cluster_ratio_plotting(all_inf_algs_results_df=sweep_results_df,
-                                                  plot_dir=sweep_dir)
+generate_and_save_data_for_cluster_ratio_plotting(
+    all_inf_algs_results_df=sweep_results_df,
+    exp_dir_path='/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/')
 
 plot_mixture_of_gaussians.plot_analyze_all_inf_algs_results(
     all_inf_algs_results_df=sweep_results_df,

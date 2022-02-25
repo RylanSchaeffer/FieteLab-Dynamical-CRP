@@ -53,105 +53,99 @@ def download_wandb_project_runs_results(wandb_project_path: str,
 
 
 def generate_and_save_data_for_cluster_ratio_plotting(all_inf_algs_results_df: pd.DataFrame,
-                                                      plot_dir: str):
-    # count = 0
-    for dynamics_str, sweep_subset_results_df in all_inf_algs_results_df.groupby('dynamics_str'):
-        sweep_dynamics_str_dir = os.path.join(plot_dir, dynamics_str)
-        os.makedirs(sweep_dynamics_str_dir, exist_ok=True)
+                                                      exp_dir_path: str):
 
-        inferred_to_observed_true_data_paths_array = []
-        inferred_to_total_true_data_paths_array = []
-        observed_true_to_total_true_data_paths_array = []
+    sweep_id = all_inf_algs_results_df.loc[0, 'Sweep']
+    sweep_results_dir = os.path.join(exp_dir_path, sweep_id)
+    os.makedirs(sweep_results_dir, exist_ok=True)
 
-        for param_tuple, df_by_n_features in sweep_subset_results_df.groupby(['alpha',
-                                                                              'likelihood_cov_prefactor',
-                                                                              'centroids_prior_cov_prefactor',
-                                                                              'inference_alg_str']):
-            # if count==2:
-            #     break
+    num_inferred_clusters_div_num_true_clusters_by_obs_idx = dict()
+    num_inferred_clusters_div_total_num_true_clusters_by_obs_idx = dict()
+    num_true_clusters_div_total_num_true_clusters_by_obs_idx = dict()
 
-            if param_tuple[-1] == 'Dynamical-CRP':
-                param_tuple_dir = '_'.join(str(x) for x in param_tuple)
-                cluster_ratio_plot_dir = os.path.join(sweep_dynamics_str_dir, param_tuple_dir)
-                os.makedirs(cluster_ratio_plot_dir, exist_ok=True)
+    num_inferred_clusters_div_num_true_clusters_by_obs_idx_df_path = os.path.join(
+        sweep_results_dir,
+        'num_inferred_clusters_div_num_true_clusters_by_obs_idx.csv')
+    num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df_path = os.path.join(
+        sweep_results_dir,
+        'num_inferred_clusters_div_total_num_true_clusters_by_obs_idx.csv')
+    num_true_clusters_div_total_num_true_clusters_by_obs_idx_df_path = os.path.join(
+        sweep_results_dir,
+        'num_true_clusters_div_total_num_true_clusters_by_obs_idx.csv')
 
-                all_inferred_to_observed_true_data_array = []
-                all_inferred_to_total_true_data_array = []
-                all_observed_true_to_total_true_data_array = []
+    if not os.path.isfile(num_inferred_clusters_div_num_true_clusters_by_obs_idx_df_path) \
+            or not os.path.isfile(num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df_path) \
+            or not os.path.isfile(num_true_clusters_div_total_num_true_clusters_by_obs_idx_df_path):
 
-                for joblib_and_n_features, filtered_df in df_by_n_features.groupby(['inf_alg_results_path',
-                                                                                    'n_features']):
-                    data_dim = joblib_and_n_features[1]
+        for inf_alg_results_joblib_path in all_inf_algs_results_df['inf_alg_results_path']:
 
-                    joblib_subpath = joblib_and_n_features[0]
-                    joblib_file = joblib.load(
-                        '/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/' + joblib_subpath)
+            joblib_file = joblib.load(os.path.join(exp_dir_path,
+                                                   inf_alg_results_joblib_path))
 
-                    # Obtain number of inferred clusters
-                    cluster_assignment_posteriors = joblib_file['inference_alg_results'][
-                        'cluster_assignment_posteriors']
-                    # cluster_assignment_priors = joblib_file['inference_alg_results']['cluster_assignment_priors']
-                    inferred_cluster_assignments = cluster_assignment_posteriors.argmax(axis=1)
-                    inferred_clusters_so_far = np.array([len(np.unique(inferred_cluster_assignments[:i + 1])) for i in
-                                                         range(len(inferred_cluster_assignments))])
+            # Obtain number of inferred clusters
+            cluster_assignment_posteriors = joblib_file['inference_alg_results'][
+                'cluster_assignment_posteriors']
+            inferred_cluster_assignments = cluster_assignment_posteriors.argmax(axis=1)
+            num_inferred_clusters_by_obs_idx = np.array([
+                len(np.unique(inferred_cluster_assignments[:i + 1]))
+                for i in range(len(inferred_cluster_assignments))])
 
-                    # Obtain numbers of observed and total true clusters
-                    true_cluster_assignments = joblib_file['mixture_model_results']['cluster_assignments']
-                    true_clusters_seen_so_far = np.array([len(np.unique(true_cluster_assignments[:i + 1])) for i in
-                                                          range(len(true_cluster_assignments))])
+            # Obtain numbers of observed and total true clusters
+            true_cluster_assignments = joblib_file['mixture_model_results']['cluster_assignments']
+            num_true_clusters_by_obs_idx = np.array([
+                len(np.unique(true_cluster_assignments[:i + 1]))
+                for i in range(len(true_cluster_assignments))])
 
-                    # Generate data for plotting
-                    seq_length = cluster_assignment_posteriors.shape[0]
-                    obs_indices = 1 + np.arange(seq_length)
-                    inferred_to_observed_true_data_df = pd.DataFrame.from_dict({
-                        'obs_idx': obs_indices,
-                        'data_dim': np.array([data_dim] * seq_length),
-                        'cluster_ratio': inferred_clusters_so_far / true_clusters_seen_so_far,
-                    })
-                    inferred_to_total_true_data_df = pd.DataFrame.from_dict({
-                        'obs_idx': obs_indices,
-                        'data_dim': np.array([data_dim] * seq_length),
-                        'cluster_ratio': inferred_clusters_so_far / max(true_clusters_seen_so_far),
-                    })
-                    observed_true_to_total_true_data_df = pd.DataFrame.from_dict({
-                        'obs_idx': obs_indices,
-                        'data_dim': np.array([data_dim] * seq_length),
-                        'cluster_ratio': true_clusters_seen_so_far / max(true_clusters_seen_so_far),
-                    })
+            num_total_true_clusters = np.max(true_cluster_assignments)
 
-                    all_inferred_to_observed_true_data_array.append(inferred_to_observed_true_data_df)
-                    all_inferred_to_total_true_data_array.append(inferred_to_total_true_data_df)
-                    all_observed_true_to_total_true_data_array.append(observed_true_to_total_true_data_df)
+            # Copy to ensure that Python can garbage-collect the joblib file pointers
+            num_inferred_clusters_div_num_true_clusters_by_obs_idx[inf_alg_results_joblib_path] = \
+                np.copy(num_inferred_clusters_by_obs_idx / num_true_clusters_by_obs_idx)
+            num_inferred_clusters_div_total_num_true_clusters_by_obs_idx[inf_alg_results_joblib_path] = \
+                np.copy(num_inferred_clusters_by_obs_idx / num_total_true_clusters)
+            num_true_clusters_div_total_num_true_clusters_by_obs_idx[inf_alg_results_joblib_path] = \
+                np.copy(num_true_clusters_by_obs_idx / num_total_true_clusters)
 
-                # Concatenate data to average over in the plots
-                concatenated_inferred_to_observed_true_df = pd.concat(all_inferred_to_observed_true_data_array,
-                                                                      ignore_index=True)
-                concatenated_inferred_to_total_true_df = pd.concat(all_inferred_to_total_true_data_array,
-                                                                   ignore_index=True)
-                concatenated_observed_true_to_total_true_df = pd.concat(all_observed_true_to_total_true_data_array,
-                                                                        ignore_index=True)
+        # Each column name is an inf_alg_results_joblib_path
+        # We want to transpose, then change the index to a column.
+        # The resulting dataframes have column 1 with name inf_alg_results_path and the
+        # remaining column names 0, 1, 2, ...
+        num_inferred_clusters_div_num_true_clusters_by_obs_idx_df = pd.DataFrame.from_dict(
+            num_inferred_clusters_div_num_true_clusters_by_obs_idx).T.rename_axis(
+            'inf_alg_results_path').reset_index()
+        num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df = pd.DataFrame.from_dict(
+            num_inferred_clusters_div_total_num_true_clusters_by_obs_idx).T.rename_axis(
+            'inf_alg_results_path').reset_index()
+        num_true_clusters_div_total_num_true_clusters_by_obs_idx_df = pd.DataFrame.from_dict(
+            num_true_clusters_div_total_num_true_clusters_by_obs_idx).T.rename_axis(
+            'inf_alg_results_path').reset_index()
 
-                # Save each dataframe
-                concatenated_inferred_to_observed_true_df.to_pickle(
-                    cluster_ratio_plot_dir + '/concatenated_inferred_to_observed_true_df.pkl')
-                concatenated_inferred_to_total_true_df.to_pickle(
-                    cluster_ratio_plot_dir + '/concatenated_inferred_to_total_true_df.pkl')
-                concatenated_observed_true_to_total_true_df.to_pickle(
-                    cluster_ratio_plot_dir + '/concatenated_observed_true_to_total_true_df.pkl')
+        # Save dataframes
+        num_inferred_clusters_div_num_true_clusters_by_obs_idx_df.to_csv(
+            num_inferred_clusters_div_num_true_clusters_by_obs_idx_df_path,
+            index=False)
 
-                # Store paths to the concatenated dataframes
-                inferred_to_observed_true_data_paths_array.append(
-                    cluster_ratio_plot_dir + '/concatenated_inferred_to_observed_true_df.pkl')
-                inferred_to_total_true_data_paths_array.append(
-                    cluster_ratio_plot_dir + '/concatenated_inferred_to_total_true_df.pkl')
-                observed_true_to_total_true_data_paths_array.append(
-                    cluster_ratio_plot_dir + '/concatenated_observed_true_to_total_true_df.pkl')
-                # count += 1
+        num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df.to_csv(
+            num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df_path,
+            index=False)
 
-        # TODO: Check that specified directory works
-        np.save(os.path.join(sweep_dynamics_str_dir, 'inferred_to_observed_true_data_paths_array.npy'),
-                np.array(inferred_to_observed_true_data_paths_array))
-        np.save(os.path.join(sweep_dynamics_str_dir, 'inferred_to_true_true_data_paths_array.npy'),
-                np.array(inferred_to_total_true_data_paths_array))
-        np.save(os.path.join(sweep_dynamics_str_dir, 'observed_true_to_total_true_data_paths_array.npy'),
-                np.array(observed_true_to_total_true_data_paths_array))
+        num_true_clusters_div_total_num_true_clusters_by_obs_idx_df.to_csv(
+            num_true_clusters_div_total_num_true_clusters_by_obs_idx_df_path,
+            index=False)
+
+    else:
+        # Load dataframes
+        num_inferred_clusters_div_num_true_clusters_by_obs_idx_df = pd.read_csv(
+            num_inferred_clusters_div_num_true_clusters_by_obs_idx_df_path)
+        num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df = pd.read_csv(
+            num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df_path)
+        num_true_clusters_div_total_num_true_clusters_by_obs_idx_df = pd.read_csv(
+            num_true_clusters_div_total_num_true_clusters_by_obs_idx_df_path)
+
+    cluster_ratio_dfs_results = dict(
+        num_inferred_clusters_div_num_true_clusters_by_obs_idx_df=num_inferred_clusters_div_num_true_clusters_by_obs_idx_df,
+        num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df=num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df,
+        num_true_clusters_div_total_num_true_clusters_by_obs_idx_df=num_true_clusters_div_total_num_true_clusters_by_obs_idx_df,
+    )
+
+    return cluster_ratio_dfs_results
