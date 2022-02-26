@@ -140,142 +140,117 @@ def plot_num_clusters_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
     plt.close()
 
 
-def plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg(sweep_results_df: pd.DataFrame,
-                                                                    plot_dir: str,
-                                                                    title_str: str = None):
+def plot_num_inferred_clusters_div_num_true_clusters_by_obs_idx(ratio_df: pd.DataFrame,
+                                                                plot_dir: str,
+                                                                title_str: str = None):
     """
-    Plot the ratio (number of inferred clusters so far) / (number of true clusters seen so far)
+    Plot the ratio of (number of inferred clusters so far) / (number of true clusters seen so far)
         versus the number of observations, averaged over multiple datasets.
     """
-    # Load data generically
-    inferred_to_observed_true_data_paths_array = np.load(plot_dir +'/inferred_to_observed_true_data_paths_array.npy')
 
-    # Retrieve and plot stored dataframe of cluster ratios for each setting of
     # (alpha, likelihood_cov_prefactor, centroids_prior_cov_prefactor)
-    for file_path in inferred_to_observed_true_data_paths_array:
+    g = sns.lineplot(data=ratio_df,
+                     x='obs_idx',
+                     y='cluster_ratio',
+                     hue='n_features',
+                     ci='sd',
+                     legend='full')
+    # palette=algorithm_color_map)
 
-        concatenated_inferred_to_true_df = pd.read_pickle(file_path)
-        cluster_ratio_plot_dir = file_path[:-46]  # Obtain path to save the plot
+    handles, labels = g.get_legend_handles_labels()
+    g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
+    g.get_legend().set_title('Data Dimension')
 
-        g = sns.lineplot(data=concatenated_inferred_to_true_df,
-                         x='obs_idx',
-                         y='cluster_ratio',
-                         hue='data_dim',
-                         ci='sd',
-                         legend='full', )
-        # palette=algorithm_color_map)
+    plt.xlabel('Num. of Observations')
+    plt.ylabel('Num. Inferred Clusters /\nNum. True Clusters Seen')
+    plt.ylim(bottom=0.)
 
-        handles, labels = g.get_legend_handles_labels()
-        g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
-        g.get_legend().set_title('Data Dimension')
+    if title_str is not None:
+        plt.title(title_str)
 
-        plt.xlabel('Number of Observations')
-        plt.ylabel('Num Inferred Clusters /\nNum True Clusters')
-        plt.ylim(bottom=0.)
-
-        if title_str is not None:
-            plt.title(title_str)
-
-        plt.grid()
-        plt.tight_layout()
-        plt.savefig(
-            os.path.join(cluster_ratio_plot_dir, 'plot_ratio_inferred_to_observed_true_clusters_vs_num_obs_by_alg.png'),
-            bbox_inches='tight',
-            dpi=300)
-        # plt.show()
-        plt.close()
+    plt.grid()
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(plot_dir, 'num_inferred_clusters_div_num_true_clusters_by_obs_idx_df.png'),
+        bbox_inches='tight',
+        dpi=300)
+    # plt.show()
+    plt.close()
 
 
-def plot_ratio_inferred_to_total_true_clusters_vs_num_obs_by_alg(sweep_results_df: pd.DataFrame,
-                                                                 plot_dir: str,
-                                                                 title_str: str = None):
+def plot_num_inferred_clusters_div_total_num_true_clusters_by_obs_idx(ratio_df: pd.DataFrame,
+                                                                      plot_dir: str,
+                                                                      title_str: str = None):
     """
-    Plot the ratio (number of inferred clusters so far) / (total number of true clusters)
+    Plot the ratio of (number of inferred clusters so far) / (total number of true clusters)
         versus the number of observations, averaged over multiple datasets.
     """
-    # Load data generically
-    inferred_to_total_true_data_paths_array = np.load(plot_dir + '/inferred_to_total_true_data_paths_array.npy')
 
-    # Retrieve and plot stored dataframe of cluster ratios for each setting of
     # (alpha, likelihood_cov_prefactor, centroids_prior_cov_prefactor)
-    for file_path in inferred_to_total_true_data_paths_array:
+    g = sns.lineplot(data=ratio_df,
+                     x='obs_idx',
+                     y='cluster_ratio',
+                     hue='n_features',
+                     ci='sd',
+                     legend='full')
+    # palette=algorithm_color_map)
 
-        concatenated_inferred_to_true_df = pd.read_pickle(file_path)
-        cluster_ratio_plot_dir = file_path[:-43]  # Obtain path to save the plot
+    handles, labels = g.get_legend_handles_labels()
+    g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
+    g.get_legend().set_title('Data Dimension')
 
-        g = sns.lineplot(data=concatenated_inferred_to_true_df,
-                         x='obs_idx',
-                         y='cluster_ratio',
-                         hue='data_dim',
-                         ci='sd',
-                         legend='full', )
-        # palette=algorithm_color_map)
+    plt.xlabel('Num. of Observations')
+    plt.ylabel('Num. Inferred Clusters /\nTotal Num. True Clusters')
+    plt.ylim(bottom=0.)
 
-        handles, labels = g.get_legend_handles_labels()
-        g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
-        g.get_legend().set_title('Data Dimension')
+    if title_str is not None:
+        plt.title(title_str)
 
-        plt.xlabel('Number of Observations')
-        plt.ylabel('Num Inferred Clusters /\nTotal Num True Clusters')
-        plt.ylim(bottom=0.)
-
-        if title_str is not None:
-            plt.title(title_str)
-
-        plt.grid()
-        plt.tight_layout()
-        plt.savefig(
-            os.path.join(cluster_ratio_plot_dir, 'plot_ratio_inferred_to_total_true_clusters_vs_num_obs_by_alg.png'),
-            bbox_inches='tight',
-            dpi=300)
-        # plt.show()
-        plt.close()
+    plt.grid()
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(plot_dir, 'num_inferred_clusters_div_total_num_true_clusters_by_obs_idx.png'),
+        bbox_inches='tight',
+        dpi=300)
+    # plt.show()
+    plt.close()
 
 
-def plot_ratio_observed_true_to_total_true_clusters_vs_num_obs_by_alg(sweep_results_df: pd.DataFrame,
-                                                                 plot_dir: str,
-                                                                 title_str: str = None):
+def plot_num_true_clusters_div_total_num_true_clusters_by_obs_idx(ratio_df: pd.DataFrame,
+                                                                  plot_dir: str,
+                                                                  title_str: str = None):
     """
-    Plot the ratio (number of observed true clusters so far) / (total number of true clusters)
+    Plot the ratio of (number of true clusters so far) / (number of total true clusters)
         versus the number of observations, averaged over multiple datasets.
     """
-    # Load data generically
-    observed_true_to_total_true_data_paths_array = np.load(plot_dir + '/observed_true_to_total_true_data_paths_array.npy')
 
-    # Retrieve and plot stored dataframe of cluster ratios for each setting of
-    # (alpha, likelihood_cov_prefactor, centroids_prior_cov_prefactor, inference_alg_str)
-    for file_path in observed_true_to_total_true_data_paths_array:
+    g = sns.lineplot(data=ratio_df,
+                     x='obs_idx',
+                     y='cluster_ratio',
+                     hue='n_features',
+                     ci='sd',
+                     legend='full')
+    # palette=algorithm_color_map)
 
-        concatenated_observed_to_total_true_df = pd.read_pickle(file_path)
-        cluster_ratio_plot_dir = file_path[:-48]  # Obtain path to save the plot
+    handles, labels = g.get_legend_handles_labels()
+    g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
+    g.get_legend().set_title('Data Dimension')
 
-        g = sns.lineplot(data=concatenated_observed_to_total_true_df,
-                         x='obs_idx',
-                         y='cluster_ratio',
-                         hue='data_dim',
-                         ci='sd',
-                         legend='full', )
-        # palette=algorithm_color_map)
+    plt.xlabel('Num. of Observations')
+    plt.ylabel('Num. True Clusters /\nTotal Num. True Clusters')
+    plt.ylim(bottom=0.)
 
-        handles, labels = g.get_legend_handles_labels()
-        g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
-        g.get_legend().set_title('Data Dimension')
+    if title_str is not None:
+        plt.title(title_str)
 
-        plt.xlabel('Number of Observations')
-        plt.ylabel('Observed Num True Clusters /\nTotal Num True Clusters')
-        plt.ylim(bottom=0.)
-
-        if title_str is not None:
-            plt.title(title_str)
-
-        plt.grid()
-        plt.tight_layout()
-        plt.savefig(
-            os.path.join(cluster_ratio_plot_dir, 'plot_ratio_observed_true_to_total_true_clusters_vs_num_obs_by_alg.png'),
-            bbox_inches='tight',
-            dpi=300)
-        # plt.show()
-        plt.close()
+    plt.grid()
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(plot_dir, 'num_true_clusters_div_total_num_true_clusters_by_obs_idx.png'),
+        bbox_inches='tight',
+        dpi=300)
+    # plt.show()
+    plt.close()
 
 
 def plot_runtime_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
