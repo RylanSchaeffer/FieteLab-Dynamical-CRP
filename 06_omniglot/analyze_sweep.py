@@ -4,7 +4,7 @@ import os
 import pandas as pd
 
 import rncrp.data.real_nontabular
-from rncrp.helpers.analyze import download_wandb_project_runs_results, generate_and_save_data_for_cluster_ratio_plotting
+from rncrp.helpers.analyze import download_wandb_project_runs_results, generate_and_save_cluster_ratio_data
 import plot_omniglot
 
 exp_dir = '06_omniglot'
@@ -29,8 +29,8 @@ else:
 print(f"Number of runs: {sweep_results_df.shape[0]} for sweep={sweep_name}")
 
 # Generate data for cluster ratio plots
-generate_and_save_data_for_cluster_ratio_plotting(all_inf_algs_results_df=sweep_results_df,
-                                                  plot_dir=sweep_dir)
+generate_and_save_cluster_ratio_data(all_inf_algs_results_df=sweep_results_df,
+                                     plot_dir=sweep_dir)
 
 # Plot W&B data
 plot_omniglot.plot_analyze_all_inf_algs_results(
