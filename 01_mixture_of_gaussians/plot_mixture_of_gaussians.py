@@ -62,6 +62,10 @@ def plot_analyze_all_inf_algs_results(
                 ratio_df=ratio_df,
                 plot_dir=sweep_dynamics_str_dir)
 
+            plt.close('all')
+
+            print(f'Plotted {ratio_plot_fn}')
+
         plot_fns = [
             rncrp.plot.plot_general.plot_num_clusters_by_alpha_colored_by_alg,
             rncrp.plot.plot_general.plot_runtime_by_alpha_colored_by_alg,
