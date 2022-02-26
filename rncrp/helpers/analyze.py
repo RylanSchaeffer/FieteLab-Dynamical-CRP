@@ -52,24 +52,21 @@ def download_wandb_project_runs_results(wandb_project_path: str,
     return sweep_results_df
 
 
-def generate_and_save_data_for_cluster_ratio_plotting(all_inf_algs_results_df: pd.DataFrame,
-                                                      exp_dir_path: str):
-    sweep_id = all_inf_algs_results_df.loc[0, 'Sweep']
-    sweep_results_dir = os.path.join(exp_dir_path, sweep_id)
-    os.makedirs(sweep_results_dir, exist_ok=True)
+def generate_and_save_cluster_ratio_data(all_inf_algs_results_df: pd.DataFrame,
+                                         sweep_results_dir_path: str):
 
     num_inferred_clusters_div_num_true_clusters_by_obs_idx = dict()
     num_inferred_clusters_div_total_num_true_clusters_by_obs_idx = dict()
     num_true_clusters_div_total_num_true_clusters_by_obs_idx = dict()
 
     num_inferred_clusters_div_num_true_clusters_by_obs_idx_df_path = os.path.join(
-        sweep_results_dir,
+        sweep_results_dir_path,
         'num_inferred_clusters_div_num_true_clusters_by_obs_idx.csv')
     num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df_path = os.path.join(
-        sweep_results_dir,
+        sweep_results_dir_path,
         'num_inferred_clusters_div_total_num_true_clusters_by_obs_idx.csv')
     num_true_clusters_div_total_num_true_clusters_by_obs_idx_df_path = os.path.join(
-        sweep_results_dir,
+        sweep_results_dir_path,
         'num_true_clusters_div_total_num_true_clusters_by_obs_idx.csv')
 
     if not os.path.isfile(num_inferred_clusters_div_num_true_clusters_by_obs_idx_df_path) \
@@ -81,8 +78,7 @@ def generate_and_save_data_for_cluster_ratio_plotting(all_inf_algs_results_df: p
         for inf_alg_results_joblib_path in all_inf_algs_results_df['inf_alg_results_path']:
 
             try:
-                joblib_file = joblib.load(os.path.join(exp_dir_path,
-                                                       inf_alg_results_joblib_path))
+                joblib_file = joblib.load(inf_alg_results_joblib_path)
             except TypeError:
                 # Sometimes, the W&B path is NaN; don't know why. This throws a
                 # TypeError: join() argument must be str or bytes, not 'float'
@@ -106,6 +102,7 @@ def generate_and_save_data_for_cluster_ratio_plotting(all_inf_algs_results_df: p
                 for i in range(len(true_cluster_assignments))])
 
             num_total_true_clusters = np.max(true_cluster_assignments)
+            num_obs = true_cluster_assignments.shape[0]
 
             # Copy to ensure that Python can garbage-collect the joblib file pointers
             num_inferred_clusters_div_num_true_clusters_by_obs_idx[inf_alg_results_joblib_path] = \
@@ -119,15 +116,18 @@ def generate_and_save_data_for_cluster_ratio_plotting(all_inf_algs_results_df: p
         # We want to transpose, then change the index to a column.
         # The resulting dataframes have column 1 with name inf_alg_results_path and the
         # remaining column names 0, 1, 2, ...
-        num_inferred_clusters_div_num_true_clusters_by_obs_idx_df = pd.DataFrame.from_dict(
-            num_inferred_clusters_div_num_true_clusters_by_obs_idx).T.rename_axis(
-            'inf_alg_results_path').reset_index()
-        num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df = pd.DataFrame.from_dict(
-            num_inferred_clusters_div_total_num_true_clusters_by_obs_idx).T.rename_axis(
-            'inf_alg_results_path').reset_index()
-        num_true_clusters_div_total_num_true_clusters_by_obs_idx_df = pd.DataFrame.from_dict(
-            num_true_clusters_div_total_num_true_clusters_by_obs_idx).T.rename_axis(
-            'inf_alg_results_path').reset_index()
+        num_inferred_clusters_div_num_true_clusters_by_obs_idx_df = pd.DataFrame.from_records(
+                num_inferred_clusters_div_num_true_clusters_by_obs_idx,
+                index=1 + np.arange(num_obs),
+            ).T.rename_axis('inf_alg_results_path').reset_index()
+        num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df = pd.DataFrame.from_records(
+                num_inferred_clusters_div_total_num_true_clusters_by_obs_idx,
+                index=1 + np.arange(num_obs),
+            ).T.rename_axis('inf_alg_results_path').reset_index()
+        num_true_clusters_div_total_num_true_clusters_by_obs_idx_df = pd.DataFrame.from_records(
+                num_true_clusters_div_total_num_true_clusters_by_obs_idx,
+                index=1 + np.arange(num_obs)
+            ).T.rename_axis('inf_alg_results_path').reset_index()
 
         # Save dataframes
         num_inferred_clusters_div_num_true_clusters_by_obs_idx_df.to_csv(
