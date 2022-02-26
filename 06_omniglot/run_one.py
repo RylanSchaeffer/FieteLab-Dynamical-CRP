@@ -12,8 +12,8 @@ import numpy as np
 import os
 import wandb
 
-
 import rncrp.data.real_nontabular
+import rncrp.data.synthetic
 import rncrp.helpers.dynamics
 import rncrp.helpers.run
 import rncrp.metrics
@@ -24,7 +24,7 @@ config_defaults = {
     'dynamics_omega': 1.,
     'alpha': 1.1,
     'beta': 0.,
-    'n_samples': 10,
+    'n_samples': 500,
     'repeat_idx': 0,
 }
 
@@ -48,18 +48,25 @@ wandb.log({'inf_alg_results_path': inf_alg_results_path},
 # set seeds
 rncrp.helpers.run.set_seed(seed=config['repeat_idx'])
 
-omniglot_data = rncrp.data.real_nontabular.load_dataset_omniglot(
-    data_dir='data',
-    num_data=config['n_samples'],
-    feature_extractor_method='vae',
-    shuffle=False)
+omniglot_data = rncrp.data.real_nontabular.load_dataset_omniglot_vae(
+    data_dir='data')
 
-observations = omniglot_data['images']
-
-true_cluster_assignments = omniglot_data['labels']
+# Sample cluster IDs to use for slicing
+monte_carlo_rncrp_results = rncrp.data.synthetic.sample_dcrp(
+    num_mc_samples=1,
+    num_customer=config['n_samples'],
+    alpha=config['alpha'],
+    beta=0.,
+    dynamics_str='sinusoid',
+    dynamics_params={'omega': config['dynamics_omega']}
+)
+true_cluster_assignments = monte_carlo_rncrp_results[
+    'customer_assignments_by_customer'][0]
 
 # Log number of true clusters
 wandb.log({'n_clusters': len(np.unique(true_cluster_assignments))}, step=0)
+
+observations = omniglot_data['images']
 
 
 # Construct observation times

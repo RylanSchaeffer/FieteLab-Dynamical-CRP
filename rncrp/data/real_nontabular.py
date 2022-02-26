@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms
-from typing import Dict, List, TupleUnion
+from typing import Dict, List, Tuple, Union
 
 
 class SwavImageNet2011Dataset(Dataset):
@@ -57,7 +57,6 @@ def load_dataloader_swav_imagenet_2021(data_dir: str = 'data',
                                        include_images: bool = False,
                                        n_samples: int = None,
                                        dataloader_kwargs: Dict = None):
-
     dataset_dir = os.path.join(data_dir, 'swav_imagenet_2021')
 
     dataset = SwavImageNet2011Dataset(
@@ -90,38 +89,12 @@ def load_dataset_omniglot(data_dir: str = 'data',
                           center_crop: bool = True,
                           avg_pool: bool = False,
                           feature_extractor_method: str = 'pca',
-                          shuffle=True,
-                          vary_clusters_with_time=False):
+                          shuffle=True):
     """
 
     """
 
     assert feature_extractor_method in {'pca', 'cnn', 'vae', 'vae_old', None}
-
-    if feature_extractor_method == 'vae':
-        vae_data = np.load(os.path.join(data_dir,
-                                        'omniglot_vae/omniglot_data.npz'))
-        labels = vae_data['targets']
-        # indices_to_sort_labels = np.argsort(labels)
-        indices_to_sort_labels = np.random.choice(
-            np.arange(len(labels)),
-            size=num_data,
-            replace=False)
-        # make sure labels are sorted so we get multiple instances of the same class
-        labels = labels[indices_to_sort_labels][:num_data]
-        images = vae_data['images'][indices_to_sort_labels][:num_data, :, :]
-        image_features = vae_data['latents'][indices_to_sort_labels][:num_data, :]
-        feature_extractor = None
-
-        omniglot_dataset_results = dict(
-            images=images,
-            labels=labels,
-            feature_extractor_method=feature_extractor_method,
-            feature_extractor=feature_extractor,
-            image_features=image_features,
-        )
-
-        return omniglot_dataset_results
 
     # https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
     transforms = [torchvision.transforms.ToTensor()]
@@ -219,21 +192,6 @@ def load_dataset_omniglot(data_dir: str = 'data',
         labels = labels[random_indices]
         image_features = image_features[random_indices]
 
-    # Enforce time-varying clusters
-    if vary_clusters_with_time:
-        # Randomly select 5 alphabets
-        alphabets = omniglot_dataset._alphabets.copy()
-        omniglot_dataset._alphabets = random.sample(alphabets, 5)  # randomly sample 5 alphabets
-
-        # Sample observations from the 5 alphabets, in sequential order
-        omniglot_dataset._characters: List[str] = sum(
-            ([os.path.join(a, c) for c in os.list_dir(join(omniglot_dataset.target_folder, a))] for a in omniglot_dataset._alphabets),
-            [])
-        omniglot_dataset._character_images = [
-            [(image, idx) for image in list_files(join(omniglot_dataset.target_folder, character), ".png")]
-            for idx, character in enumerate(omniglot_dataset._characters)]
-        omniglot_dataset._flat_character_images: List[Tuple[str, int]] = sum(omniglot_dataset._character_images, [])
-
     omniglot_dataset_results = dict(
         images=images,
         labels=labels,
@@ -245,12 +203,55 @@ def load_dataset_omniglot(data_dir: str = 'data',
     return omniglot_dataset_results
 
 
+def load_dataset_omniglot_vae(data_dir: str = 'data',
+                              num_data: int = None,
+                              feature_extractor_method: str = 'pca'):
+    """
+    Load Omniglot VAE embeddings from VAE with single Gaussian latent.
+    """
+
+    # The file `omniglot_data.npz` contains Gaussian latent vectors from
+    # a VAE with a single Gaussian prior, generated using
+    # https://github.com/jmtomczak/vae_vampprior.
+    vae_data = np.load(os.path.join(data_dir, 'omniglot_vae/omniglot_data.npz'))
+
+    # transforms = [torchvision.transforms.ToTensor()]
+    # omniglot_dataset = torchvision.datasets.Omniglot(
+    #     root=data_dir,
+    #     download=True,
+    #     transform=torchvision.transforms.Compose(transforms))
+
+    # make sure labels are sorted before slicing so we get multiple instances of the same class
+    total_num_data = len(vae_data['targets'])
+    indices_to_sort_labels = np.random.choice(
+        np.arange(total_num_data),
+        size=total_num_data,
+        replace=False)
+    labels = vae_data['targets'][indices_to_sort_labels]
+    images = vae_data['images'][indices_to_sort_labels]
+    image_features = vae_data['latents'][indices_to_sort_labels]
+
+    if num_data is not None:
+        labels = labels[:num_data]
+        images = images[:num_data, :, :]
+        image_features = image_features[:num_data, :]
+
+    omniglot_dataset_results = dict(
+        images=images,
+        labels=labels,
+        feature_extractor_method=feature_extractor_method,
+        image_features=image_features,
+    )
+
+    return omniglot_dataset_results
+
+
+
 def load_dataset_yilun_nav_2d_2022(data_dir: str = 'data',
                                    narrow_hallways: bool = False,
                                    finite_vision: bool = False,
                                    **kwargs,
                                    ) -> Dict[str, Union[np.ndarray, pd.DataFrame]]:
-
     dataset_dir = os.path.join(data_dir, 'yilun_nav_2d_2022')
     if narrow_hallways:
         if finite_vision:
