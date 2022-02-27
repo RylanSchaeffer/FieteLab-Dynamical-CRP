@@ -96,7 +96,13 @@ def generate_and_save_cluster_ratio_data(all_inf_algs_results_df: pd.DataFrame,
                 for i in range(len(inferred_cluster_assignments))])
 
             # Obtain numbers of observed and total true clusters
-            true_cluster_assignments = joblib_file['mixture_model_results']['cluster_assignments']
+            if 'true_cluster_assignments' in joblib_file:
+                true_cluster_assignments = joblib_file['true_cluster_assignments']
+            elif 'mixture_model_results' in joblib_file:
+                true_cluster_assignments = joblib_file['mixture_model_results']['cluster_assignments']
+            else:
+                raise NotImplementedError
+
             num_true_clusters_by_obs_idx = np.array([
                 len(np.unique(true_cluster_assignments[:i + 1]))
                 for i in range(len(true_cluster_assignments))])
