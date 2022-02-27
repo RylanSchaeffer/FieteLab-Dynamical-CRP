@@ -12,7 +12,9 @@ wandb_sweep_path = "rylan/dcrp-mixture-of-vonmises-fisher"
 sweep_name = 'neihn6sz'
 sweep_results_dir_path = os.path.join(results_dir, sweep_name)
 os.makedirs(sweep_results_dir_path, exist_ok=True)
-sweep_results_df_path = os.path.join(sweep_results_dir_path, f'sweep={sweep_name}_results.csv')
+sweep_results_df_path = os.path.join(
+    sweep_results_dir_path,
+    f'sweep={sweep_name}_results.csv')
 
 if not os.path.isfile(sweep_results_df_path):
 

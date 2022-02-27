@@ -23,7 +23,7 @@ parameters:
   n_samples:
     values: [1000]
   n_features:
-    values: [5, 10, 15]
+    values: [3, 6, 9, 12, 15]
   centroids_prior_cov_prefactor:
     values: [5., 10., 50.]
   likelihood_cov_prefactor:
