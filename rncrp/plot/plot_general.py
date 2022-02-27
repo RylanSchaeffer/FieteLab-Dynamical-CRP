@@ -157,13 +157,16 @@ def plot_num_inferred_clusters_div_num_true_clusters_by_obs_idx(ratio_df: pd.Dat
                      legend='full')
     # palette=algorithm_color_map)
 
-    handles, labels = g.get_legend_handles_labels()
-    g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
+    # Rylan 2022/02/26: I don't these two lines actually remove quantity from legend title.
+    # handles, labels = g.get_legend_handles_labels()
+    # g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
+
     g.get_legend().set_title('Data Dimension')
 
     plt.xlabel('Num. of Observations')
     plt.ylabel('Num. Inferred Clusters /\nNum. True Clusters Seen')
-    plt.ylim(bottom=0.)
+    # plt.ylim(bottom=0.)
+    plt.yscale('log')
 
     if title_str is not None:
         plt.title(title_str)
@@ -195,13 +198,15 @@ def plot_num_inferred_clusters_div_total_num_true_clusters_by_obs_idx(ratio_df: 
                      legend='full')
     # palette=algorithm_color_map)
 
-    handles, labels = g.get_legend_handles_labels()
-    g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
+    # Rylan 2022/02/26: I don't these two lines actually remove quantity from legend title.
+    # handles, labels = g.get_legend_handles_labels()
+    # g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
     g.get_legend().set_title('Data Dimension')
 
     plt.xlabel('Num. of Observations')
     plt.ylabel('Num. Inferred Clusters /\nTotal Num. True Clusters')
-    plt.ylim(bottom=0.)
+    # plt.ylim(bottom=0.)
+    plt.yscale('log')
 
     if title_str is not None:
         plt.title(title_str)
@@ -232,8 +237,10 @@ def plot_num_true_clusters_div_total_num_true_clusters_by_obs_idx(ratio_df: pd.D
                      legend='full')
     # palette=algorithm_color_map)
 
-    handles, labels = g.get_legend_handles_labels()
-    g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
+    # Rylan 2022/02/26: I don't these two lines actually remove quantity from legend title.
+    # handles, labels = g.get_legend_handles_labels()
+    # g.legend(handles=handles[1:], labels=labels[1:])  # Remove "quantity" from legend title
+
     g.get_legend().set_title('Data Dimension')
 
     plt.xlabel('Num. of Observations')
