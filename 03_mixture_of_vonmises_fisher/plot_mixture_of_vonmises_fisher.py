@@ -58,6 +58,9 @@ def plot_analyze_all_inf_algs_results(
                                var_name='obs_idx',
                                value_name='cluster_ratio')
 
+            # Make sure that observation index is recognized as an integer
+            ratio_df['obs_idx'] = pd.to_numeric(ratio_df['obs_idx'])
+
             ratio_plot_fn(
                 ratio_df=ratio_df,
                 plot_dir=sweep_dynamics_str_dir)
