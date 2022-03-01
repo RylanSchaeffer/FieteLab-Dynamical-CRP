@@ -11,7 +11,8 @@ import wandb
 import tensorflow as tf
 from typing import Union
 
-from rncrp.inference import DPMeans, DynamicalCRP, KMeansWrapper, VariationalInferenceGMM
+from rncrp.inference import DPMeans, DynamicalCRP, KMeansWrapper, RecursiveCRP,\
+    VariationalInferenceGMM
 
 
 def create_logger(run_dir):
@@ -37,10 +38,27 @@ def run_inference_alg(inference_alg_str: str,
                       gen_model_params: Dict[str, Dict[str, float]],
                       inference_alg_kwargs: Dict = None):
 
-    if inference_alg_str == 'Dynamical-CRP':
+    if inference_alg_str.startswith('Dynamical-CRP'):
         if inference_alg_kwargs is None:
             inference_alg_kwargs = dict()
+
+        # TODO: Refactor model names to not contain parameters, you nit wit
+        if inference_alg_str.endswith('(Cutoff=1e-2)'):
+            inference_alg_kwargs['cutoff'] = 1e-2
+        elif inference_alg_str.endswith('(Cutoff=1e-3)'):
+            inference_alg_kwargs['cutoff'] = 1e-3
+        elif inference_alg_str.endswith('(Cutoff=1e-4)'):
+            inference_alg_kwargs['cutoff'] = 1e-4
+
         inference_alg = DynamicalCRP(
+            gen_model_params=gen_model_params,
+            **inference_alg_kwargs)
+
+    elif inference_alg_str == 'Recursive-CRP':
+        if inference_alg_kwargs is None:
+            inference_alg_kwargs = dict()
+
+        inference_alg = RecursiveCRP(
             gen_model_params=gen_model_params,
             **inference_alg_kwargs)
 

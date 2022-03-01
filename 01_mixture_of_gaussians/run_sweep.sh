@@ -11,8 +11,8 @@
 # wandb sweep 01_mixture_of_gaussians/sweep_quick.yaml
 # wandb sweep 01_mixture_of_gaussians/sweep_complete.yaml
 
-for i in {1..10}
+for i in {1..12}
 do
-  sbatch 01_mixture_of_gaussians/run_one.sh 9kplnw7y
+  sbatch 01_mixture_of_gaussians/run_one.sh aliyc9mo
   sleep 5
 done

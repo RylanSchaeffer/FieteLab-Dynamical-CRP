@@ -129,6 +129,7 @@ def sample_mixture_model(num_obs: int = 100,
                          component_prior_str: str = 'gaussian',
                          component_prior_params: dict = None,
                          **kwargs):
+
     # Ensure we have parameters to sample cluster assignments.
     if mixing_distribution_params is None:
         if mixing_prior_str == 'rncrp':
@@ -206,6 +207,15 @@ def sample_mixture_model(num_obs: int = 100,
             np.random.multivariate_normal(mean=means[assigned_cluster],
                                           cov=covs[assigned_cluster])
             for assigned_cluster in cluster_assignments])
+
+        # import matplotlib.pyplot as plt
+        #
+        # # plt.close()
+        # plt.scatter(means[:, 0], means[:, 1], color='k', label='Centroids')
+        # plt.scatter(observations[:, 0], observations[:, 1],
+        #             c=cluster_assignments, marker='x')
+        # plt.legend()
+        # plt.show()
 
     elif component_prior_str == 'vonmises_fisher':
 

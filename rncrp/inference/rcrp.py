@@ -17,14 +17,14 @@ from rncrp.helpers.dynamics import convert_dynamics_str_to_dynamics_obj
 from rncrp.helpers.torch_helpers import assert_torch_no_nan_no_inf_is_real
 
 
-class DynamicalCRP(BaseModel):
+class RecursiveCRP(BaseModel):
     """
 
     """
 
     def __init__(self,
                  gen_model_params: Dict[str, Dict],
-                 model_str: str = 'Dynamical-CRP',
+                 model_str: str = 'Recursive-CRP',
                  plot_dir: str = None,
                  num_coord_ascent_steps_per_obs: int = 3,
                  numerically_optimize: bool = False,
@@ -183,7 +183,7 @@ class DynamicalCRP(BaseModel):
             if isinstance(torch_observation, dict):
                 torch_observation = torch_observation['observations'][0]  # Remove the batch index
 
-            # print('Observation: ', torch_observation.numpy())
+            print('Observation: ', torch_observation.numpy())
 
             if obs_idx == 0:
 
@@ -265,22 +265,14 @@ class DynamicalCRP(BaseModel):
                                 cluster_assignment_prior=cluster_assignment_prior,
                                 variational_params=variational_params,
                                 likelihood_params=self.gen_model_params['likelihood_params'])
-                            # time_2 = time.time()
-
-                            # Renormalize
-                            if self.cutoff > 0:
-                                indices_to_zero = variational_params['assignments']['probs'][obs_idx, :] < self.cutoff
-                                variational_params['assignments']['probs'][obs_idx, indices_to_zero] = 0.
-                                variational_params['assignments']['probs'][obs_idx, :] /= \
-                                    torch.sum(variational_params['assignments']['probs'][obs_idx, :])
-
+                            time_2 = time.time()
                             optimize_cluster_params_fn(
                                 torch_observation=torch_observation,
                                 obs_idx=obs_idx,
                                 vi_idx=vi_idx,
                                 variational_params=variational_params,
                                 likelihood_params=self.gen_model_params['likelihood_params'])
-                            # time_3 = time.time()
+                            time_3 = time.time()
                             # print(f'Time2 - Time1: {time_2 - time_1}')
                             # print(f'Time3 - Time2: {time_3 - time_2}')
 

@@ -1,10 +1,10 @@
+import numpy as np
 import os
 import pandas as pd
 
 import plot_mixture_of_gaussians
 from rncrp.helpers.analyze import download_wandb_project_runs_results, \
     generate_and_save_cluster_ratio_data
-
 
 exp_dir_path = '01_mixture_of_gaussians'
 results_dir = os.path.join(exp_dir_path, 'results')
@@ -22,8 +22,9 @@ if not os.path.isfile(sweep_results_df_path):
         sweep_id=sweep_name)
 
     # Compute SNR := rho / sigma
-    sweep_results_df['snr'] = sweep_results_df['centroids_prior_cov_prefactor'] \
-                              / sweep_results_df['likelihood_cov_prefactor']
+    sweep_results_df['snr'] = np.sqrt(
+        sweep_results_df['centroids_prior_cov_prefactor'] \
+        / sweep_results_df['likelihood_cov_prefactor'])
 
     sweep_results_df.to_csv(sweep_results_df_path, index=False)
 
@@ -60,7 +61,6 @@ num_true_clusters_div_total_num_true_clusters_by_obs_idx_df = pd.merge(
     right=cluster_ratio_dfs_results['num_true_clusters_div_total_num_true_clusters_by_obs_idx_df'],
     how='inner',
     on='inf_alg_results_path')
-
 
 # Generate all plots
 plot_mixture_of_gaussians.plot_analyze_all_inf_algs_results(

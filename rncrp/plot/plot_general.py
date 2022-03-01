@@ -186,7 +186,7 @@ def plot_cluster_coassignments_inferred_vs_true(cluster_assignment_posteriors: n
                              f'cluster_coassignments_inferred_vs_true.png'),
                 bbox_inches='tight',
                 dpi=300)
-    plt.show()
+    # plt.show()
     plt.close()
 
 

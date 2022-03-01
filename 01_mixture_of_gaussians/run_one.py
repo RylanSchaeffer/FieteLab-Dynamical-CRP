@@ -23,7 +23,8 @@ import rncrp.plot.plot_general
 
 config_defaults = {
     # 'inference_alg_str': 'DP-Means (Offline)',
-    'inference_alg_str': 'Dynamical-CRP',
+    # 'inference_alg_str': 'Dynamical-CRP',
+    'inference_alg_str': 'Dynamical-CRP (Cutoff=1e-3)',
     # 'inference_alg_str': 'K-Means (Online)',
     # 'inference_alg_str': 'VI-GMM',
     'dynamics_str': 'step',
@@ -31,13 +32,13 @@ config_defaults = {
     'dynamics_b': 1.,
     'dynamics_c': 1.,
     'dynamics_omega': np.pi / 2.,
-    'n_samples': 20,
+    'n_samples': 100,
     'n_features': 2,
     # 'alpha': 1.1,
-    # 'alpha': 4.5,
-    'alpha': 5.7,
+    'alpha': 4.5,
+    # 'alpha': 5.7,
     'beta': 0.,
-    'centroids_prior_cov_prefactor': 50.,
+    'centroids_prior_cov_prefactor': 250.,
     'likelihood_cov_prefactor': 5.,
     'repeat_idx': 0,
 }
