@@ -31,10 +31,10 @@ config_defaults = {
     'dynamics_b': 1.,
     'dynamics_c': 1.,
     'dynamics_omega': np.pi / 2.,
-    'n_samples': 100,
+    'n_samples': 20,
     'n_features': 2,
     # 'alpha': 1.1,
-    # 'alpha': 2.5,
+    # 'alpha': 4.5,
     'alpha': 5.7,
     'beta': 0.,
     'centroids_prior_cov_prefactor': 50.,
@@ -138,13 +138,13 @@ inf_alg_plot_dir = os.path.join(
 os.makedirs(inf_alg_plot_dir, exist_ok=True)
 
 rncrp.plot.plot_general.plot_cluster_assignments_inferred_vs_true(
-    true_cluster_assignments=mixture_model_results['cluster_assignments_one_hot'],
+    true_cluster_assignments_one_hot=mixture_model_results['cluster_assignments_one_hot'],
     cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
     plot_dir=inf_alg_plot_dir,
 )
 
 rncrp.plot.plot_general.plot_cluster_coassignments_inferred_vs_true(
-    true_cluster_assignments=mixture_model_results['cluster_assignments_one_hot'],
+    true_cluster_assignments=mixture_model_results['cluster_assignments'],
     cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
     plot_dir=inf_alg_plot_dir,
 )
