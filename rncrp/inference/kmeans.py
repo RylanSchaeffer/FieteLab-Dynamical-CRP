@@ -1,16 +1,13 @@
 import numpy as np
-import sklearn.mixture
+from sklearn.cluster import KMeans
 from typing import Dict
 
 from rncrp.inference.base import BaseModel
 
 
-class VariationalInferenceGMM(BaseModel):
+class KMeansWrapper(BaseModel):
     """
-    Variational Inference for Dirichlet Process Gaussian Mixture Model, as
-    proposed by Blei and Jordan (2006).
-
-    Wrapper around scikit-learn's implementation.
+    KMeans. Wrapper around scikit-learn's implementation.
     """
 
     def __init__(self,
@@ -38,14 +35,11 @@ class VariationalInferenceGMM(BaseModel):
             observations_times: np.ndarray):
 
         num_obs, obs_dim = observations.shape
-        var_dp_gmm = sklearn.mixture.BayesianGaussianMixture(
-            n_components=num_obs,
+        var_dp_gmm = KMeans(
+            n_clusters=num_obs,
             max_iter=self.max_iter,
             n_init=self.num_initializations,
-            covariance_type='spherical',
-            init_params='random',
-            weight_concentration_prior_type='dirichlet_process',
-            weight_concentration_prior=self.mixing_params['alpha'])
+            init='random')
         var_dp_gmm.fit(observations)
         cluster_assignment_posteriors = var_dp_gmm.predict_proba(observations)
         cluster_assignment_posteriors_running_sum = np.cumsum(

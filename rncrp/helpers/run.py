@@ -2,7 +2,6 @@ import logging
 import numpy as np
 import os
 import pandas as pd
-from sklearn.cluster import KMeans
 import sys
 import torch
 from torch.utils.data import DataLoader
@@ -12,7 +11,7 @@ import wandb
 import tensorflow as tf
 from typing import Union
 
-from rncrp.inference import DPMeans, DynamicalCRP, VariationalInferenceGMM
+from rncrp.inference import DPMeans, DynamicalCRP, KMeansWrapper, VariationalInferenceGMM
 
 
 def create_logger(run_dir):
@@ -48,8 +47,9 @@ def run_inference_alg(inference_alg_str: str,
     elif inference_alg_str.startswith('DP-Means'):
         if inference_alg_kwargs is None:
             inference_alg_kwargs = dict()
+
         if inference_alg_str.endswith('(Offline)'):
-            inference_alg_kwargs['max_iter'] = 8  # Matching by Kulis and Jordan.
+            inference_alg_kwargs['max_iter'] = 8  # Matching Kulis and Jordan.
         elif inference_alg_str.endswith('(Online)'):
             inference_alg_kwargs['max_iter'] = 1
         else:
@@ -60,6 +60,27 @@ def run_inference_alg(inference_alg_str: str,
             gen_model_params['mixing_params']['lambda'] = 20. / gen_model_params['mixing_params']['alpha']
 
         inference_alg = DPMeans(
+            gen_model_params=gen_model_params,
+            **inference_alg_kwargs)
+
+    elif inference_alg_str.startswith('KMeans'):
+
+        if inference_alg_kwargs is None:
+            inference_alg_kwargs = dict()
+
+        if inference_alg_str.endswith('(Offline)'):
+            inference_alg_kwargs['max_iter'] = 8  # Matching DP Means
+        elif inference_alg_str.endswith('(Online)'):
+            inference_alg_kwargs['max_iter'] = 1
+            inference_alg_kwargs['num_initializations'] = 1
+        else:
+            raise ValueError('Invalid KMeans Means')
+
+        if 'lambda' not in gen_model_params['mixing_params']:
+            # 20 is arbitrary. Just want a reasonable range.
+            gen_model_params['mixing_params']['lambda'] = 20. / gen_model_params['mixing_params']['alpha']
+
+        inference_alg = KMeansWrapper(
             gen_model_params=gen_model_params,
             **inference_alg_kwargs)
 
@@ -91,6 +112,31 @@ def run_inference_alg(inference_alg_str: str,
     inference_alg_results['inference_alg'] = inference_alg
 
     return inference_alg_results
+
+
+def select_indices_given_desired_cluster_assignments_and_labels(
+        desired_cluster_assignments: np.ndarray,
+        labels: np.ndarray) -> np.ndarray:
+
+    """
+    If we're given the sequence of desired cluster assignments e.g. 0, 1, 0, 0, 1, 2...
+    And the true label per class e.g. 0,...,0,1,...,1,2,....,2 etc.
+
+    desired_cluster_assignments: Shape (num desired data,)
+    labels: Shape: (total num observations,)
+    """
+
+    # First, find out how many unique classes are requested and how many data from each.
+    cluster_ids, n_data_per_cluster_id = np.unique(
+        desired_cluster_assignments,
+        return_counts=True)
+    num_clusters = len(cluster_ids)
+
+    labels_df = pd.DataFrame({'labels': labels})
+
+    indices = np.full_like(desired_cluster_assignments, fill_value=-1)
+    for desired_cluster_assignment in desired_cluster_assignments:
+        print(10)
 
 
 def set_seed(seed: int):
