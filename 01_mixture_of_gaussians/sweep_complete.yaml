@@ -7,10 +7,12 @@ metric:
 parameters:
   inference_alg_str:
     values: [
-        'VI-GMM',
         'DP-Means (Offline)',
         'DP-Means (Online)',
         'Dynamical-CRP',
+        'K-Means (Offline)',
+        'K-Means (Online)',
+        'VI-GMM',
     ]
   dynamics_str:
     values: [

@@ -63,7 +63,7 @@ def run_inference_alg(inference_alg_str: str,
             gen_model_params=gen_model_params,
             **inference_alg_kwargs)
 
-    elif inference_alg_str.startswith('KMeans'):
+    elif inference_alg_str.startswith('K-Means'):
 
         if inference_alg_kwargs is None:
             inference_alg_kwargs = dict()
@@ -76,12 +76,7 @@ def run_inference_alg(inference_alg_str: str,
         else:
             raise ValueError('Invalid KMeans Means')
 
-        if 'lambda' not in gen_model_params['mixing_params']:
-            # 20 is arbitrary. Just want a reasonable range.
-            gen_model_params['mixing_params']['lambda'] = 20. / gen_model_params['mixing_params']['alpha']
-
         inference_alg = KMeansWrapper(
-            gen_model_params=gen_model_params,
             **inference_alg_kwargs)
 
     elif inference_alg_str == 'VI-GMM':

@@ -21,9 +21,10 @@ import rncrp.helpers.run
 import rncrp.metrics
 
 config_defaults = {
-    # 'inference_alg_str': 'VI-GMM',
     # 'inference_alg_str': 'DP-Means (Offline)',
-    'inference_alg_str': 'Dynamical-CRP',
+    # 'inference_alg_str': 'Dynamical-CRP',
+    'inference_alg_str': 'K-Means (Online)',
+    # 'inference_alg_str': 'VI-GMM',
     'dynamics_str': 'exp',
     'dynamics_a': 1.,
     'dynamics_b': 1.,
@@ -69,8 +70,9 @@ mixture_model_results = rncrp.data.synthetic.sample_mixture_model(
     component_prior_params={'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor'],
                             'likelihood_cov_prefactor': config['likelihood_cov_prefactor']})
 
+n_clusters = len(np.unique(mixture_model_results['cluster_assignments']))
 wandb.log(
-    {'n_clusters': len(np.unique(mixture_model_results['cluster_assignments']))},
+    {'n_clusters': n_clusters},
     step=0)
 
 gen_model_params = {
@@ -89,17 +91,23 @@ gen_model_params = {
     }
 }
 
+# K-Means gets access to ground-truth number of clusters
+inference_alg_kwargs = dict()
+if config['inference_alg_str'].startswith('K-Means'):
+    inference_alg_kwargs['n_clusters'] = n_clusters
+
+
 inference_alg_results = rncrp.helpers.run.run_inference_alg(
     inference_alg_str=config['inference_alg_str'],
     observations=mixture_model_results['observations'],
     observations_times=mixture_model_results['observations_times'],
     gen_model_params=gen_model_params,
+    inference_alg_kwargs=inference_alg_kwargs,
 )
 
 scores, map_cluster_assignments = rncrp.metrics.compute_predicted_clusters_scores(
     cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
-    true_cluster_assignments=mixture_model_results['cluster_assignments'],
-)
+    true_cluster_assignments=mixture_model_results['cluster_assignments'])
 inference_alg_results.update(scores)
 inference_alg_results['map_cluster_assignments'] = map_cluster_assignments
 wandb.log(scores, step=0)

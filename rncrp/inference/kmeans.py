@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.cluster import KMeans
+from sklearn.preprocessing import OneHotEncoder
 from typing import Dict
 
 from rncrp.inference.base import BaseModel
@@ -11,19 +12,15 @@ class KMeansWrapper(BaseModel):
     """
 
     def __init__(self,
-                 gen_model_params: Dict[str, Dict[str, float]],
+                 n_clusters: int,
                  model_str: str = 'VI-GMM',
                  plot_dir: str = None,
                  max_iter: int = 100,
                  num_initializations: int = 10,
                  **kwargs,
                  ):
-        self.gen_model_params = gen_model_params
-        self.mixing_params = gen_model_params['mixing_params']
-        assert self.mixing_params['alpha'] > 0.
-        assert self.mixing_params['beta'] == 0.
-        self.component_prior_params = gen_model_params['component_prior_params']
-        self.likelihood_params = gen_model_params['likelihood_params']
+
+        self.n_clusters = n_clusters
         self.max_iter = max_iter
         self.num_initializations = num_initializations
         self.model_str = model_str
@@ -34,19 +31,24 @@ class KMeansWrapper(BaseModel):
             observations: np.ndarray,
             observations_times: np.ndarray):
 
-        num_obs, obs_dim = observations.shape
-        var_dp_gmm = KMeans(
-            n_clusters=num_obs,
+        kmeans = KMeans(
+            n_clusters=self.n_clusters,
             max_iter=self.max_iter,
             n_init=self.num_initializations,
             init='random')
-        var_dp_gmm.fit(observations)
-        cluster_assignment_posteriors = var_dp_gmm.predict_proba(observations)
+        kmeans.fit(observations)
+        assigned_clusters = kmeans.predict(observations)
+        cluster_assignment_posteriors = OneHotEncoder(sparse=False).fit_transform(
+            assigned_clusters.reshape(-1, 1))
+
+        # Reorder to "Left Ordered Form".
+        shuffle_indices = np.lexsort(-cluster_assignment_posteriors[::-1])
+        cluster_assignment_posteriors = cluster_assignment_posteriors[:, shuffle_indices]
+
         cluster_assignment_posteriors_running_sum = np.cumsum(
             cluster_assignment_posteriors,
             axis=0)
-        params = dict(means=var_dp_gmm.means_,
-                      covs=var_dp_gmm.covariances_)
+        params = dict(means=kmeans.cluster_centers_[shuffle_indices, :])
 
         total_mass_per_cluster = np.sum(cluster_assignment_posteriors, axis=0)
         num_inferred_clusters = np.sum(total_mass_per_cluster >= 1.)
