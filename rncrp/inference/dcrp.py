@@ -283,7 +283,7 @@ class DynamicalCRP(BaseModel):
 
                 cluster_assignment_posterior = variational_params['assignments']['probs'][obs_idx, :].clone()
 
-                print(cluster_assignment_posterior.numpy()[:obs_idx + 1])
+                # print(cluster_assignment_posterior.numpy()[:obs_idx + 1])
                 # Step 4: Update posterior over number of clusters.
                 # Use new approach with time complexity O(t).
                 cum_table_assignment_posterior = torch.cumsum(
