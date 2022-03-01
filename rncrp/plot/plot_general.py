@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
+import scipy.spatial.distance
 import seaborn as sns
 from typing import Dict, List
 import joblib
@@ -38,6 +39,125 @@ def plot_cluster_multiclass_classification_score_by_alpha_by_alg(sweep_results_d
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir,
                              f'cluster_multiclass_classification_score_by_alpha_by_alg.png'),
+                bbox_inches='tight',
+                dpi=300)
+    # plt.show()
+    plt.close()
+
+
+def plot_cluster_assignments_inferred_vs_true(cluster_assignment_posteriors: np.ndarray,
+                                              true_cluster_assignments: np.ndarray,
+                                              plot_dir: str,
+                                              default_num_tables_to_plot: int = 100):
+    """
+    Plot true cluster assignments (Y = observation index, X = cluster assignment) (left)
+    and inferred cluster assignments (Y = observation index, X = cluster assignment) (right).
+    """
+
+    num_tables_to_plot = min([default_num_tables_to_plot,
+                              true_cluster_assignments.shape[1],
+                              cluster_assignment_posteriors.shape[1]])
+
+
+    fig, axes = plt.subplots(nrows=1,
+                             ncols=2,
+                             figsize=(8, 4))
+
+    ax_idx = 0
+    # plot prior table assignments
+    ax = axes[ax_idx]
+    true_cluster_assignments_subset = true_cluster_assignments[
+                                      :num_tables_to_plot, :num_tables_to_plot]
+    sns.heatmap(true_cluster_assignments[:num_tables_to_plot, :num_tables_to_plot],
+                ax=ax,
+                cmap='Blues',
+                # xticklabels=1 + np.arange(num_tables_to_plot),
+                mask=np.isnan(true_cluster_assignments_subset),
+                vmin=0.,
+                vmax=1.)
+    ax.set_title(r'True Clusters')
+    ax.set_ylabel('Observation Index')
+    ax.set_xlabel('Cluster Index')
+
+    # plot posterior table assignments
+    ax_idx += 1
+    ax = axes[ax_idx]
+    cluster_assignment_posteriors_subset = cluster_assignment_posteriors[
+                                           :num_tables_to_plot, :num_tables_to_plot]
+    sns.heatmap(cluster_assignment_posteriors_subset,
+                ax=ax,
+                cmap='Blues',
+                # xticklabels=1 + np.arange(num_tables_to_plot),
+                mask=np.isnan(cluster_assignment_posteriors_subset),
+                vmin=0.,
+                vmax=1.)
+    ax.set_title(r'Inferred Clusters')
+    ax.set_xlabel('Cluster Index')
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(plot_dir,
+                             f'cluster_assignments_inferred_vs_true.png'),
+                bbox_inches='tight',
+                dpi=300)
+    # plt.show()
+    plt.close()
+
+
+def plot_cluster_coassignments_inferred_vs_true(cluster_assignment_posteriors: np.ndarray,
+                                                true_cluster_assignments: np.ndarray,
+                                                plot_dir: str,
+                                                default_num_tables_to_plot: int = 100):
+    """
+
+    """
+
+    fig, axes = plt.subplots(nrows=1,
+                             ncols=2,
+                             figsize=(8, 4))
+
+    num_tables_to_plot = min([default_num_tables_to_plot,
+                              true_cluster_assignments.shape[1],
+                              cluster_assignment_posteriors.shape[1]])
+
+    ax_idx = 0
+    # plot prior table assignments
+    ax = axes[ax_idx]
+    true_cluster_assignments_subset = true_cluster_assignments[
+                                      :num_tables_to_plot, :num_tables_to_plot]
+    true_pairwise_distances = scipy.spatial.distance.cdist(
+        true_cluster_assignments_subset,
+        true_cluster_assignments_subset)
+    sns.heatmap(true_pairwise_distances,
+                ax=ax,
+                cmap='Blues',
+                mask=np.isnan(true_pairwise_distances),
+                vmin=0.,
+                vmax=1.)
+    ax.set_title(r'True Clusters')
+    ax.set_ylabel('Observation Index')
+    ax.set_xlabel('Cluster Index')
+
+    # plot posterior table assignments
+    ax_idx += 1
+    ax = axes[ax_idx]
+    cluster_assignment_posteriors_subset = cluster_assignment_posteriors[
+                                           :num_tables_to_plot, :num_tables_to_plot]
+    inferred_pairwise_distances = scipy.spatial.distance.cdist(
+        cluster_assignment_posteriors_subset,
+        cluster_assignment_posteriors_subset)
+    sns.heatmap(inferred_pairwise_distances,
+                ax=ax,
+                cmap='Blues',
+                # xticklabels=1 + np.arange(num_tables_to_plot),
+                mask=np.isnan(inferred_pairwise_distances),
+                vmin=0.,
+                vmax=1.)
+    ax.set_title(r'Inferred Clusters')
+    ax.set_xlabel('Cluster Index')
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(plot_dir,
+                             f'cluster_coassignments_inferred_vs_true.png'),
                 bbox_inches='tight',
                 dpi=300)
     # plt.show()

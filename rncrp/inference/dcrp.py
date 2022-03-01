@@ -213,14 +213,14 @@ class DynamicalCRP(BaseModel):
                 cluster_assignment_prior /= torch.sum(cluster_assignment_prior)
                 assert_torch_no_nan_no_inf_is_real(cluster_assignment_prior)
 
-                print(cluster_assignment_prior.numpy()[:obs_idx + 1])
+                # print(cluster_assignment_prior.numpy()[:obs_idx + 1])
 
                 # Step 1(iv): Sometimes, somehow, small negative numbers sneak in e.g. -2e-22
                 # Identify them, test whether they're close to 0. If they are, replace with 0.
                 # Otherwise, raise an assertion error.
                 negative_indices = cluster_assignment_prior < 0.
                 if torch.any(negative_indices):
-                    print(f'Smallest value: {torch.min(cluster_assignment_prior)}')
+                    # print(f'Smallest value: {torch.min(cluster_assignment_prior)}')
                     # If the values are sufficiently close to 0, replace with 0.
                     # if torch.all(torch.isclose(cluster_assignment_prior[negative_indices],
                     #                            torch.tensor(0.),

@@ -19,20 +19,23 @@ import rncrp.data.synthetic
 import rncrp.helpers.dynamics
 import rncrp.helpers.run
 import rncrp.metrics
+import rncrp.plot.plot_general
 
 config_defaults = {
     # 'inference_alg_str': 'DP-Means (Offline)',
-    # 'inference_alg_str': 'Dynamical-CRP',
-    'inference_alg_str': 'K-Means (Online)',
+    'inference_alg_str': 'Dynamical-CRP',
+    # 'inference_alg_str': 'K-Means (Online)',
     # 'inference_alg_str': 'VI-GMM',
-    'dynamics_str': 'exp',
+    'dynamics_str': 'step',
     'dynamics_a': 1.,
     'dynamics_b': 1.,
     'dynamics_c': 1.,
     'dynamics_omega': np.pi / 2.,
     'n_samples': 100,
     'n_features': 2,
-    'alpha': 1.1,
+    # 'alpha': 1.1,
+    # 'alpha': 2.5,
+    'alpha': 5.7,
     'beta': 0.,
     'centroids_prior_cov_prefactor': 50.,
     'likelihood_cov_prefactor': 5.,
@@ -51,8 +54,9 @@ for key, value in config.items():
 exp_dir = '01_mixture_of_gaussians'
 results_dir_path = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir_path, exist_ok=True)
-inf_alg_results_path = os.path.join(results_dir_path,
-                                    f'id={wandb.run.id}.joblib')
+inf_alg_results_path = os.path.join(
+    results_dir_path, f'id={wandb.run.id}.joblib')
+
 wandb.log({'inf_alg_results_path': inf_alg_results_path},
           step=0)
 
@@ -128,4 +132,21 @@ data_to_store = dict(
 joblib.dump(data_to_store,
             filename=inf_alg_results_path)
 
-print('Finished run.')
+
+inf_alg_plot_dir = os.path.join(
+    results_dir_path, f'id={wandb.run.id}')
+os.makedirs(inf_alg_plot_dir, exist_ok=True)
+
+rncrp.plot.plot_general.plot_cluster_assignments_inferred_vs_true(
+    true_cluster_assignments=mixture_model_results['cluster_assignments_one_hot'],
+    cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
+    plot_dir=inf_alg_plot_dir,
+)
+
+rncrp.plot.plot_general.plot_cluster_coassignments_inferred_vs_true(
+    true_cluster_assignments=mixture_model_results['cluster_assignments_one_hot'],
+    cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
+    plot_dir=inf_alg_plot_dir,
+)
+
+print(f'Finished 01_mixture_of_gaussians/run_one.py for sweep={wandb.run.id}.')
