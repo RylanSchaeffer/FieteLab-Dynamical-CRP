@@ -619,8 +619,14 @@ def convert_dynamics_str_to_dynamics_obj(dynamics_str: str,
     assert implementation_mode in {'numpy', 'torch'}
 
     if dynamics_str == 'step':
+
         if dynamics_params is None:
             dynamics_params = {'a': 1., 'b': 0.}
+
+        if 'a' not in dynamics_params:
+            dynamics_params['a'] = 1.
+        if 'b' not in dynamics_params:
+            dynamics_params['b'] = 0.
 
         if implementation_mode == 'numpy':
             dynamics_fn = LinearFirstOrderNumpy

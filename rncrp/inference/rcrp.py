@@ -38,7 +38,7 @@ class RecursiveCRP(BaseModel):
         assert self.mixing_params['alpha'] > 0.
         assert self.mixing_params['beta'] == 0.
         self.dynamics = convert_dynamics_str_to_dynamics_obj(
-            dynamics_str=self.mixing_params['dynamics_str'],
+            dynamics_str='step',
             dynamics_params=self.mixing_params['dynamics_params'],
             implementation_mode='torch')
         self.component_prior_params = gen_model_params['component_prior_params']
@@ -183,7 +183,7 @@ class RecursiveCRP(BaseModel):
             if isinstance(torch_observation, dict):
                 torch_observation = torch_observation['observations'][0]  # Remove the batch index
 
-            print('Observation: ', torch_observation.numpy())
+            # print('Observation: ', torch_observation.numpy())
 
             if obs_idx == 0:
 
@@ -214,9 +214,9 @@ class RecursiveCRP(BaseModel):
                                                            num_clusters_posteriors[obs_idx - 1, :obs_idx].clone()
 
                 # Step 1(iii): Normalize.
-                print('Unnormalized cluster assignment prior: ', cluster_assignment_prior[:obs_idx + 1].numpy())
+                # print('Unnormalized cluster assignment prior: ', cluster_assignment_prior[:obs_idx + 1].numpy())
                 cluster_assignment_prior /= torch.sum(cluster_assignment_prior)
-                print('Normalized cluster assignment prior: ', cluster_assignment_prior[:obs_idx + 1].numpy())
+                # print('Normalized cluster assignment prior: ', cluster_assignment_prior[:obs_idx + 1].numpy())
                 assert_torch_no_nan_no_inf_is_real(cluster_assignment_prior)
 
                 # print(cluster_assignment_prior.numpy()[:obs_idx + 1])
@@ -289,8 +289,8 @@ class RecursiveCRP(BaseModel):
 
                 cluster_assignment_posterior = variational_params['assignments']['probs'][obs_idx, :].clone()
 
-                print('Cluster assignment posterior: ', cluster_assignment_prior.numpy()[:obs_idx+1])
-                print('Cluster means: ', variational_params['means']['means'][1][:obs_idx+1].numpy())
+                # print('Cluster assignment posterior: ', cluster_assignment_prior.numpy()[:obs_idx+1])
+                # print('Cluster means: ', variational_params['means']['means'][1][:obs_idx+1].numpy())
 
                 # print(cluster_assignment_posterior.numpy()[:obs_idx + 1])
                 # Step 4: Update posterior over number of clusters.
