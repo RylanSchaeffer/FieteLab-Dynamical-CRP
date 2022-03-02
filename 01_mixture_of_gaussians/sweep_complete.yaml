@@ -12,9 +12,9 @@ parameters:
         'Dynamical-CRP',
         'Dynamical-CRP (Cutoff=1e-2)',
         'Dynamical-CRP (Cutoff=1e-4)',
-        'Recursive-CRP',
         'K-Means (Offline)',
         'K-Means (Online)',
+        'Recursive-CRP',
         'VI-GMM',
     ]
   dynamics_str:
