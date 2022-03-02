@@ -211,9 +211,13 @@ def sample_mixture_model(num_obs: int = 100,
         # import matplotlib.pyplot as plt
         #
         # # plt.close()
-        # plt.scatter(means[:, 0], means[:, 1], color='k', label='Centroids')
+        # plt.scatter(means[:, 0],
+        #             means[:, 1],
+        #             color='k',
+        #             label='Centroids',
+        #             marker='x')
         # plt.scatter(observations[:, 0], observations[:, 1],
-        #             c=cluster_assignments, marker='x')
+        #             c=cluster_assignments)
         # plt.legend()
         # plt.show()
 
