@@ -18,7 +18,7 @@ import scipy.stats
 from sympy.functions.combinatorial.numbers import stirling
 from typing import Dict
 
-
+import plot_prior
 from rncrp.data.synthetic import sample_dcrp
 from rncrp.helpers.dynamics import convert_dynamics_str_to_dynamics_obj
 from rncrp.helpers.run import set_seed
@@ -56,7 +56,7 @@ def run_one(args: argparse.Namespace):
         raise NotImplementedError
     dynamics_latex_str = 'Time Function: ' + dynamics_latex_str
 
-    plot.plot_customer_assignments_analytical_vs_monte_carlo(
+    plot_prior.plot_customer_assignments_analytical_vs_monte_carlo(
         sampled_customer_assignments_by_customer=monte_carlo_rncrp_results['one_hot_customer_assignments_by_customer'],
         analytical_customer_assignments_by_customer=analytical_dcrp_results['customer_assignment_probs_by_customer'],
         alpha=args.alpha,
@@ -64,7 +64,7 @@ def run_one(args: argparse.Namespace):
         plot_dir=run_one_results_dir,
         dynamics_latex_str=dynamics_latex_str)
 
-    plot.plot_num_tables_analytical_vs_monte_carlo(
+    plot_prior.plot_num_tables_analytical_vs_monte_carlo(
         sampled_num_tables_by_customer=monte_carlo_rncrp_results['num_tables_by_customer'],
         analytical_num_tables_by_customer=analytical_dcrp_results['num_table_probs_by_customer'],
         alpha=args.alpha,

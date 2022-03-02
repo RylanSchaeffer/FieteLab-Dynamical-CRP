@@ -6,6 +6,7 @@ import os
 import scipy.special
 import scipy.stats
 import seaborn as sns
+import pandas as pd
 
 plt.rcParams["font.family"] = ["Times New Roman"]
 plt.rcParams["font.size"] = 16  # was previously 22
@@ -17,6 +18,37 @@ alphas_color_map = {
     15.37: 'tab:purple',
     30.91: 'tab:green'
 }
+
+
+def plot_mse_analytical_vs_monte_carlo(mse_by_customer_df: pd.DataFrame,
+                                       plot_dir: str,
+                                       dynamics_latex_str: str,
+                                       dynamics_str: str):
+
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 5))
+
+    sns.lineplot(data=mse_by_customer_df,
+                 x='num_samples',
+                 y='mse',
+                 hue='alpha_label',
+                 ax=ax,
+                 palette=alphas_color_map)
+
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles=handles[1:], labels=labels[1:]) # Remove legend title
+
+    ax.set_title(dynamics_latex_str)
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_ylabel(r'(Analytic - Monte Carlo$)^2$')
+    ax.set_xlabel('Number of Monte Carlo Samples')
+
+    fig.savefig(os.path.join(plot_dir, f'mse_monte_carlo_vs_analytical_{dynamics_str}.png'),
+                bbox_inches='tight',
+                dpi=300)
+    # plt.show()
+    plt.close()
+    print('PLOT SAVED TO:',plot_dir+'/mse_monte_carlo_vs_analytical_'+dynamics_str+'.png')
 
 
 def plot_customer_assignments_analytical_vs_monte_carlo(sampled_customer_assignments_by_customer,
