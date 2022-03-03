@@ -33,7 +33,7 @@ config_defaults = {
     'dynamics_b': 1.,
     'dynamics_c': 1.,
     'dynamics_omega': np.pi / 2.,
-    'n_samples': 100,
+    'n_samples': 1000,
     'n_features': 2,
     # 'alpha': 1.1,
     'alpha': 4.5,
@@ -43,6 +43,7 @@ config_defaults = {
     'likelihood_cov_prefactor': 5.,
     'repeat_idx': 0,
 }
+
 
 wandb.init(project='dcrp-mixture-of-gaussians',
            config=config_defaults)
@@ -137,6 +138,14 @@ joblib.dump(data_to_store,
 
 inf_alg_plot_dir_name = ""
 for key, value in dict(config).items():
+    # Need to truncate file names because too long
+    if key == 'beta':
+        continue
+    if key == 'centroids_prior_cov_prefactor':
+        key = 'centroids_prior_cov'
+    if key == 'likelihood_cov_prefactor':
+        key = 'likelihood_cov'
+
     inf_alg_plot_dir_name += f"{key}={value}_"
 inf_alg_plot_dir_path = os.path.join(results_dir_path, inf_alg_plot_dir_name)
 os.makedirs(inf_alg_plot_dir_path, exist_ok=True)
