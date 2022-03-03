@@ -17,6 +17,7 @@ import rncrp.data.synthetic
 import rncrp.helpers.dynamics
 import rncrp.helpers.run
 import rncrp.metrics
+import rncrp.plot.plot_general
 
 config_defaults = {
     'inference_alg_str': 'Dynamical-CRP',
@@ -25,7 +26,7 @@ config_defaults = {
     # 'dynamics_b': 1.,
     # 'dynamics_c': 1.,
     # 'dynamics_omega': np.pi / 2.,
-    'n_samples': 27,
+    'n_samples': 101,
     'n_features': 10,
     'alpha': 1.1,
     'beta': 0.,
@@ -113,4 +114,23 @@ data_to_store = dict(
 joblib.dump(data_to_store,
             filename=inf_alg_results_path)
 
-print('Finished run.')
+inf_alg_plot_dir_name = ""
+for key, value in dict(config).items():
+    inf_alg_plot_dir_name += f"{key}={value}_"
+inf_alg_plot_dir_path = os.path.join(results_dir_path, inf_alg_plot_dir_name)
+os.makedirs(inf_alg_plot_dir_path, exist_ok=True)
+
+rncrp.plot.plot_general.plot_cluster_assignments_inferred_vs_true(
+    true_cluster_assignments_one_hot=mixture_model_results['cluster_assignments_one_hot'],
+    cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
+    plot_dir=inf_alg_plot_dir_path,
+)
+
+rncrp.plot.plot_general.plot_cluster_coassignments_inferred_vs_true(
+    true_cluster_assignments=mixture_model_results['cluster_assignments'],
+    cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
+    plot_dir=inf_alg_plot_dir_path,
+)
+
+print(f'Finished 03_mixture_of_vonmises_fisher/run_one.py for sweep={wandb.run.id}.')
+

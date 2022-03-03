@@ -1,9 +1,7 @@
 import time
 
-# from mpmath import besselj
+import matplotlib.pyplot as plt
 import numpy as np
-import scipy
-import sklearn.mixture
 import tensorflow_probability as tfp
 
 tfd = tfp.distributions
@@ -311,6 +309,20 @@ class DynamicalCRP(BaseModel):
                         variational_param_tensor[0] = variational_param_tensor[1]
 
                 cluster_assignment_posterior = variational_params['assignments']['probs'][obs_idx, :].clone()
+
+                plt.close()
+                plt.scatter(variational_params['means']['means'][1, :obs_idx+1, 0],
+                            variational_params['means']['means'][1, :obs_idx+1, 1],
+                            color='k',
+                            label='Centroids',
+                            marker='x')
+                plt.scatter(observations[:obs_idx+1, 0],
+                            observations[:obs_idx+1, 1])
+                plt.legend()
+                plt.xlim(-40, 40)
+                plt.ylim(-40, 40)
+                plt.title(f'Obs Idx: {obs_idx+1}')
+                plt.show()
 
                 # print('Cluster assignment posterior: ', cluster_assignment_posterior.numpy()[:obs_idx+1])
                 # print('Cluster means: ', variational_params['means']['means'][1][:obs_idx+1].numpy())
