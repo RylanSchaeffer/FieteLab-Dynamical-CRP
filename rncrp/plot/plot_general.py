@@ -27,6 +27,9 @@ algorithm_color_map = {
 def plot_cluster_multiclass_classification_score_by_alpha_by_alg(sweep_results_df: pd.DataFrame,
                                                                  plot_dir: str,
                                                                  title_str: str = None):
+    # Manually make figure bigger to handle external legend
+    plt.figure(figsize=(9, 4))
+
     sns.lineplot(data=sweep_results_df,
                  x='alpha',
                  y='avg_finetune_acc',
@@ -198,6 +201,10 @@ def plot_cluster_coassignments_inferred_vs_true(cluster_assignment_posteriors: n
 def plot_num_clusters_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
                                               plot_dir: str,
                                               title_str: str = None):
+
+    # Manually make figure bigger to handle external legend
+    plt.figure(figsize=(9, 4))
+
     sns.lineplot(data=sweep_results_df,
                  x='alpha',
                  y='Num Inferred Clusters',
@@ -229,7 +236,10 @@ def plot_num_clusters_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
 
     plt.yscale('log')
     plt.xlabel(r'$\alpha$')
-    plt.legend()
+
+    # Move legend outside of plot
+    # See https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot-in-matplotlib
+    plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0.)
 
     if title_str is not None:
         plt.title(title_str)
@@ -246,6 +256,10 @@ def plot_num_clusters_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
 def plot_num_clusters_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
                                             plot_dir: str,
                                             title_str: str = None):
+
+    # Manually make figure bigger to handle external legend
+    plt.figure(figsize=(9, 4))
+
     sns.lineplot(data=sweep_results_df,
                  x='snr',
                  y='Num Inferred Clusters',
@@ -281,7 +295,12 @@ def plot_num_clusters_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
     if title_str is not None:
         plt.title(title_str)
 
-    plt.legend()
+    # plt.legend()
+
+    # Move legend outside of plot
+    # See https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot-in-matplotlib
+    plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir,
                              f'num_clusters_by_snr.png'),
@@ -414,6 +433,9 @@ def plot_num_true_clusters_div_total_num_true_clusters_by_obs_idx(ratio_df: pd.D
 def plot_runtime_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
                                          plot_dir: str,
                                          title_str: str = None):
+    # Manually make figure bigger to handle external legend
+    plt.figure(figsize=(9, 4))
+
     sns.lineplot(data=sweep_results_df,
                  x='alpha',
                  y='Runtime',
@@ -425,7 +447,10 @@ def plot_runtime_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
     if title_str is not None:
         plt.title(title_str)
 
-    plt.legend()
+    # Move legend outside of plot
+    # See https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot-in-matplotlib
+    plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir,
                              f'runtime_by_alpha.png'),
@@ -438,6 +463,9 @@ def plot_runtime_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
 def plot_runtime_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
                                              plot_dir: str,
                                              title_str: str = None):
+    # Manually make figure bigger to handle external legend
+    plt.figure(figsize=(9, 4))
+
     sns.lineplot(data=sweep_results_df,
                  x='n_features',
                  y='Runtime',
@@ -450,7 +478,10 @@ def plot_runtime_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
     if title_str is not None:
         plt.title(title_str)
 
-    plt.legend()
+    # Move legend outside of plot
+    # See https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot-in-matplotlib
+    plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir,
                              f'runtime_by_dimension.png'),
@@ -467,6 +498,10 @@ def plot_scores_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
                       if 'Score' in col]
 
     for score_column in scores_columns:
+
+        # Manually make figure bigger to handle external legend
+        plt.figure(figsize=(9, 4))
+
         sns.lineplot(data=sweep_results_df,
                      x='snr',
                      y=score_column,
@@ -474,7 +509,10 @@ def plot_scores_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
                      palette=algorithm_color_map)
         plt.xscale('log')
         plt.xlabel(r'SNR')
-        plt.legend()
+
+        # Move legend outside of plot
+        # See https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot-in-matplotlib
+        plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0.)
 
         if title_str is not None:
             plt.title(title_str)
@@ -496,13 +534,21 @@ def plot_scores_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
                       if 'Score' in col]
 
     for score_column in scores_columns:
+
+        # Manually make figure bigger to handle external legend
+        plt.figure(figsize=(9, 4))
+
         sns.lineplot(data=sweep_results_df,
                      x='alpha',
                      y=score_column,
                      hue='inference_alg_str',
                      palette=algorithm_color_map)
         plt.xlabel(r'$\alpha$')
-        plt.legend()
+        # plt.legend()
+        # Move legend outside of plot
+        # See https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot-in-matplotlib
+        plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+
         if title_str is not None:
             plt.title(title_str)
 
@@ -523,6 +569,10 @@ def plot_scores_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
                       if 'Score' in col]
 
     for score_column in scores_columns:
+
+        # Manually make figure bigger to handle external legend
+        plt.figure(figsize=(9, 4))
+
         sns.lineplot(data=sweep_results_df,
                      x='n_features',
                      y=score_column,
@@ -530,7 +580,11 @@ def plot_scores_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
                      palette=algorithm_color_map,
                      err_style="bars", )
         plt.xlabel(r'Data Dimension')
-        plt.legend()
+        # plt.legend()
+
+        # Move legend outside of plot
+        # See https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot-in-matplotlib
+        plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0.)
 
         if title_str is not None:
             plt.title(title_str)
@@ -541,5 +595,5 @@ def plot_scores_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
                                  f'comparison_score={score_column}_by_dimension.png'),
                     bbox_inches='tight',
                     dpi=300)
-        # plt.show()
+        plt.show()
         plt.close()

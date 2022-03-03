@@ -10,8 +10,8 @@
 # source rncrp_venv/bin/activate
 # wandb sweep 05_swav_pretrained/sweep_complete.yaml
 
-for i in {1..10}
+for i in {1..12}
 do
-  sbatch 05_swav_pretrained/run_one.sh bia0srmy
+  sbatch 05_swav_pretrained/run_one.sh 0p1o79dt
   sleep 5
 done

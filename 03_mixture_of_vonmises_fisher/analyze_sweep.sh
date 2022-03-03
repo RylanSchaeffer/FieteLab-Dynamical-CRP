@@ -3,7 +3,6 @@
 #SBATCH -n 1                    # one core
 #SBATCH --mem=16G               # RAM
 #SBATCH --time=99:99:99         # total run time limit (HH:MM:SS)
-#SBATCH --mail-user=gkml
 #SBATCH --mail-type=FAIL
 
 export PYTHONPATH=.

@@ -3,7 +3,6 @@
 #SBATCH -n 1                    # two cores
 #SBATCH --mem=4G                # RAM
 #SBATCH --time=99:99:99         # total run time limit (HH:MM:SS)
-#SBATCH --mail-user=gkml
 #SBATCH --mail-type=FAIL
 
 
