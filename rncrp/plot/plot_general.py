@@ -55,6 +55,7 @@ def plot_cluster_multiclass_classification_score_by_alpha_by_alg(sweep_results_d
 def plot_cluster_assignments_inferred_vs_true(cluster_assignment_posteriors: np.ndarray,
                                               true_cluster_assignments_one_hot: np.ndarray,
                                               plot_dir: str,
+                                              plot_title: str = None,
                                               default_num_tables_to_plot: int = 100):
     """
     Plot true cluster assignments (Y = observation index, X = cluster assignment) (left)
@@ -72,6 +73,9 @@ def plot_cluster_assignments_inferred_vs_true(cluster_assignment_posteriors: np.
     fig, axes = plt.subplots(nrows=1,
                              ncols=2,
                              figsize=(8, 4))
+
+    if plot_title is not None:
+        fig.suptitle(plot_title)
 
     ax_idx = 0
     # plot prior table assignments
@@ -116,6 +120,7 @@ def plot_cluster_assignments_inferred_vs_true(cluster_assignment_posteriors: np.
 def plot_cluster_coassignments_inferred_vs_true(cluster_assignment_posteriors: np.ndarray,
                                                 true_cluster_assignments: np.ndarray,
                                                 plot_dir: str,
+                                                plot_title: str = None,
                                                 default_num_obs_to_plot: int = 100):
     """
     Plot observation-by-observation matrices of inner products between cluster posteriors.
@@ -131,6 +136,9 @@ def plot_cluster_coassignments_inferred_vs_true(cluster_assignment_posteriors: n
     fig, axes = plt.subplots(nrows=1,
                              ncols=2,
                              figsize=(8, 4))
+
+    if plot_title is not None:
+        fig.suptitle(plot_title)
 
     num_obs_to_plot = min([default_num_obs_to_plot,
                            true_cluster_assignments.shape[0]])

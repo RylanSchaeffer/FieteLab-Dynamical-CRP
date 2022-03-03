@@ -135,8 +135,11 @@ joblib.dump(data_to_store,
             filename=inf_alg_results_path)
 
 
-inf_alg_plot_dir = os.path.join(
-    results_dir_path, f'id={wandb.run.id}')
+inf_alg_plot_dir = ""
+for key, value in dict(config):
+    inf_alg_plot_dir += f"{key}={value}_"
+# inf_alg_plot_dir = os.path.join(
+#     results_dir_path, f'id={wandb.run.id}')
 os.makedirs(inf_alg_plot_dir, exist_ok=True)
 
 rncrp.plot.plot_general.plot_cluster_assignments_inferred_vs_true(
