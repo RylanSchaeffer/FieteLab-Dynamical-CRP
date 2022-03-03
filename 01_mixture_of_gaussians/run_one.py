@@ -135,23 +135,22 @@ joblib.dump(data_to_store,
             filename=inf_alg_results_path)
 
 
-inf_alg_plot_dir = ""
-for key, value in dict(config):
-    inf_alg_plot_dir += f"{key}={value}_"
-# inf_alg_plot_dir = os.path.join(
-#     results_dir_path, f'id={wandb.run.id}')
-os.makedirs(inf_alg_plot_dir, exist_ok=True)
+inf_alg_plot_dir_name = ""
+for key, value in dict(config).items():
+    inf_alg_plot_dir_name += f"{key}={value}_"
+inf_alg_plot_dir_path = os.path.join(results_dir_path, inf_alg_plot_dir_name)
+os.makedirs(inf_alg_plot_dir_path, exist_ok=True)
 
 rncrp.plot.plot_general.plot_cluster_assignments_inferred_vs_true(
     true_cluster_assignments_one_hot=mixture_model_results['cluster_assignments_one_hot'],
     cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
-    plot_dir=inf_alg_plot_dir,
+    plot_dir=inf_alg_plot_dir_path,
 )
 
 rncrp.plot.plot_general.plot_cluster_coassignments_inferred_vs_true(
     true_cluster_assignments=mixture_model_results['cluster_assignments'],
     cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
-    plot_dir=inf_alg_plot_dir,
+    plot_dir=inf_alg_plot_dir_path,
 )
 
 print(f'Finished 01_mixture_of_gaussians/run_one.py for sweep={wandb.run.id}.')

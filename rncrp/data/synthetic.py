@@ -173,6 +173,7 @@ def sample_mixture_model(num_obs: int = 100,
                 'likelihood_cov_prefactor': 1.,
             }
         elif component_prior_str == 'vonmises-fisher':
+            # TODO: use kappa for prior
             component_prior_params = {
                 'kappa': 1.,
             }
