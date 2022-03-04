@@ -607,5 +607,5 @@ def plot_scores_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
                                  f'comparison_score={score_column}_by_dimension.png'),
                     bbox_inches='tight',
                     dpi=300)
-        plt.show()
+        # plt.show()
         plt.close()
