@@ -21,6 +21,7 @@ algorithm_color_map = {
     'K-Means (Online)': 'tab:gray',
     'Recursive-CRP': 'tab:olive',
     'VI-GMM': 'tab:green',
+    'CollapsedGibbsSampler': 'tab:cyan',
 }
 
 
@@ -114,6 +115,9 @@ def plot_cluster_assignments_inferred_vs_true(cluster_assignment_posteriors: np.
                 bbox_inches='tight',
                 dpi=300)
     # plt.show()
+    plt.close()
+
+    plt.savefig('path_to_save.png')
     plt.close()
 
 

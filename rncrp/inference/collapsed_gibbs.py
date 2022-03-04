@@ -122,7 +122,7 @@ class CollapsedGibbsSampler(BaseModel):
                 cluster_assignment_posteriors,
                 return_counts=True)
             # Find indices for size-biased sorting.
-            sorted_indices_by_num_obs = np.argsort(num_obs_per_cluster)
+            sorted_indices_by_num_obs = np.argsort(num_obs_per_cluster)[::-1]
             # Replace size-sorted cluster id (e.g. 97, 83, 101, ...)
             # with low integers e.g. (0, 1, 2, ...).
             for cluster_idx, cluster_id in enumerate(cluster_ids[sorted_indices_by_num_obs]):
