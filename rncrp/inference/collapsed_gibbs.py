@@ -19,7 +19,7 @@ class CollapsedGibbsSampler(BaseModel):
                  gen_model_params: Dict[str, Dict[str, float]],
                  model_str: str = 'CGS',
                  plot_dir: str = None,
-                 num_passes: int = 2,
+                 num_passes: int = 3,
                  **kwargs,
                  ):
         self.gen_model_params = gen_model_params
@@ -57,22 +57,23 @@ class CollapsedGibbsSampler(BaseModel):
                 # Exclude current observation from num obs per cluster.
                 num_obs_per_cluster[cluster_ids == cluster_assignment_posteriors[obs_idx]] -= 1
 
-                # Add 1 for possibility of new cluster
+                # Add 1 for consideration of new cluster.
                 cluster_mean_per_cluster = np.zeros(shape=(len(cluster_ids) + 1, obs_dim))
                 cluster_cov_per_cluster = np.zeros(shape=(len(cluster_ids) + 1, 1))
 
                 for cluster_idx, (cluster_id, num_obs_in_cluster) in enumerate(zip(cluster_ids, num_obs_per_cluster)):
+
                     # Identify other points in cluster.
                     obs_in_cluster_id = observations[
                         (cluster_assignment_posteriors == cluster_id)
                         & (obs_idx_range != obs_idx)]
 
                     # Average other points in the cluster.
-                    # This can produce NaN if there are no other observations in the cluster.
+                    # This can produce NaN if there are no other observations in this cluster.
                     avg_obs_in_cluster_id = np.mean(obs_in_cluster_id, axis=0)
 
-                    cluster_diag_prec = num_obs_in_cluster / self.likelihood_params['likelihood_cov_prefactor'] \
-                                        + 1 / self.component_prior_params['centroids_prior_cov_prefactor']
+                    cluster_diag_prec = (num_obs_in_cluster / self.likelihood_params['likelihood_cov_prefactor']) \
+                                        + (1. / self.component_prior_params['centroids_prior_cov_prefactor'])
                     cluster_diag_cov = 1. / cluster_diag_prec
                     cluster_cov_per_cluster[cluster_idx] = cluster_diag_cov
 
@@ -86,9 +87,9 @@ class CollapsedGibbsSampler(BaseModel):
                                               + self.likelihood_params['likelihood_cov_prefactor']
 
                 log_likelihood_per_cluster = np.array([multivariate_normal.logpdf(
-                        observation,
-                        mean=cluster_mean_per_cluster[cluster_idx],
-                        cov=cluster_cov_per_cluster[cluster_idx] * np.eye(obs_dim))
+                    observation,
+                    mean=cluster_mean_per_cluster[cluster_idx],
+                    cov=cluster_cov_per_cluster[cluster_idx] * np.eye(obs_dim))
                     for cluster_idx in range(len(cluster_ids) + 1)])
 
                 # If there are no other points in a cluster, then the log likelihood will be NaN
@@ -103,7 +104,11 @@ class CollapsedGibbsSampler(BaseModel):
                 log_prior_per_cluster = np.log(prior_per_cluster)
 
                 log_sampling_prob_per_cluster = log_likelihood_per_cluster + log_prior_per_cluster
+
+                # For numerical stability, first subtract max.
                 log_sampling_prob_per_cluster -= np.max(log_sampling_prob_per_cluster)
+
+                # Compute softmax.
                 sampling_prob_per_cluster = np.exp(log_sampling_prob_per_cluster)
                 sampling_prob_per_cluster /= np.sum(sampling_prob_per_cluster)
 
@@ -128,6 +133,7 @@ class CollapsedGibbsSampler(BaseModel):
             cluster_ids, num_obs_per_cluster = np.unique(
                 cluster_assignment_posteriors,
                 return_counts=True)
+
             # Find indices for size-biased sorting.
             sorted_indices_by_num_obs = np.argsort(num_obs_per_cluster)[::-1]
             # Replace size-sorted cluster id (e.g. 97, 83, 101, ...)
@@ -178,4 +184,3 @@ class CollapsedGibbsSampler(BaseModel):
         Returns array of shape (num features, feature dimension)
         """
         return self.fit_results['parameters']['means']
-
