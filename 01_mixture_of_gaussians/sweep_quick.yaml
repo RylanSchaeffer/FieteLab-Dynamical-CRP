@@ -7,29 +7,20 @@ metric:
 parameters:
   inference_alg_str:
     values: [
-        'Dynamical-CRP',
+      'CollapsedGibbsSampler'
     ]
   dynamics_str:
     values: [
-        'step',
-    ]
-  dynamics_a:
-    values: [1.]
-  dynamics_b:
-    values: [ 1. ]
-  dynamics_c:
-    values: [ 1. ]
-  dynamics_omega:
-    values: [ 1. ]
+        'step',]
   alpha:
-    values: [ 1., 2.5, 5., 7.5, 10., 15., 20.]
+    values: [ 1.0, 2.5, 5.0, 10.0, 15.0, 20.0]
   n_samples:
     values: [1000]
   n_features:
-    values: [3, 10, 15]
+    values: [3, 9, 15]
   centroids_prior_cov_prefactor:
-    values: [5., 10., 50.]
+    values: [1., 2.5, 10., 25., 100., 250., 1000.]
   likelihood_cov_prefactor:
-    values: [1., 5., 10.]
+    values: [1.]
   repeat_idx:
     values: [0]

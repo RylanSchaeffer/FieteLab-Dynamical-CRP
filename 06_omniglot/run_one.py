@@ -66,6 +66,11 @@ true_cluster_assignments = monte_carlo_rncrp_results[
 # Log number of true clusters
 wandb.log({'n_clusters': len(np.unique(true_cluster_assignments))}, step=0)
 
+rncrp.helpers.run.select_indices_given_desired_cluster_assignments_and_labels(
+    desired_cluster_assignments=true_cluster_assignments,
+    labels=omniglot_data['labels'],
+)
+
 observations = omniglot_data['images']
 
 

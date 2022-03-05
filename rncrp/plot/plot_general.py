@@ -186,6 +186,13 @@ def plot_cluster_coassignments_inferred_vs_true(cluster_assignment_posteriors: n
         cluster_assignment_posteriors_subset,
         cluster_assignment_posteriors_subset.T)
 
+    # plt.close()
+    # shuffle_indices = np.argsort(true_cluster_assignments)
+    # sns.heatmap(np.matmul(cluster_assignment_posteriors[true_cluster_assignments],
+    #                       cluster_assignment_posteriors[true_cluster_assignments].T),
+    #             cmap='Blues')
+    # plt.show()
+
     # Shuffle to group together similar clusters.
     inferred_pairwise_similarities_subset = inferred_pairwise_similarities_subset[
         shuffle_indices, :][:, shuffle_indices]
@@ -206,7 +213,7 @@ def plot_cluster_coassignments_inferred_vs_true(cluster_assignment_posteriors: n
                              f'cluster_coassignments_inferred_vs_true.png'),
                 bbox_inches='tight',
                 dpi=300)
-    # plt.show()
+    plt.show()
     plt.close()
 
 

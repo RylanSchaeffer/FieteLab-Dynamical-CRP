@@ -30,6 +30,6 @@ parameters:
   n_features:
     values: [3, 10, 15]
   likelihood_kappa:
-    values: [5., 10., 50.]
+    values: [1., 2.5, 5., 10.]
   repeat_idx:
     values: [0]

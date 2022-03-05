@@ -22,6 +22,7 @@ import rncrp.metrics
 import rncrp.plot.plot_general
 
 config_defaults = {
+    # 'inference_alg_str': 'CollapsedGibbsSampler',
     # 'inference_alg_str': 'DP-Means (Offline)',
     'inference_alg_str': 'Dynamical-CRP',
     # 'inference_alg_str': 'Dynamical-CRP (Cutoff=1e-3)',
@@ -36,8 +37,8 @@ config_defaults = {
     'n_samples': 1000,
     'n_features': 2,
     # 'alpha': 1.1,
-    'alpha': 4.5,
-    # 'alpha': 5.7,
+    # 'alpha': 4.5,
+    'alpha': 5,
     'beta': 0.,
     'centroids_prior_cov_prefactor': 250.,
     'likelihood_cov_prefactor': 5.,
@@ -161,5 +162,8 @@ rncrp.plot.plot_general.plot_cluster_coassignments_inferred_vs_true(
     cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
     plot_dir=inf_alg_plot_dir_path,
 )
+
+
+
 
 print(f'Finished 01_mixture_of_gaussians/run_one.py for sweep={wandb.run.id}.')

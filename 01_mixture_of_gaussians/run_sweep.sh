@@ -9,9 +9,10 @@
 # Run this, then pipe sweep ID to each individual run
 # source rncrp_venv/bin/activate
 # wandb sweep 01_mixture_of_gaussians/sweep_complete.yaml
+# wandb sweep 01_mixture_of_gaussians/sweep_quick.yaml
 
-for i in {1..20}
+for i in {1..30}
 do
-  sbatch 01_mixture_of_gaussians/run_one.sh ptutmcvc
+  sbatch 01_mixture_of_gaussians/run_one.sh yix8lrnt
   sleep 5
 done

@@ -218,9 +218,11 @@ def sample_mixture_model(num_obs: int = 100,
         #             label='Centroids',
         #             marker='x')
         # plt.scatter(observations[:, 0], observations[:, 1],
-        #             c=cluster_assignments)
+        #             c=cluster_assignments,
+        #             s=3)
         # plt.legend()
         # plt.show()
+        # # print(10)
 
     elif component_prior_str == 'vonmises_fisher':
 

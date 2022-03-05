@@ -19,7 +19,7 @@ class CollapsedGibbsSampler(BaseModel):
                  gen_model_params: Dict[str, Dict[str, float]],
                  model_str: str = 'CGS',
                  plot_dir: str = None,
-                 num_passes: int = 3,
+                 num_passes: int = 15,
                  **kwargs,
                  ):
         self.gen_model_params = gen_model_params

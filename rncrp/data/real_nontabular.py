@@ -246,7 +246,6 @@ def load_dataset_omniglot_vae(data_dir: str = 'data',
     return omniglot_dataset_results
 
 
-
 def load_dataset_yilun_nav_2d_2022(data_dir: str = 'data',
                                    narrow_hallways: bool = False,
                                    finite_vision: bool = False,
