@@ -1,0 +1,41 @@
+program: 09_mixture_of_gaussians_debug/run_one.py
+project: dcrp-mixture-of-gaussians-debug
+method: grid
+metric:
+  goal: minimize
+  name: training_reconstruction_error
+parameters:
+  inference_alg_str:
+    values: [
+      'Dynamical-CRP'
+    ]
+  dynamics_str:
+    values: [
+      'step',]
+  vi_param_initialization:
+    values: [
+      'zero',
+      'observation',
+    ]
+  which_prior_prob:
+    values: [
+      'DP',
+      'variational'
+    ]
+  update_new_cluster_parameters:
+    values: [
+      True,
+      False,
+    ]
+  alpha:
+    values: [ 5.0, 10., ]
+  n_samples:
+    values: [1000]
+  n_features:
+    values: [3, 6, 9]
+  centroids_prior_cov_prefactor:
+    values: [25., 100., 250.]
+  likelihood_cov_prefactor:
+    values: [5.]
+  repeat_idx:
+    values: [0, 1, 2]

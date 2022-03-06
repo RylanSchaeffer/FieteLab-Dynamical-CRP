@@ -29,7 +29,10 @@ class DynamicalCRP(BaseModel):
                  learning_rate: float = None,
                  record_history: bool = True,
                  cutoff: float = 0.,
-                 robbins_monro_cavi_updates: bool = True,
+                 robbins_monro_cavi_updates: bool = False,
+                 vi_param_initialization: str = 'zero',
+                 which_prior_prob: str = 'DP',
+                 update_new_cluster_parameters: bool = True,
                  **kwargs,
                  ):
         self.gen_model_params = gen_model_params
@@ -45,6 +48,8 @@ class DynamicalCRP(BaseModel):
         self.model_str = model_str
         self.num_coord_ascent_steps_per_obs = num_coord_ascent_steps_per_obs
         self.numerically_optimize = numerically_optimize
+
+        # Note: Learning rate is currently unused.
         if self.numerically_optimize:
             assert isinstance(learning_rate, float)
             assert learning_rate > 0.
@@ -53,6 +58,12 @@ class DynamicalCRP(BaseModel):
         self.learning_rate = learning_rate
         self.cutoff = cutoff
         self.plot_dir = plot_dir
+        assert vi_param_initialization in {'zero', 'observation'}
+        self.vi_param_initialization = vi_param_initialization
+        assert which_prior_prob in {'DP', 'variational'}
+        self.which_prior_prob = which_prior_prob
+        self.update_new_cluster_parameters = update_new_cluster_parameters
+
         self.record_history = record_history
         self.robbins_monro_cavi_updates = robbins_monro_cavi_updates
         self.fit_results = None
@@ -110,10 +121,10 @@ class DynamicalCRP(BaseModel):
 
             # TODO: What is the right covariance initialization? How should this be determined?
             # Currently set as an arbitrary choice
-            A_prefactor = self.gen_model_params['component_prior_params']['centroids_prior_cov_prefactor'] \
-                          + self.gen_model_params['likelihood_params']['likelihood_cov_prefactor']
+            # A_prefactor = self.gen_model_params['component_prior_params']['centroids_prior_cov_prefactor'] \
+            #               + self.gen_model_params['likelihood_params']['likelihood_cov_prefactor']
             # A_prefactor = self.gen_model_params['component_prior_params']['centroids_prior_cov_prefactor']
-            # A_prefactor = 10.
+            A_prefactor = self.gen_model_params['likelihood_params']['likelihood_cov_prefactor']
             # A_prefactor = 1.
             # Shape: (2 for old and new, max num clusters, obs dim)
             A_diag_covs = (A_prefactor * torch.ones(obs_dim).float()[None, None, :]).repeat(
@@ -187,10 +198,10 @@ class DynamicalCRP(BaseModel):
             if isinstance(torch_observation, dict):
                 torch_observation = torch_observation['observations'][0]  # Remove the batch index
 
-            print(f'Observation {obs_idx + 1}: ', torch_observation.numpy())
+            # print(f'Observation {obs_idx + 1}: ', torch_observation.numpy())
 
-            if obs_idx == 5:
-                print()
+            # if obs_idx == 5:
+            #     print()
 
             if obs_idx == 0:
 
@@ -237,9 +248,9 @@ class DynamicalCRP(BaseModel):
                                                            num_clusters_posteriors[obs_idx - 1, :obs_idx].clone()
 
                 # Step 1(iii): Normalize.
-                print('Unnormalized cluster assignment prior: ', cluster_assignment_prior[:obs_idx + 1].numpy())
+                # print('Unnormalized cluster assignment prior: ', cluster_assignment_prior[:obs_idx + 1].numpy())
                 cluster_assignment_prior /= torch.sum(cluster_assignment_prior)
-                print('Normalized cluster assignment prior: ', cluster_assignment_prior[:obs_idx + 1].numpy())
+                # print('Normalized cluster assignment prior: ', cluster_assignment_prior[:obs_idx + 1].numpy())
                 assert_torch_no_nan_no_inf_is_real(cluster_assignment_prior)
 
                 # print(cluster_assignment_prior.numpy()[:obs_idx + 1])
@@ -351,47 +362,47 @@ class DynamicalCRP(BaseModel):
                 # print(f'Time5 - Time4: {time_5 - time_4}')
 
             cum_cluster_assignment_posteriors += cluster_assignment_posterior
-
-            plt.close()
-            plt.scatter(1 + np.arange(obs_idx + 1),
-                        num_clusters_posteriors[obs_idx, :obs_idx + 1].numpy())
-            plt.ylabel('P(Num Clusters)')
-            plt.xlabel('Num Clusters')
-            plt.title(f'Obs Idx: {obs_idx + 1}')
-            plt.show()
-            plt.close()
-
-            norm = plt.Normalize(0., obs_idx)
-            fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(12, 8))
-            fig.suptitle(f'Obs Idx: {obs_idx + 1}')
-            axes[0].scatter(variational_params['means']['means'][1, :obs_idx + 1, 0],
-                            variational_params['means']['means'][1, :obs_idx + 1, 1],
-                            # alpha=cluster_assignment_posterior[:obs_idx+1],
-                            c=np.arange(obs_idx + 1),
-                            norm=norm,
-                            cmap='viridis',
-                            # color='k',
-                            # label='Centroids',
-                            # marker='d',
-                            # edgecolors='black',
-                            s=20)
-            axes[0].set_xlim(-40, 40)
-            axes[0].set_ylim(-40, 40)
-            axes[0].set_title('Centroids')
-            axes[1].scatter(observations[:obs_idx + 1, 0],
-                            observations[:obs_idx + 1, 1],
-                            c=torch.argmax(variational_params['assignments']['probs'][np.newaxis, :obs_idx + 1, :],
-                                           dim=2).numpy()[0],
-                            cmap='viridis',
-                            norm=norm,
-                            s=20)
-            # plt.legend()
-            axes[1].set_xlim(-40, 40)
-            axes[1].set_ylim(-40, 40)
-            axes[1].set_title('Observations')
-            plt.show()
-            plt.close()
-            print()
+            #
+            # plt.close()
+            # plt.scatter(1 + np.arange(obs_idx + 1),
+            #             num_clusters_posteriors[obs_idx, :obs_idx + 1].numpy())
+            # plt.ylabel('P(Num Clusters)')
+            # plt.xlabel('Num Clusters')
+            # plt.title(f'Obs Idx: {obs_idx + 1}')
+            # plt.show()
+            # plt.close()
+            #
+            # norm = plt.Normalize(0., obs_idx)
+            # fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(12, 8))
+            # fig.suptitle(f'Obs Idx: {obs_idx + 1}')
+            # axes[0].scatter(variational_params['means']['means'][1, :obs_idx + 1, 0],
+            #                 variational_params['means']['means'][1, :obs_idx + 1, 1],
+            #                 # alpha=cluster_assignment_posterior[:obs_idx+1],
+            #                 c=np.arange(obs_idx + 1),
+            #                 norm=norm,
+            #                 cmap='viridis',
+            #                 # color='k',
+            #                 # label='Centroids',
+            #                 # marker='d',
+            #                 # edgecolors='black',
+            #                 s=20)
+            # axes[0].set_xlim(-40, 40)
+            # axes[0].set_ylim(-40, 40)
+            # axes[0].set_title('Centroids')
+            # axes[1].scatter(observations[:obs_idx + 1, 0],
+            #                 observations[:obs_idx + 1, 1],
+            #                 c=torch.argmax(variational_params['assignments']['probs'][np.newaxis, :obs_idx + 1, :],
+            #                                dim=2).numpy()[0],
+            #                 cmap='viridis',
+            #                 norm=norm,
+            #                 s=20)
+            # # plt.legend()
+            # axes[1].set_xlim(-40, 40)
+            # axes[1].set_ylim(-40, 40)
+            # axes[1].set_title('Observations')
+            # plt.show()
+            # plt.close()
+            # print()
 
         # Add 1 because of indexing starts at 0.
         # TODO: Is this really the right way to determine the number of inferred clusters?
@@ -430,13 +441,17 @@ class DynamicalCRP(BaseModel):
         # variational_params['concentrations'][0, obs_idx, :] = torch_observation + epsilon
         raise NotImplementedError
 
-    @staticmethod
-    def initialize_cluster_params_multivariate_normal(torch_observation: np.ndarray,
+    def initialize_cluster_params_multivariate_normal(self,
+                                                      torch_observation: np.ndarray,
                                                       obs_idx: int,
                                                       variational_params: Dict[str, np.ndarray]):
 
-        # variational_params['means']['means'].data[:, obs_idx, :] = torch_observation
-        variational_params['means']['means'].data[:, obs_idx, :] = 0.
+        if self.vi_param_initialization == 'zero':
+            variational_params['means']['means'].data[:, obs_idx, :] = 0.
+        elif self.vi_param_initialization == 'observation':
+            variational_params['means']['means'].data[:, obs_idx, :] = torch_observation
+        else:
+            raise ValueError
         assert_torch_no_nan_no_inf_is_real(variational_params['means']['means'])
 
     def initialize_cluster_params_product_bernoullis(self,
@@ -473,8 +488,8 @@ class DynamicalCRP(BaseModel):
                                                          likelihood_params: Dict[str, float],
                                                          ) -> None:
 
-        if obs_idx == 5:
-            print()
+        # if obs_idx == 5:
+        #     print()
 
         obs_dim = torch_observation.shape[0]
         sigma_obs_squared = self.likelihood_params['likelihood_cov_prefactor']
@@ -511,14 +526,15 @@ class DynamicalCRP(BaseModel):
         term_to_softmax = term_one + term_two + term_three + term_four + term_five
 
         # For the new cluster, the likelihood is N(0, likelihood cov + cluster mean prior cov)
-        # Consequently, we need to overwrite the last index.
-        new_cluster_var = sigma_obs_squared + self.component_prior_params['centroids_prior_cov_prefactor']
-        replacement_term_one = term_one[obs_idx]
-        # Since mean mu_{nk} = 0, term two is 0 and we can skip.
-        replacement_term_three = -0.5 * torch.square(torch.linalg.norm(torch_observation)) / \
-                                 new_cluster_var
-        replacement_term_four = -obs_dim * np.log(2 * np.pi * new_cluster_var) / 2.
-        term_to_softmax[obs_idx] = replacement_term_one + replacement_term_three + replacement_term_four
+        # Consequently, we need to overwrite the last index with the correct value.
+        if self.which_prior_prob == 'DP':
+            new_cluster_var = sigma_obs_squared + self.component_prior_params['centroids_prior_cov_prefactor']
+            replacement_term_one = term_one[obs_idx]
+            # Since mean mu_{nk} = 0, term two is 0 and we can skip.
+            replacement_term_three = -0.5 * torch.square(torch.linalg.norm(torch_observation)) / \
+                                     new_cluster_var
+            replacement_term_four = -obs_dim * np.log(2 * np.pi * new_cluster_var) / 2.
+            term_to_softmax[obs_idx] = replacement_term_one + replacement_term_three + replacement_term_four
 
         cluster_assignment_posterior = torch.nn.functional.softmax(
             term_to_softmax,  # shape: (max num clusters, )
@@ -531,7 +547,7 @@ class DynamicalCRP(BaseModel):
 
         variational_params['assignments']['probs'][obs_idx, :obs_idx + 1] = cluster_assignment_posterior
 
-        print('Cluster assignment posterior: ', np.round(cluster_assignment_posterior.numpy()[:obs_idx + 1], 2))
+        # print('Cluster assignment posterior: ', np.round(cluster_assignment_posterior.numpy()[:obs_idx + 1], 2))
 
     @staticmethod
     def optimize_cluster_assignments_product_bernoullis(torch_observation: torch.Tensor,
@@ -702,16 +718,19 @@ class DynamicalCRP(BaseModel):
                                                     cum_cluster_assignment_posteriors: torch.Tensor,
                                                     ) -> None:
 
-        if obs_idx == 5:
-            print()
+        if self.update_new_cluster_parameters:
+            max_cluster_idx_to_update = obs_idx + 1  # End index is exclusionary.
+        else:
+            # Recall, we only update the previous clusters' parameters.
+            max_cluster_idx_to_update = obs_idx
 
         sigma_obs_squared = likelihood_params['likelihood_cov_prefactor']
         assert sigma_obs_squared > 0.
 
-        prev_means_means = variational_params['means']['means'][0, :obs_idx + 1, :].clone()
+        prev_means_means = variational_params['means']['means'][0, :max_cluster_idx_to_update, :].clone()
 
         time_2_1 = time.time()
-        prev_means_diag_precisions = 1. / variational_params['means']['diag_covs'][0, :obs_idx + 1, :]
+        prev_means_diag_precisions = 1. / variational_params['means']['diag_covs'][0, :max_cluster_idx_to_update, :]
         time_2_2 = time.time()
         # print(f'Time2.2 - Time2.1: {time_2_2 - time_2_1}')
 
@@ -720,13 +739,12 @@ class DynamicalCRP(BaseModel):
 
         # Step 1: Compute updated covariances
         # Take I_{D \times D} and repeat to add a batch dimension
-        # Shape (curr max num clusters, obs_dim,)
+        # Shape (max clusters to update, obs_dim,)
         repeated_diag_eyes = torch.ones(size=(1, obs_dim)).repeat(
             curr_max_num_clusters, 1)
         weighted_diag_eyes = torch.multiply(
-            variational_params['assignments']['probs'][obs_idx, :obs_idx + 1, np.newaxis],
-            # shape (curr max num clusters, 1)
-            repeated_diag_eyes,  # shape (curr max num clusters, 1)
+            variational_params['assignments']['probs'][obs_idx, :max_cluster_idx_to_update, np.newaxis],
+            repeated_diag_eyes,
         ) / sigma_obs_squared
         new_mean_diag_precisions = torch.add(prev_means_diag_precisions, weighted_diag_eyes)
         new_means_diag_covs = 1. / new_mean_diag_precisions
@@ -736,11 +754,11 @@ class DynamicalCRP(BaseModel):
 
         if not self.robbins_monro_cavi_updates:
             # Don't reduce effective step size.
-            variational_params['means']['diag_covs'][1, :obs_idx + 1, :] = new_means_diag_covs
+            variational_params['means']['diag_covs'][1, :max_cluster_idx_to_update, :] = new_means_diag_covs
         else:
-            # Shape: (curr max num clusters,)
-            numerator = variational_params['assignments']['probs'][obs_idx, :obs_idx + 1]
-            denominator = numerator + cum_cluster_assignment_posteriors[:obs_idx + 1]
+            # Shape: (curr max num clusters - 1,)
+            numerator = variational_params['assignments']['probs'][obs_idx, :max_cluster_idx_to_update]
+            denominator = numerator + cum_cluster_assignment_posteriors[:max_cluster_idx_to_update]
             step_size_per_cluster = torch.divide(
                 numerator,
                 denominator)
@@ -753,23 +771,23 @@ class DynamicalCRP(BaseModel):
             # Take linear combination: step size * new + (1-step size) * old
             scaled_new_means_diag_covs = torch.add(
                 torch.multiply(
-                    step_size_per_cluster[:, np.newaxis],  # Shape (max num clusters, 1)
-                    new_means_diag_covs,  # Shape (max num clusters, obs dim)
+                    step_size_per_cluster[:, np.newaxis],  # Shape (curr max num clusters - 1, 1)
+                    new_means_diag_covs,  # Shape (curr max num clusters - 1, obs dim)
                 ),
                 torch.multiply(
-                    1. - step_size_per_cluster[:, np.newaxis],  # Shape (max num clusters, 1)
-                    variational_params['means']['diag_covs'][0, :obs_idx + 1, :],
+                    1. - step_size_per_cluster[:, np.newaxis],  # Shape (curr max num clusters, 1)
+                    variational_params['means']['diag_covs'][0, :max_cluster_idx_to_update, :],
                 )
             )
-            # Shape: (curr max num obs, obs dim)
-            variational_params['means']['diag_covs'][1, :obs_idx + 1, :] = scaled_new_means_diag_covs
+            # Shape: (curr max num obs - 1, obs dim)
+            variational_params['means']['diag_covs'][1, :max_cluster_idx_to_update, :] = scaled_new_means_diag_covs
 
         # Slowest piece
         time_2_3_1 = time.time()
         # print(f'Time2.3.1 - Time2.3: {time_2_3_1 - time_2_3}')
 
         assert_torch_no_nan_no_inf_is_real(
-            variational_params['means']['diag_covs'][1, :obs_idx + 1, :])
+            variational_params['means']['diag_covs'][1, :max_cluster_idx_to_update, :])
 
         time_2_4 = time.time()
         # print(f'Time2.4 - Time2.3: {time_2_4 - time_2_3}')
@@ -784,8 +802,8 @@ class DynamicalCRP(BaseModel):
         # Need to add 1 when repeating because obs_idx starts at 0.
         term_two = torch.einsum(
             'k, kd->kd',
-            variational_params['assignments']['probs'][obs_idx, :obs_idx + 1],  # Shape: (curr max num clusters - 1, )
-            torch_observation.reshape(1, obs_dim).repeat(obs_idx + 1, 1),  # Shape: (curr max num clusters, obs dim)
+            variational_params['assignments']['probs'][obs_idx, :max_cluster_idx_to_update],  # Shape: (max clusters to update, )
+            torch_observation.reshape(1, obs_dim).repeat(max_cluster_idx_to_update, 1),  # Shape: (max clusters to update, obs dim)
         ) / sigma_obs_squared
 
         new_means_means = torch.einsum(
@@ -800,24 +818,24 @@ class DynamicalCRP(BaseModel):
 
         if not self.robbins_monro_cavi_updates:
             # Don't reduce effective step size.
-            variational_params['means']['means'][1, :obs_idx + 1, :] = new_means_means
+            variational_params['means']['means'][1, :max_cluster_idx_to_update, :] = new_means_means
         else:
             # Shape: (curr max num clusters, obs dim)
             # Take linear combination: step size * new + (1-step size) * old
             scaled_new_means_means = torch.add(
                 torch.multiply(
-                    step_size_per_cluster[:, np.newaxis],  # Shape (curr max num clusters, 1)
-                    new_means_means,  # Shape (curr max num clusters, obs dim)
+                    step_size_per_cluster[:, np.newaxis],  # Shape (max clusters to update, 1)
+                    new_means_means,  # Shape (curr_max_cluster_idx, obs dim)
                 ),
                 torch.multiply(
-                    1. - step_size_per_cluster[:, np.newaxis],  # Shape (max num clusters, 1)
-                    variational_params['means']['means'][0, :obs_idx + 1, :],
+                    1. - step_size_per_cluster[:, np.newaxis],  # Shape (max clusters to update, 1)
+                    variational_params['means']['means'][0, :max_cluster_idx_to_update, :],
                 )
             )
-            # Shape: (curr max num clusters, obs dim)
-            variational_params['means']['means'][1, :obs_idx + 1, :] = scaled_new_means_means
+            # Shape: (max clusters to update, obs dim)
+            variational_params['means']['means'][1, :max_cluster_idx_to_update, :] = scaled_new_means_means
 
-            print('Cluster means: ', variational_params['means']['means'][1][:obs_idx + 1].numpy())
+            # print('Cluster means: ', variational_params['means']['means'][1][:obs_idx].numpy())
 
     def optimize_cluster_params_vonmises_fisher(self,
                                                 torch_observation: torch.Tensor,

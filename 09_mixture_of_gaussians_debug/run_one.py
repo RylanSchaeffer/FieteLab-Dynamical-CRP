@@ -4,7 +4,7 @@ algorithm and model parameters.
 
 Example usage:
 
-01_mixture_of_gaussians/run_one.py
+09_mixture_of_gaussians_debug/run_one.py
 """
 
 import joblib
@@ -22,31 +22,23 @@ import rncrp.metrics
 import rncrp.plot.plot_general
 
 config_defaults = {
-    # 'inference_alg_str': 'CollapsedGibbsSampler',
-    # 'inference_alg_str': 'DP-Means (Offline)',
     'inference_alg_str': 'Dynamical-CRP',
-    # 'inference_alg_str': 'Dynamical-CRP (Cutoff=1e-3)',
-    # 'inference_alg_str': 'Recursive-CRP',
-    # 'inference_alg_str': 'K-Means (Online)',
-    # 'inference_alg_str': 'VI-GMM',
     'dynamics_str': 'step',
     'dynamics_a': 1.,
-    'dynamics_b': 1.,
-    'dynamics_c': 1.,
-    'dynamics_omega': np.pi / 2.,
     'n_samples': 1000,
     'n_features': 2,
-    # 'alpha': 1.1,
-    # 'alpha': 4.5,
     'alpha': 5,
     'beta': 0.,
     'centroids_prior_cov_prefactor': 250.,
     'likelihood_cov_prefactor': 5.,
+    'vi_param_initialization': 'observation',
+    'which_prior_prob': 'DP',
     'repeat_idx': 0,
+    'update_new_cluster_parameters': True,
 }
 
 
-wandb.init(project='dcrp-mixture-of-gaussians',
+wandb.init(project='dcrp-mixture-of-gaussians-debug',
            config=config_defaults)
 config = wandb.config
 
@@ -55,7 +47,7 @@ for key, value in config.items():
     print(key, ' : ', value)
 
 # determine paths
-exp_dir = '01_mixture_of_gaussians'
+exp_dir = '09_mixture_of_gaussians_debug'
 results_dir_path = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir_path, exist_ok=True)
 inf_alg_results_path = os.path.join(
@@ -99,11 +91,12 @@ gen_model_params = {
     }
 }
 
-# K-Means gets access to ground-truth number of clusters
-inference_alg_kwargs = dict()
-if config['inference_alg_str'].startswith('K-Means'):
-    inference_alg_kwargs['n_clusters'] = n_clusters
 
+inference_alg_kwargs = dict(
+    initialization=config['vi_param_initialization'],
+    prior_prob=config['which_prior_prob'],
+    update_new_cluster_parameters=config['update_new_cluster_parameters']
+)
 
 inference_alg_results = rncrp.helpers.run.run_inference_alg(
     inference_alg_str=config['inference_alg_str'],
@@ -137,31 +130,32 @@ joblib.dump(data_to_store,
             filename=inf_alg_results_path)
 
 
-inf_alg_plot_dir_name = ""
-for key, value in dict(config).items():
-    # Need to truncate file names because too long
-    if key == 'beta':
-        continue
-    if key == 'centroids_prior_cov_prefactor':
-        key = 'centroids_prior_cov'
-    if key == 'likelihood_cov_prefactor':
-        key = 'likelihood_cov'
+# inf_alg_plot_dir_name = ""
+# for key, value in dict(config).items():
+#     # Need to truncate file names because too long
+#     if key == 'beta':
+#         continue
+#     if key.startswith('dynamics'):
+#         continue
+#     if key == 'centroids_prior_cov_prefactor':
+#         key = 'centroids_prior_cov'
+#     if key == 'likelihood_cov_prefactor':
+#         key = 'likelihood_cov'
+#
+# inf_alg_plot_dir_path = os.path.join(results_dir_path, inf_alg_plot_dir_name)
+# os.makedirs(inf_alg_plot_dir_path, exist_ok=True)
+#
+# rncrp.plot.plot_general.plot_cluster_assignments_inferred_vs_true(
+#     true_cluster_assignments_one_hot=mixture_model_results['cluster_assignments_one_hot'],
+#     cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
+#     plot_dir=inf_alg_plot_dir_path,
+# )
+#
+# rncrp.plot.plot_general.plot_cluster_coassignments_inferred_vs_true(
+#     true_cluster_assignments=mixture_model_results['cluster_assignments'],
+#     cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
+#     plot_dir=inf_alg_plot_dir_path,
+# )
 
-    inf_alg_plot_dir_name += f"{key}={value}_"
-inf_alg_plot_dir_path = os.path.join(results_dir_path, inf_alg_plot_dir_name)
-os.makedirs(inf_alg_plot_dir_path, exist_ok=True)
 
-rncrp.plot.plot_general.plot_cluster_assignments_inferred_vs_true(
-    true_cluster_assignments_one_hot=mixture_model_results['cluster_assignments_one_hot'],
-    cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
-    plot_dir=inf_alg_plot_dir_path,
-)
-
-rncrp.plot.plot_general.plot_cluster_coassignments_inferred_vs_true(
-    true_cluster_assignments=mixture_model_results['cluster_assignments'],
-    cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
-    plot_dir=inf_alg_plot_dir_path,
-)
-
-
-print(f'Finished 01_mixture_of_gaussians/run_one.py for sweep={wandb.run.id}.')
+print(f'Finished 09_mixture_of_gaussians_debug/run_one.py for run={wandb.run.id}.')

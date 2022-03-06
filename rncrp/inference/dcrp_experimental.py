@@ -43,7 +43,7 @@ class DynamicalCRP(BaseModel):
         self.component_prior_params = gen_model_params['component_prior_params']
         self.likelihood_params = gen_model_params['likelihood_params']
         self.model_str = model_str
-        self.num_coord_ascent_steps_per_obs = num_coord_ascent_steps_per_obs
+        self.num_cavi_steps_per_obs = num_coord_ascent_steps_per_obs
         self.numerically_optimize = numerically_optimize
         if self.numerically_optimize:
             assert isinstance(learning_rate, float)
@@ -213,6 +213,7 @@ class DynamicalCRP(BaseModel):
                     torch_observation=torch_observation,
                     obs_idx=obs_idx,
                     vi_idx=0,
+                    num_cavi_steps_per_obs=1,
                     variational_params=variational_params,
                     likelihood_params=self.gen_model_params['likelihood_params'],
                     cum_cluster_assignment_posteriors=cum_cluster_assignment_posteriors)
@@ -272,7 +273,7 @@ class DynamicalCRP(BaseModel):
 
                 # Step 3: Perform coordinate ascent on variational parameters.
                 approx_lower_bounds = []
-                for vi_idx in range(self.num_coord_ascent_steps_per_obs):
+                for vi_idx in range(self.num_cavi_steps_per_obs):
 
                     # print(f'Obs Idx: {obs_idx}, VI idx: {vi_idx}')
 
@@ -303,6 +304,7 @@ class DynamicalCRP(BaseModel):
                             optimize_cluster_params_fn(
                                 torch_observation=torch_observation,
                                 obs_idx=obs_idx,
+                                num_cavi_steps_per_obs=self.num_cavi_steps_per_obs,
                                 vi_idx=vi_idx,
                                 variational_params=variational_params,
                                 likelihood_params=self.gen_model_params['likelihood_params'],
@@ -312,16 +314,16 @@ class DynamicalCRP(BaseModel):
                             # print(f'Time2 - Time1: {time_2 - time_1}')
                             # print(f'Time3 - Time2: {time_3 - time_2}')
 
+                            # Overwrite old variational parameters with curr variational parameters
+                            for variable, variable_variational_params_dict in variational_params.items():
+                                if variable == 'assignments':
+                                    continue
+                                for variational_param, variational_param_tensor in variable_variational_params_dict.items():
+                                    variational_param_tensor[0] = variational_param_tensor[1]
+
                     # print(torch_observations[:obs_idx + 1])
                     # print(variational_params['assignments']['probs'][obs_idx, :obs_idx+1])
                     # print(variational_params['means']['means'][1, obs_idx, :obs_idx+1])
-
-                # Overwrite old variational parameters with curr variational parameters
-                for variable, variable_variational_params_dict in variational_params.items():
-                    if variable == 'assignments':
-                        continue
-                    for variational_param, variational_param_tensor in variable_variational_params_dict.items():
-                        variational_param_tensor[0] = variational_param_tensor[1]
 
                 cluster_assignment_posterior = variational_params['assignments']['probs'][obs_idx, :].clone()
 
@@ -697,6 +699,7 @@ class DynamicalCRP(BaseModel):
                                                     torch_observation: torch.Tensor,
                                                     obs_idx: int,
                                                     vi_idx: int,
+                                                    num_cavi_steps_per_obs: int,
                                                     variational_params: Dict[str, dict],
                                                     likelihood_params: Dict[str, float],
                                                     cum_cluster_assignment_posteriors: torch.Tensor,
@@ -741,9 +744,10 @@ class DynamicalCRP(BaseModel):
             # Shape: (curr max num clusters,)
             numerator = variational_params['assignments']['probs'][obs_idx, :obs_idx + 1]
             denominator = numerator + cum_cluster_assignment_posteriors[:obs_idx + 1]
+            # Remember to divide by the number of CAVI steps
             step_size_per_cluster = torch.divide(
                 numerator,
-                denominator)
+                denominator) / float(num_cavi_steps_per_obs)
 
             # If the cumulative probability mass is 0, the previous few lines
             # will divide 0/0 and result in NaN. Consequently, we mask those values.

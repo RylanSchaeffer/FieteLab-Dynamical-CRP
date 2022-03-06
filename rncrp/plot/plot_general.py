@@ -213,7 +213,7 @@ def plot_cluster_coassignments_inferred_vs_true(cluster_assignment_posteriors: n
                              f'cluster_coassignments_inferred_vs_true.png'),
                 bbox_inches='tight',
                 dpi=300)
-    plt.show()
+    # plt.show()
     plt.close()
 
 
@@ -418,6 +418,8 @@ def plot_num_true_clusters_div_total_num_true_clusters_by_obs_idx(ratio_df: pd.D
         versus the number of observations, averaged over multiple datasets.
     """
 
+    plt.close()
+
     g = sns.lineplot(data=ratio_df,
                      x='obs_idx',
                      y='cluster_ratio',
@@ -452,6 +454,8 @@ def plot_num_true_clusters_div_total_num_true_clusters_by_obs_idx(ratio_df: pd.D
 def plot_runtime_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
                                          plot_dir: str,
                                          title_str: str = None):
+    plt.close()
+
     # Manually make figure bigger to handle external legend
     plt.figure(figsize=(9, 4))
 
@@ -482,6 +486,9 @@ def plot_runtime_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
 def plot_runtime_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
                                              plot_dir: str,
                                              title_str: str = None):
+
+    plt.close()
+
     # Manually make figure bigger to handle external legend
     plt.figure(figsize=(9, 4))
 
@@ -517,6 +524,8 @@ def plot_scores_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
                       if 'Score' in col]
 
     for score_column in scores_columns:
+
+        plt.close()
 
         # Manually make figure bigger to handle external legend
         plt.figure(figsize=(9, 4))
@@ -554,6 +563,8 @@ def plot_scores_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
 
     for score_column in scores_columns:
 
+        plt.close()
+
         # Manually make figure bigger to handle external legend
         plt.figure(figsize=(9, 4))
 
@@ -588,6 +599,8 @@ def plot_scores_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
                       if 'Score' in col]
 
     for score_column in scores_columns:
+
+        plt.close()
 
         # Manually make figure bigger to handle external legend
         plt.figure(figsize=(9, 4))
