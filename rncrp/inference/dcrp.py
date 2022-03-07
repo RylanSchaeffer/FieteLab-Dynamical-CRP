@@ -301,14 +301,6 @@ class DynamicalCRP(BaseModel):
                                 variational_params=variational_params,
                                 likelihood_params=self.gen_model_params['likelihood_params'])
 
-                            # Renormalize
-                            if self.cutoff > 0:
-                                indices_to_zero = variational_params['assignments']['probs'][obs_idx,
-                                                  :obs_idx + 1] < self.cutoff
-                                variational_params['assignments']['probs'][obs_idx, indices_to_zero] = 0.
-                                variational_params['assignments']['probs'][obs_idx, :obs_idx + 1] /= \
-                                    torch.sum(variational_params['assignments']['probs'][obs_idx, :obs_idx + 1])
-
                             # time_2 = time.time()
 
                             optimize_cluster_params_fn(
@@ -802,8 +794,10 @@ class DynamicalCRP(BaseModel):
         # Need to add 1 when repeating because obs_idx starts at 0.
         term_two = torch.einsum(
             'k, kd->kd',
-            variational_params['assignments']['probs'][obs_idx, :max_cluster_idx_to_update],  # Shape: (max clusters to update, )
-            torch_observation.reshape(1, obs_dim).repeat(max_cluster_idx_to_update, 1),  # Shape: (max clusters to update, obs dim)
+            variational_params['assignments']['probs'][obs_idx, :max_cluster_idx_to_update],
+            # Shape: (max clusters to update, )
+            torch_observation.reshape(1, obs_dim).repeat(max_cluster_idx_to_update, 1),
+            # Shape: (max clusters to update, obs dim)
         ) / sigma_obs_squared
 
         new_means_means = torch.einsum(
@@ -872,3 +866,20 @@ class DynamicalCRP(BaseModel):
             variational_params['means']['means'][1, :obs_idx + 1, :] = directions
         else:
             raise NotImplementedError
+
+    # def renormalize_after_cutoff(self):
+    #
+    #     # Renormalize
+    #     if self.cutoff > 0:
+    #         indices_to_zero = variational_params['assignments']['probs'][obs_idx,
+    #                           :obs_idx + 1] < self.cutoff
+    #         variational_params['assignments']['probs'][obs_idx, indices_to_zero] = 0.
+    #         variational_params['assignments']['probs'][obs_idx, :obs_idx + 1] /= \
+    #             torch.sum(variational_params['assignments']['probs'][obs_idx, :obs_idx + 1])
+    #
+    #         negative_indices = variational_params['assignments']['probs'][obs_idx,
+    #                            :obs_idx + 1] < 0.
+    #         if torch.any(negative_indices):
+    #             variational_params['assignments']['probs'][obs_idx, :obs_idx + 1][
+    #                 negative_indices] = 0.
+    #             assert torch.all(cluster_assignment_prior >= 0.)
