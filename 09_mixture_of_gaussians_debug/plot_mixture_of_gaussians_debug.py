@@ -150,7 +150,7 @@ def plot_num_clusters_by_alpha_split_by_hyperparameter_choices(
             linewidth=0,
             color='k')
 
-        plt.ylim(10., 1000.)
+        plt.ylim(10., 100.)
         plt.yscale('log')
         plt.xlabel(r'$\alpha$')
         plt.title(hue)
@@ -178,6 +178,11 @@ def plot_scores_by_alpha_split_by_hyperparameter_choices(sweep_results_df: pd.Da
 
     for hue in product(('zero', 'observation'), ('DP', 'variational'), (True, False)):
 
+        sweep_results_df_subset = sweep_results_df[
+            (sweep_results_df['vi_param_initialization'] == hue[0])
+            & (sweep_results_df['which_prior_prob'] == hue[1])
+            & (sweep_results_df['update_new_cluster_parameters'] == hue[2])]
+
         for score_column in scores_columns:
 
             plt.close()
@@ -185,7 +190,7 @@ def plot_scores_by_alpha_split_by_hyperparameter_choices(sweep_results_df: pd.Da
             # Manually make figure bigger to handle external legend
             plt.figure(figsize=(9, 4))
 
-            sns.lineplot(data=sweep_results_df,
+            sns.lineplot(data=sweep_results_df_subset,
                          x='alpha',
                          y=score_column,
                          hue='inference_alg_str')
@@ -198,10 +203,10 @@ def plot_scores_by_alpha_split_by_hyperparameter_choices(sweep_results_df: pd.Da
             if title_str is not None:
                 plt.title(title_str)
 
-            plt.ylim(-0.05, 1.05)
+            plt.ylim(0.35, 0.9)
             plt.tight_layout()
             plt.savefig(os.path.join(plot_dir,
-                                     f'comparison_score={score_column}_by_alpha_init={hue[0]}_prior={hue[1]}_updatenew={hue[2]}.png.png'),
+                                     f'comparison_score={score_column}_by_alpha_init={hue[0]}_prior={hue[1]}_updatenew={hue[2]}.png'),
                         bbox_inches='tight',
                         dpi=300)
             # plt.show()

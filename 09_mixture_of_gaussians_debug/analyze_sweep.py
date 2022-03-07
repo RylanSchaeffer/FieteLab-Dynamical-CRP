@@ -33,7 +33,16 @@ else:
 
 print(f"Number of runs: {sweep_results_df.shape[0]} for sweep={sweep_name}")
 
+# sweep_results_df.groupby(['vi_param_initialization', 'which_prior_prob', 'update_new_cluster_parameters']).agg({
+#     'Normalized Mutual Info Score': ['mean', 'median']
+# })['Normalized Mutual Info Score']
+
 plot_mixture_of_gaussians_debug.plot_num_clusters_by_alpha_split_by_hyperparameter_choices(
+    sweep_results_df=sweep_results_df,
+    plot_dir=sweep_results_dir_path,
+)
+
+plot_mixture_of_gaussians_debug.plot_scores_by_alpha_split_by_hyperparameter_choices(
     sweep_results_df=sweep_results_df,
     plot_dir=sweep_results_dir_path,
 )
