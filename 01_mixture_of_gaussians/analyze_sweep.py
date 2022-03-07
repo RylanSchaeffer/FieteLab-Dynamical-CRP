@@ -10,7 +10,7 @@ exp_dir_path = '01_mixture_of_gaussians'
 results_dir = os.path.join(exp_dir_path, 'results')
 os.makedirs(results_dir, exist_ok=True)
 wandb_sweep_path = "rylan/dcrp-mixture-of-gaussians"
-sweep_name = 'j6ehykmd'
+sweep_name = '4jfwfeas'
 sweep_results_dir_path = os.path.join(results_dir, sweep_name)
 os.makedirs(sweep_results_dir_path, exist_ok=True)
 sweep_results_df_path = os.path.join(sweep_results_dir_path, f'sweep={sweep_name}_results.csv')

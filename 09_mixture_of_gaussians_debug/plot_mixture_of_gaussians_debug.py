@@ -196,6 +196,7 @@ def plot_scores_by_alpha_split_by_hyperparameter_choices(sweep_results_df: pd.Da
                          hue='inference_alg_str')
             plt.xlabel(r'$\alpha$')
             # plt.legend()
+
             # Move legend outside of plot
             # See https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot-in-matplotlib
             plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0.)
