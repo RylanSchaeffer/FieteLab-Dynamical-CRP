@@ -28,7 +28,7 @@ parameters:
       False,
     ]
   alpha:
-    values: [ 5.0, 10., ]
+    values: [ 5.0, 10., 15.0, 20., 25.]
   n_samples:
     values: [1000]
   n_features:

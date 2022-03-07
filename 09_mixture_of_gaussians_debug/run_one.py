@@ -32,9 +32,9 @@ config_defaults = {
     'centroids_prior_cov_prefactor': 250.,
     'likelihood_cov_prefactor': 5.,
     'vi_param_initialization': 'observation',
-    'which_prior_prob': 'DP',
-    'repeat_idx': 0,
+    'which_prior_prob': 'variational',
     'update_new_cluster_parameters': True,
+    'repeat_idx': 0,
 }
 
 
@@ -93,8 +93,8 @@ gen_model_params = {
 
 
 inference_alg_kwargs = dict(
-    initialization=config['vi_param_initialization'],
-    prior_prob=config['which_prior_prob'],
+    vi_param_initialization=config['vi_param_initialization'],
+    which_prior_prob=config['which_prior_prob'],
     update_new_cluster_parameters=config['update_new_cluster_parameters']
 )
 
