@@ -39,9 +39,12 @@ class RecursiveCRP(BaseModel):
         self.mixing_params = gen_model_params['mixing_params']
         assert self.mixing_params['alpha'] > 0.
         assert self.mixing_params['beta'] == 0.
+
+        if 'b' in self.mixing_params['dynamics_params']:
+            self.mixing_params['dynamics_params']['b'] = 0.
         self.dynamics = convert_dynamics_str_to_dynamics_obj(
             dynamics_str='step',
-            dynamics_params=self.mixing_params['dynamics_params'],
+            dynamics_params=dict(a=1., b=0.),
             implementation_mode='torch')
         self.component_prior_params = gen_model_params['component_prior_params']
         self.likelihood_params = gen_model_params['likelihood_params']
