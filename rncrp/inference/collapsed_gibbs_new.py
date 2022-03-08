@@ -145,8 +145,9 @@ class CollapsedGibbsSamplerNew(BaseModel):
                 cluster_assignments_one_hot_sample)
 
             # Cluster means
-            for cluster_id in np.unique(cluster_assignments_mcmc_samples[sample_idx]):
+            for cluster_id in np.unique(cluster_assignments_sample):
                 indices_in_cluster = cluster_assignments_sample == cluster_id
+                assert np.sum(indices_in_cluster) > 0
                 cluster_mean = np.mean(observations[indices_in_cluster], axis=0)
                 params_mcmc_samples['means'].append(cluster_mean)
                 # TODO: implement cluster covariances
