@@ -11,8 +11,8 @@ import wandb
 import tensorflow as tf
 from typing import Union
 
-from rncrp.inference import CollapsedGibbsSampler, DPMeans, DynamicalCRP, \
-    KMeansWrapper, RecursiveCRP, VariationalInferenceGMM
+from rncrp.inference import CollapsedGibbsSampler, CollapsedGibbsSamplerNew, DPMeans,\
+    DynamicalCRP, KMeans, RecursiveCRP, VariationalInferenceGMM
 
 
 def create_logger(run_dir):
@@ -43,7 +43,11 @@ def run_inference_alg(inference_alg_str: str,
 
     if inference_alg_str == 'CollapsedGibbsSampler':
 
-        inference_alg = CollapsedGibbsSampler(
+        # inference_alg = CollapsedGibbsSampler(
+        #     gen_model_params=gen_model_params,
+        #     **inference_alg_kwargs
+        # )
+        inference_alg = CollapsedGibbsSamplerNew(
             gen_model_params=gen_model_params,
             **inference_alg_kwargs
         )
@@ -59,14 +63,6 @@ def run_inference_alg(inference_alg_str: str,
             inference_alg_kwargs['cutoff'] = 1e-4
 
         inference_alg = DynamicalCRP(
-            gen_model_params=gen_model_params,
-            **inference_alg_kwargs)
-
-    elif inference_alg_str == 'Recursive-CRP':
-        if inference_alg_kwargs is None:
-            inference_alg_kwargs = dict()
-
-        inference_alg = RecursiveCRP(
             gen_model_params=gen_model_params,
             **inference_alg_kwargs)
 
@@ -102,7 +98,16 @@ def run_inference_alg(inference_alg_str: str,
         else:
             raise ValueError('Invalid KMeans Means')
 
-        inference_alg = KMeansWrapper(
+        inference_alg = KMeans(
+            gen_model_params=gen_model_params,
+            **inference_alg_kwargs)
+
+    elif inference_alg_str == 'Recursive-CRP':
+        if inference_alg_kwargs is None:
+            inference_alg_kwargs = dict()
+
+        inference_alg = RecursiveCRP(
+            gen_model_params=gen_model_params,
             **inference_alg_kwargs)
 
     elif inference_alg_str == 'VI-GMM':
