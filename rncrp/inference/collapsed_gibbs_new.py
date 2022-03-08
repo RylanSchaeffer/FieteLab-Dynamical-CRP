@@ -373,3 +373,5 @@ class CollapsedGibbsSamplerNew(BaseModel):
             gibbs_statistics=gibbs_statistics,
             forward_statistics=forward_statistics,
         )
+
+        return gweke_test_results
