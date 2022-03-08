@@ -36,6 +36,7 @@ class KMeans(BaseModel):
 
         self.n_clusters = n_clusters
         self.max_iter = max_iter
+        self.n_iters_till_convergence = None
         # self.num_initializations = num_initializations
         self.model_str = model_str
         self.plot_dir = plot_dir
@@ -55,11 +56,12 @@ class KMeans(BaseModel):
                 size=self.n_clusters,)
         # If "offline", we initialize centroids using data.
         else:
-            centers = np.random.choice(
-                observations,
+            center_indices = np.random.choice(
+                num_obs,
                 size=self.n_clusters,
                 replace=False,
             )
+            centers = observations[center_indices, :]
 
         cluster_assignments_posteriors = np.full(num_obs, fill_value=-1, dtype=np.int)
 
@@ -87,6 +89,7 @@ class KMeans(BaseModel):
 
             # If no data was assigned to a different cluster, then we've converged.
             if iter_idx > 0 and not datum_reassigned:
+                self.n_iters_till_convergence = iter_idx
                 break
 
             # Update centers based on assigned observations.
@@ -104,6 +107,8 @@ class KMeans(BaseModel):
 
                 # Recompute centroid from assigned observations.
                 centers[center_idx, :] = np.mean(points_in_assigned_cluster, axis=0)
+
+        print(f'Converged in {self.n_iters_till_convergence} iterations.')
 
         cluster_assignment_posteriors_one_hot = OneHotEncoder(sparse=False).fit_transform(
             cluster_assignments_posteriors.reshape(-1, 1))
