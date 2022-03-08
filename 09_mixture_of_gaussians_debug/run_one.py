@@ -34,6 +34,7 @@ config_defaults = {
     'vi_param_initialization': 'observation',
     'which_prior_prob': 'variational',
     'update_new_cluster_parameters': True,
+    'robbins_monro_cavi_updates': True,
     'repeat_idx': 0,
 }
 
@@ -95,7 +96,8 @@ gen_model_params = {
 inference_alg_kwargs = dict(
     vi_param_initialization=config['vi_param_initialization'],
     which_prior_prob=config['which_prior_prob'],
-    update_new_cluster_parameters=config['update_new_cluster_parameters']
+    update_new_cluster_parameters=config['update_new_cluster_parameters'],
+    robbins_monro_cavi_updates=config['robbins_monro_cavi_updates'],
 )
 
 inference_alg_results = rncrp.helpers.run.run_inference_alg(
