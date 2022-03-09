@@ -68,8 +68,8 @@ class CollapsedGibbsSamplerNew(BaseModel):
                  model_str: str = 'CGS',
                  plot_dir: str = None,
                  num_samples: int = 23,
-                 burn_in_steps: int = 150,
-                 thinning_num_steps: int = 50,
+                 burn_in_steps: int = 20000,
+                 thinning_num_steps: int = 1000,
                  **kwargs,
                  ):
         self.gen_model_params = gen_model_params
@@ -175,6 +175,8 @@ class CollapsedGibbsSamplerNew(BaseModel):
                                 obs_idx: np.ndarray,
                                 state: State):
 
+        num_obs, obs_dim = observations.shape
+
         # Ensure the cluster IDs have nice low integer values.
         state.rename_cluster_ids()
 
@@ -185,6 +187,13 @@ class CollapsedGibbsSamplerNew(BaseModel):
         # Exclude current observation from number of observations per cluster.
         num_obs_per_cluster[cluster_ids == state.cluster_assignments[obs_idx]] -= 1
 
+        # Convert from ints (counts) to float to be able to normalize.
+        prior_per_cluster = np.append(
+            num_obs_per_cluster,
+            self.mixing_params['alpha']).astype(np.float32)
+        prior_per_cluster /= np.sum(prior_per_cluster)
+        log_prior_per_cluster = np.log(prior_per_cluster)
+
         # Add 1 for consideration of new cluster.
         cluster_mean_per_cluster = np.zeros(shape=(len(cluster_ids) + 1, observations.shape[1]))
         cluster_cov_per_cluster = np.zeros(shape=(len(cluster_ids) + 1, 1))
@@ -192,13 +201,13 @@ class CollapsedGibbsSamplerNew(BaseModel):
         for cluster_idx, (cluster_id, num_obs_in_cluster) in enumerate(zip(cluster_ids, num_obs_per_cluster)):
 
             # Identify other points in cluster.
-            obs_in_cluster_id = observations[
+            other_obs_in_cluster = observations[
                 (state.cluster_assignments == cluster_id)
                 & (self.obs_idx_range != obs_idx)]
 
             # Average other points in the cluster.
             # This can produce NaN if there are no other observations in this cluster.
-            avg_obs_in_cluster = np.mean(obs_in_cluster_id, axis=0)
+            avg_obs_in_cluster = np.mean(other_obs_in_cluster, axis=0)
 
             cluster_diag_prec = (num_obs_in_cluster / self.likelihood_params['likelihood_cov_prefactor']) \
                                 + (1. / self.component_prior_params['centroids_prior_cov_prefactor'])
@@ -210,7 +219,7 @@ class CollapsedGibbsSamplerNew(BaseModel):
             cluster_mean_per_cluster[cluster_idx] = cluster_mean
 
         # Set mean and cov for the possible new cluster.
-        # Don't need to set mean because the prior mean is 0.
+        # Note: Don't need to set mean because the prior mean is 0.
         cluster_cov_per_cluster[-1] = self.component_prior_params['centroids_prior_cov_prefactor'] \
                                       + self.likelihood_params['likelihood_cov_prefactor']
 
@@ -237,12 +246,13 @@ class CollapsedGibbsSamplerNew(BaseModel):
         # since the mean is NaN. Set these to negative infinity.
         log_likelihood_per_cluster[np.isnan(log_likelihood_per_cluster)] = -np.inf
 
-        # Convert from ints (counts) to float to be able to normalize.
-        prior_per_cluster = np.concatenate([
-            num_obs_per_cluster,
-            np.array([self.mixing_params['alpha']])]).astype(np.float32)
-        prior_per_cluster /= np.sum(prior_per_cluster)
-        log_prior_per_cluster = np.log(prior_per_cluster)
+        # For the new cluster, use likelihood of N(0, (sigma_obs_sqrd + sigma_mean_sqrd) * Eye)
+        new_cluster_var = self.likelihood_params['likelihood_cov_prefactor']\
+                          + self.component_prior_params['centroids_prior_cov_prefactor']
+        log_likelihood_per_cluster[-1] = multivariate_normal.logpdf(
+            observations[obs_idx],
+            mean=np.zeros(obs_dim),
+            cov=new_cluster_var * np.eye(obs_dim))
 
         log_sampling_prob_per_cluster = log_likelihood_per_cluster + log_prior_per_cluster
 
