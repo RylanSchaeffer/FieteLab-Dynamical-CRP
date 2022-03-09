@@ -2,15 +2,15 @@ import numpy as np
 import os
 import pandas as pd
 
-import plot_mixture_of_gaussians_debug
+import plot_mixture_of_gaussians_cgs
 from rncrp.helpers.analyze import download_wandb_project_runs_results, \
     generate_and_save_cluster_ratio_data
 
-exp_dir_path = '09_mixture_of_gaussians_debug'
+exp_dir_path = '10_mixture_of_gaussians_cgs'
 results_dir = os.path.join(exp_dir_path, 'results')
 os.makedirs(results_dir, exist_ok=True)
-wandb_sweep_path = "rylan/dcrp-mixture-of-gaussians-debug"
-sweep_name = 'yhsk2mez'
+wandb_sweep_path = "rylan/dcrp-mixture-of-gaussians-cgs"
+sweep_name = 'kavbcfgx'
 sweep_results_dir_path = os.path.join(results_dir, sweep_name)
 os.makedirs(sweep_results_dir_path, exist_ok=True)
 sweep_results_df_path = os.path.join(sweep_results_dir_path, f'sweep={sweep_name}_results.csv')
@@ -36,16 +36,6 @@ print(f"Number of runs: {sweep_results_df.shape[0]} for sweep={sweep_name}")
 # sweep_results_df.groupby(['vi_param_initialization', 'which_prior_prob', 'update_new_cluster_parameters']).agg({
 #     'Normalized Mutual Info Score': ['mean', 'median']
 # })['Normalized Mutual Info Score']
-
-plot_mixture_of_gaussians_debug.plot_num_clusters_by_alpha_split_by_hyperparameter_choices(
-    sweep_results_df=sweep_results_df,
-    plot_dir=sweep_results_dir_path,
-)
-
-plot_mixture_of_gaussians_debug.plot_scores_by_alpha_split_by_hyperparameter_choices(
-    sweep_results_df=sweep_results_df,
-    plot_dir=sweep_results_dir_path,
-)
 
 
 cluster_ratio_dfs_results = generate_and_save_cluster_ratio_data(
@@ -78,7 +68,7 @@ num_true_clusters_div_total_num_true_clusters_by_obs_idx_df = pd.merge(
     on='inf_alg_results_path')
 
 # Generate all plots
-plot_mixture_of_gaussians_debug.plot_analyze_all_inf_algs_results(
+plot_mixture_of_gaussians_cgs.plot_analyze_all_inf_algs_results(
     all_inf_algs_results_df=sweep_results_df,
     num_inferred_clusters_div_num_true_clusters_by_obs_idx_df=num_inferred_clusters_div_num_true_clusters_by_obs_idx_df,
     num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df=num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df,
@@ -86,4 +76,14 @@ plot_mixture_of_gaussians_debug.plot_analyze_all_inf_algs_results(
     plot_dir=sweep_results_dir_path,
 )
 
-print(f'Finished 09_mixture_of_gaussians_debug/analyze_sweep.py for sweep={sweep_name}.')
+plot_mixture_of_gaussians_cgs.plot_num_clusters_by_alpha_split_by_hyperparameter_choices(
+    sweep_results_df=sweep_results_df,
+    plot_dir=sweep_results_dir_path,
+)
+
+plot_mixture_of_gaussians_cgs.plot_scores_by_alpha_split_by_hyperparameter_choices(
+    sweep_results_df=sweep_results_df,
+    plot_dir=sweep_results_dir_path,
+)
+
+print(f'Finished 10_mixture_of_gaussians_cgs/analyze_sweep.py for sweep={sweep_name}.')
