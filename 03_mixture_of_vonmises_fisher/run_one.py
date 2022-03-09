@@ -26,11 +26,11 @@ config_defaults = {
     # 'dynamics_b': 1.,
     # 'dynamics_c': 1.,
     # 'dynamics_omega': np.pi / 2.,
-    'n_samples': 101,
+    'n_samples': 1000,
     'n_features': 10,
-    'alpha': 1.1,
+    'alpha': 5.,
     'beta': 0.,
-    'likelihood_kappa': 1.,
+    'likelihood_kappa': 5.,
     'repeat_idx': 0,
 }
 
