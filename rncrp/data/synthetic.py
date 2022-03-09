@@ -228,8 +228,6 @@ def sample_mixture_model(num_obs: int = 100,
 
         assert component_prior_params['likelihood_kappa'] >= 0
 
-        tfd = tfp.distributions
-
         # mus dimension: num_components x obs_dim
         # each mu (row) is a unit vector
         mus = np.random.normal(loc=0., scale=1, size=(num_components, obs_dim))
@@ -243,7 +241,8 @@ def sample_mixture_model(num_obs: int = 100,
                           mus=mus,
                           kappas=kappas)
 
-        # observations dimension: num_obs x obs_dim
+        tfd = tfp.distributions
+        # Shape: (num_obs, obs_dim)
         observations = np.array([
             tfd.VonMisesFisher(
                 mean_direction=mus[assigned_cluster],
