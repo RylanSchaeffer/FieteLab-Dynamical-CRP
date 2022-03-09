@@ -32,6 +32,10 @@ config_defaults = {
     'centroids_prior_cov_prefactor': 250.,
     'likelihood_cov_prefactor': 5.,
     'repeat_idx': 0,
+    'num_repeats': 43,
+    'num_samples_per_repeat': 51,
+    'burn_in_num_steps': 20000,
+    'thinning_num_steps': 2000,
 }
 
 
@@ -74,31 +78,37 @@ gen_model_params = {
 
 
 cgs = CollapsedGibbsSamplerNew(
-    gen_model_params=gen_model_params,)
-
+    gen_model_params=gen_model_params,
+    num_samples=config['num_samples_per_repeat'],
+    burn_in_num_steps=config['burn_in_num_steps'],
+    thinning_num_steps=config['thinning_num_steps'])
 
 gweke_test_results = cgs.geweke_test(
     num_obs=config['n_samples'],
-    obs_dim=config['n_features'])
-
+    obs_dim=config['n_features'],
+    num_repeats=config['num_repeats'])
 
 forward_statistics = gweke_test_results['forward_statistics']
 gibbs_statistics = gweke_test_results['gibbs_statistics']
 
 import matplotlib.pyplot as plt
 
-
+min_value = min(np.min(forward_statistics), np.min(gibbs_statistics)) - 5
+max_value = max(np.max(forward_statistics), np.max(gibbs_statistics)) + 5
 plt.plot(np.sort(forward_statistics), np.sort(gibbs_statistics))
-min_value = min(np.min(forward_statistics), np.min(gibbs_statistics))
-max_value = max(np.max(forward_statistics), np.max(gibbs_statistics))
 plt.title('Num Inferred Clusters')
 plt.xlabel('Forward')
 plt.ylabel('Gibbs Sampling (Median)')
 plt.xlim(min_value, max_value)
 plt.ylim(min_value, max_value)
 plt.tight_layout()
-plt.savefig(os.path.join(exp_dir,
-                         f'gweke_test_num_inferred_clusters.png'),
+
+plot_title = f"gweke_num_inferred_clusters_repeats={config['num_repeats']}" \
+             f"_samples={config['num_samples_per_repeat']}" \
+             f"_burnin={config['burn_in_num_steps']}" \
+             f"_thinning={config['thinning_num_steps']}.png"
+
+plt.savefig(os.path.join(results_dir_path, plot_title),
             bbox_inches='tight',
             dpi=300)
 # plt.show()

@@ -1,5 +1,5 @@
-program: 09_mixture_of_gaussians_debug/run_one.py
-project: dcrp-mixture-of-gaussians-debug
+program: 10_mixture_of_gaussians_cgs/run_one.py
+project: dcrp-mixture-of-gaussians-cgs
 method: grid
 metric:
   goal: minimize
@@ -14,14 +14,20 @@ parameters:
       'step',
     ]
   alpha:
-    values: [ 5.0, 10., 15.0, 20., 25.]
+    values: [ 5.0]
   n_samples:
     values: [1000]
   n_features:
-    values: [3, 6, 9]
+    values: [2]
   centroids_prior_cov_prefactor:
-    values: [25., 100., 250.]
+    values: [250.]
   likelihood_cov_prefactor:
     values: [5.]
-  repeat_idx:
-    values: [0, 1, 2]
+  num_repeats:
+    values: [53]
+  num_samples_per_repeat:
+    values: [51]
+  burn_in_num_steps:
+    values: [10000, 25000, 50000]
+  thinning_num_steps:
+    values: [100, 1000, 2000, 5000]

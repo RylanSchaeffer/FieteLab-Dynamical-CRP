@@ -8,10 +8,10 @@
 
 # Run this, then pipe sweep ID to each individual run
 # source rncrp_venv/bin/activate
-# wandb sweep 09_mixture_of_gaussians_debug/sweep_debug.yaml
+# wandb sweep 10_mixture_of_gaussians_cgs/sweep_debug.yaml
 
-for i in {1..60}
+for i in {1..10}
 do
-  sbatch 09_mixture_of_gaussians_debug/run_one.sh yhsk2mez
+  sbatch 10_mixture_of_gaussians_cgs/run_one.sh kavbcfgx
   sleep 5
 done

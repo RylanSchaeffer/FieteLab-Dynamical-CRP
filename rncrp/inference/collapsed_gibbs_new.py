@@ -5,6 +5,7 @@ from sklearn.preprocessing import OneHotEncoder
 from typing import Dict
 
 from rncrp.inference.base import BaseModel
+from rncrp.helpers.numpy_helpers import assert_np_no_nan_no_inf_is_real
 
 
 class State(object):
@@ -199,7 +200,6 @@ class CollapsedGibbsSamplerNew(BaseModel):
         cluster_cov_per_cluster = np.zeros(shape=(len(cluster_ids) + 1, 1))
 
         for cluster_idx, (cluster_id, num_obs_in_cluster) in enumerate(zip(cluster_ids, num_obs_per_cluster)):
-
             # Identify other points in cluster.
             other_obs_in_cluster = observations[
                 (state.cluster_assignments == cluster_id)
@@ -209,19 +209,27 @@ class CollapsedGibbsSamplerNew(BaseModel):
             # This can produce NaN if there are no other observations in this cluster.
             avg_obs_in_cluster = np.mean(other_obs_in_cluster, axis=0)
 
+            # https://www.cs.ubc.ca/~murphyk/Papers/bayesGauss.pdf
+            # Equation 29.
             cluster_diag_prec = (num_obs_in_cluster / self.likelihood_params['likelihood_cov_prefactor']) \
                                 + (1. / self.component_prior_params['centroids_prior_cov_prefactor'])
             cluster_diag_cov = 1. / cluster_diag_prec
             cluster_cov_per_cluster[cluster_idx] = cluster_diag_cov
 
+            # https://www.cs.ubc.ca/~murphyk/Papers/bayesGauss.pdf
+            # Equation 30.
             cluster_mean = cluster_diag_cov * num_obs_in_cluster * avg_obs_in_cluster \
                            / self.likelihood_params['likelihood_cov_prefactor']
             cluster_mean_per_cluster[cluster_idx] = cluster_mean
 
+        # https://www.cs.ubc.ca/~murphyk/Papers/bayesGauss.pdf
+        # Equation 36.
+        cluster_cov_per_cluster += self.likelihood_params['likelihood_cov_prefactor']
+
         # Set mean and cov for the possible new cluster.
-        # Note: Don't need to set mean because the prior mean is 0.
-        cluster_cov_per_cluster[-1] = self.component_prior_params['centroids_prior_cov_prefactor'] \
-                                      + self.likelihood_params['likelihood_cov_prefactor']
+        cluster_mean_per_cluster[-1, :] = 0.
+        cluster_cov_per_cluster[-1, :] = self.component_prior_params['centroids_prior_cov_prefactor'] \
+                                         + self.likelihood_params['likelihood_cov_prefactor']
 
         # import matplotlib.pyplot as plt
         #
@@ -242,22 +250,14 @@ class CollapsedGibbsSamplerNew(BaseModel):
             cov=cluster_cov_per_cluster[cluster_idx] * np.eye(observations.shape[1]))
             for cluster_idx in range(len(cluster_ids) + 1)])
 
-        # If there are no other points in a cluster, then the log likelihood will be NaN
-        # since the mean is NaN. Set these to negative infinity.
+        # If there are no other points in a cluster, then the mean will be NaN and the
+        # log likelihood will be NaN. Set these to negative infinity.
         log_likelihood_per_cluster[np.isnan(log_likelihood_per_cluster)] = -np.inf
-
-        # For the new cluster, use likelihood of N(0, (sigma_obs_sqrd + sigma_mean_sqrd) * Eye)
-        new_cluster_var = self.likelihood_params['likelihood_cov_prefactor']\
-                          + self.component_prior_params['centroids_prior_cov_prefactor']
-        log_likelihood_per_cluster[-1] = multivariate_normal.logpdf(
-            observations[obs_idx],
-            mean=np.zeros(obs_dim),
-            cov=new_cluster_var * np.eye(obs_dim))
 
         log_sampling_prob_per_cluster = log_likelihood_per_cluster + log_prior_per_cluster
 
         # For numerical stability, first subtract max.
-        log_sampling_prob_per_cluster -= np.max(log_sampling_prob_per_cluster)
+        # log_sampling_prob_per_cluster -= np.max(log_sampling_prob_per_cluster)
 
         # Compute softmax.
         sampling_prob_per_cluster = np.exp(log_sampling_prob_per_cluster)
@@ -349,7 +349,6 @@ class CollapsedGibbsSamplerNew(BaseModel):
         gibbs_statistics = []
         from rncrp.data.synthetic import sample_mixture_model
         for repeat_idx in range(num_repeats):
-
             print(f'Gweke Test Repeat Idx: {repeat_idx}')
 
             # Forward sample.
