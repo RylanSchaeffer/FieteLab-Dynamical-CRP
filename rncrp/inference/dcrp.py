@@ -2,8 +2,8 @@ import time
 
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.special
 import tensorflow_probability as tfp
-
 tfd = tfp.distributions
 import torch
 import torch.nn.functional
@@ -474,12 +474,14 @@ class DynamicalCRP(BaseModel):
                                                   variational_params: Dict[str, np.ndarray]):
 
         # Data should already lie on sphere, so need to normalize.
-        if self.vi_param_initialization == 'zero':
-            variational_params['means']['means'].data[:, obs_idx, :] = 0.
-        elif self.vi_param_initialization == 'observation':
-            variational_params['means']['means'].data[:, obs_idx, :] = torch_observation
-        else:
-            raise ValueError
+        # if self.vi_param_initialization == 'zero':
+        #     # For von-Mises, zero doesn't make any sense.
+        #     variational_params['means']['means'].data[:, obs_idx, :] = torch_observation
+        # elif self.vi_param_initialization == 'observation':
+        #     variational_params['means']['means'].data[:, obs_idx, :] = torch_observation
+        # else:
+        #     raise ValueError
+        variational_params['means']['means'].data[:, obs_idx, :] = torch_observation
 
         assert_torch_no_nan_no_inf_is_real(variational_params['means']['means'])
 
@@ -599,14 +601,14 @@ class DynamicalCRP(BaseModel):
         # For the new cluster, the likelihood is N(0, likelihood cov + cluster mean prior cov)
         # Consequently, we need to overwrite the last index with the correct value.
         if self.which_prior_prob == 'DP':
-            new_cluster_var = sigma_obs_squared + self.component_prior_params['centroids_prior_cov_prefactor']
-            replacement_term_one = term_one[obs_idx]
-            # Since mean mu_{nk} = 0, term two is 0 and we can skip.
-            replacement_term_three = -0.5 * torch.square(torch.linalg.norm(torch_observation)) / \
-                                     new_cluster_var
-            replacement_term_four = -obs_dim * np.log(2 * np.pi * new_cluster_var) / 2.
-            term_to_softmax[obs_idx] = replacement_term_one + replacement_term_three + replacement_term_four
-
+            # new_cluster_var = sigma_obs_squared + self.component_prior_params['centroids_prior_cov_prefactor']
+            # replacement_term_one = term_one[obs_idx]
+            # # Since mean mu_{nk} = 0, term two is 0 and we can skip.
+            # replacement_term_three = -0.5 * torch.square(torch.linalg.norm(torch_observation)) / \
+            #                          new_cluster_var
+            # replacement_term_four = -obs_dim * np.log(2 * np.pi * new_cluster_var) / 2.
+            # term_to_softmax[obs_idx] = replacement_term_one + replacement_term_three + replacement_term_four
+            raise NotImplementedError
 
         cluster_assignment_posterior_params = torch.nn.functional.softmax(
             term_to_softmax,  # shape: (max num clusters, )
@@ -654,14 +656,25 @@ class DynamicalCRP(BaseModel):
         # For the new cluster, the likelihood is N(0, likelihood cov + cluster mean prior cov)
         # Consequently, we need to overwrite the last index with the correct value.
         if self.which_prior_prob == 'DP':
-            new_cluster_var = sigma_obs_squared + self.component_prior_params['centroids_prior_cov_prefactor']
-            replacement_term_one = term_one[obs_idx]
-            # Since mean mu_{nk} = 0, term two is 0 and we can skip.
-            replacement_term_three = -0.5 * torch.square(torch.linalg.norm(torch_observation)) / \
-                                     new_cluster_var
-            replacement_term_four = -obs_dim * np.log(2 * np.pi * new_cluster_var) / 2.
-            term_to_softmax[obs_idx] = replacement_term_one + replacement_term_three + replacement_term_four
 
+            # Recall, the log likelihood is log(C(k)*C(k)*C(0)) = 2 * log(C(k)) + log(C(0)).
+
+            # Compute log(C(k)).
+            normalizing_const_likelihood = self.compute_vonmisesfisher_normalization(
+                dim=len(torch_observation),
+                kappa=likelihood_params['likelihood_kappa'],
+            )
+
+            # Compute log(C(0)).
+            normalizing_const_prior = self.compute_vonmisesfisher_normalization(
+                dim=len(torch_observation),
+                kappa=0.)
+
+            # Compute log(C(k)*C(k)*C(0)).
+            log_likelihood = 2. * np.log(normalizing_const_likelihood)\
+                             + np.log(normalizing_const_prior)
+
+            term_to_softmax[obs_idx] = term_one[obs_idx] + log_likelihood
 
         cluster_assignment_posterior_params = torch.nn.functional.softmax(
             term_to_softmax,  # shape: (curr max num clusters i.e. obs idx, )
@@ -1009,3 +1022,22 @@ class DynamicalCRP(BaseModel):
     #                 negative_indices] = 0.
     #             assert torch.all(cluster_assignment_prior >= 0.)
 
+
+    @staticmethod
+    def compute_vonmisesfisher_normalization(dim: int,
+                                             kappa: float):
+        if kappa > 0.:
+            term1 = np.power(kappa, dim / 2 - 1)
+            term2 = np.power(2 * np.pi, dim / 2)
+            term3 = scipy.special.iv(
+                dim / 2 - 1,  # order
+                kappa,  # argument
+            )
+            normalizing_const = term1 / term2 / term3
+        elif kappa == 0:
+            # If kappa = 0., we need to compute surface area of sphere.
+            # https://en.wikipedia.org/wiki/N-sphere#Volume_and_surface_area
+            normalizing_const = 2. * np.power(np.pi, dim / 2.) / scipy.special.gamma( dim / 2.)
+        else:
+            raise ValueError(f'Impermissible kappa: {kappa}')
+        return normalizing_const
