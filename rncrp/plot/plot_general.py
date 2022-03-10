@@ -25,6 +25,43 @@ algorithm_color_map = {
 }
 
 
+def plot_images_with_top_cluster_probability(plot_dir: str,
+                                             images: np.ndarray,
+                                             cluster_assignments: np.ndarray,
+                                             posterior_probabilities: np.ndarray,
+                                             probability_threshold: float = 0.7,
+                                             top_k: int = 24):
+    # posterior_probabilities = np.random.rand(images.shape[0], int(max(cluster_assignments)))
+
+    row_idxs, col_idxs = np.where(posterior_probabilities >= probability_threshold)
+
+    # Obtain images and cluster assignment probabilities to plot
+    cluster_probabilities = np.amax(posterior_probabilities[row_idxs], axis=1)  # probabilities that pass threshold
+    image_idxs_by_probability = np.argsort(cluster_probabilities)[:top_k]
+
+    images_to_plot = []
+    for idx in image_idxs_by_probability:  # obtain k images of highest inferred cluster probability
+        images_to_plot.append(images[idx].reshape(28, 28))
+    cluster_probabilities_to_plot = cluster_probabilities[image_idxs_by_probability]
+
+    # Plot images
+    num_imgs_per_row = int(top_k / 3)
+    _, axs = plt.subplots(3, num_imgs_per_row, figsize=(10, 5))
+
+    for img, cluster_prob, ax in zip(images_to_plot[::-1], cluster_probabilities_to_plot[::-1], axs.flatten()):
+        ax.imshow(img, cmap=plt.cm.binary,vmin = 0.0 , vmax = 1.0)
+        ax.set_xlabel(f'\n{cluster_prob:.2f}')
+        ax.axes.xaxis.set_ticks([])
+        ax.axes.yaxis.set_ticks([])
+    plt.tight_layout()
+    plt.savefig(os.path.join(plot_dir,
+                             f'plot_images_with_top_cluster_probability.png'),
+                bbox_inches='tight',
+                dpi=300)
+    # plt.show()
+    plt.close()
+
+
 def plot_cluster_multiclass_classification_score_by_alpha_by_alg(sweep_results_df: pd.DataFrame,
                                                                  plot_dir: str,
                                                                  title_str: str = None):
@@ -165,7 +202,7 @@ def plot_cluster_coassignments_inferred_vs_true(cluster_assignment_posteriors: n
 
     # Shuffle to group together similar clusters.
     true_pairwise_similarities_subset = true_pairwise_similarities_subset[
-        shuffle_indices, :][:, shuffle_indices]
+                                        shuffle_indices, :][:, shuffle_indices]
 
     sns.heatmap(true_pairwise_similarities_subset,
                 ax=ax,
@@ -195,7 +232,7 @@ def plot_cluster_coassignments_inferred_vs_true(cluster_assignment_posteriors: n
 
     # Shuffle to group together similar clusters.
     inferred_pairwise_similarities_subset = inferred_pairwise_similarities_subset[
-        shuffle_indices, :][:, shuffle_indices]
+                                            shuffle_indices, :][:, shuffle_indices]
 
     sns.heatmap(inferred_pairwise_similarities_subset,
                 ax=ax,
@@ -220,7 +257,6 @@ def plot_cluster_coassignments_inferred_vs_true(cluster_assignment_posteriors: n
 def plot_num_clusters_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
                                               plot_dir: str,
                                               title_str: str = None):
-
     # Manually make figure bigger to handle external legend
     plt.figure(figsize=(9, 4))
 
@@ -275,7 +311,6 @@ def plot_num_clusters_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
 def plot_num_clusters_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
                                             plot_dir: str,
                                             title_str: str = None):
-
     # Manually make figure bigger to handle external legend
     plt.figure(figsize=(9, 4))
 
@@ -486,7 +521,6 @@ def plot_runtime_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
 def plot_runtime_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
                                              plot_dir: str,
                                              title_str: str = None):
-
     plt.close()
 
     # Manually make figure bigger to handle external legend
