@@ -27,10 +27,10 @@ config_defaults = {
     # 'dynamics_c': 1.,
     # 'dynamics_omega': np.pi / 2.,
     'n_samples': 1000,
-    'n_features': 10,
-    'alpha': 5.,
+    'n_features': 2,
+    'alpha': 1.1,
     'beta': 0.,
-    'likelihood_kappa': 5.,
+    'likelihood_kappa': 10.,
     'repeat_idx': 0,
     'vi_param_initialization': 'observation',
     'which_prior_prob': 'DP',
@@ -41,6 +41,7 @@ config_defaults = {
 wandb.init(project='dcrp-mixture-of-vonmises-fisher',
            config=config_defaults)
 config = wandb.config
+
 
 print(f'Running:')
 for key, value in config.items():
@@ -128,21 +129,36 @@ joblib.dump(data_to_store,
 
 inf_alg_plot_dir_name = ""
 for key, value in dict(config).items():
+    # Need to truncate file names because too long
+    if key in {'beta', 'vi_param_initialization', 'observation_which_prior_prob',
+               'update_new_cluster_parameters', 'robbins_monro_cavi_updates'}:
+        continue
+    if key == 'centroids_prior_cov_prefactor':
+        key = 'centroids_prior_cov'
+    if key == 'likelihood_cov_prefactor':
+        key = 'likelihood_cov'
+
     inf_alg_plot_dir_name += f"{key}={value}_"
+
 inf_alg_plot_dir_path = os.path.join(results_dir_path, inf_alg_plot_dir_name)
 os.makedirs(inf_alg_plot_dir_path, exist_ok=True)
 
-rncrp.plot.plot_general.plot_cluster_assignments_inferred_vs_true(
-    true_cluster_assignments_one_hot=mixture_model_results['cluster_assignments_one_hot'],
-    cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
-    plot_dir=inf_alg_plot_dir_path,
-)
+try:
+    rncrp.plot.plot_general.plot_cluster_assignments_inferred_vs_true(
+        true_cluster_assignments_one_hot=mixture_model_results['cluster_assignments_one_hot'],
+        cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
+        plot_dir=inf_alg_plot_dir_path,
+    )
 
-rncrp.plot.plot_general.plot_cluster_coassignments_inferred_vs_true(
-    true_cluster_assignments=mixture_model_results['cluster_assignments'],
-    cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
-    plot_dir=inf_alg_plot_dir_path,
-)
+    rncrp.plot.plot_general.plot_cluster_coassignments_inferred_vs_true(
+        true_cluster_assignments=mixture_model_results['cluster_assignments'],
+        cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
+        plot_dir=inf_alg_plot_dir_path,
+    )
+# Some algorithms e.g. CollapsedGibbsSampler don't have cluster assignments.
+# They will throw a KeyError; we gracefully exit instead.
+except KeyError:
+    pass
 
-print(f'Finished 03_mixture_of_vonmises_fisher/run_one.py for sweep={wandb.run.id}.')
+print(f'Finished 03_mixture_of_vonmises_fisher/run_one.py for run={wandb.run.id}.')
 

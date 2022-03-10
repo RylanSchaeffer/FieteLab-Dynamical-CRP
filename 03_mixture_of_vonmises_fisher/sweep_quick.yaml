@@ -12,9 +12,7 @@ parameters:
   dynamics_str:
     values: [
         'step',
-        'exp',
-        'sinusoid',
-        'hyperbolic']
+    ]
   dynamics_a:
     values: [1.]
   dynamics_b:
@@ -24,12 +22,12 @@ parameters:
   dynamics_omega:
     values: [ 1. ]
   alpha:
-    values: [ 5., 10., 15., 20.]
+    values: [ 5., 10., 15.]
   n_samples:
     values: [1000]
   n_features:
-    values: [3, 9, 15]
+    values: [10, 20, 30]
   likelihood_kappa:
-    values: [1., 10.]
+    values: [10., 20., 40., 80. 160.]
   repeat_idx:
     values: [0, 1]
