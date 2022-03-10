@@ -46,6 +46,9 @@ def download_wandb_project_runs_results(wandb_project_path: str,
     print(f"% of successfully finished runs: {finished_runs.mean()}")
     sweep_results_df = sweep_results_df[finished_runs]
 
+    # Check that we don't have an empty data frame.
+    assert len(sweep_results_df) > 0
+
     # Ensure we aren't working with a slice.
     sweep_results_df = sweep_results_df.copy()
 
