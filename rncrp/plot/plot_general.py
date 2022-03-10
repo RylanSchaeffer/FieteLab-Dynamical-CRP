@@ -33,15 +33,15 @@ def plot_images_with_top_cluster_probability(plot_dir: str,
                                              top_k: int = 24):
     # posterior_probabilities = np.random.rand(images.shape[0], int(max(cluster_assignments)))
 
-    row_idxs, col_idxs = np.where(posterior_probabilities >= probability_threshold)
+    row_idxs, col_idxs = np.where(posterior_probabilities >= probability_threshold) # probabilities that pass threshold
 
     # Obtain images and cluster assignment probabilities to plot
-    cluster_probabilities = np.amax(posterior_probabilities[row_idxs], axis=1)  # probabilities that pass threshold
-    image_idxs_by_probability = np.argsort(cluster_probabilities)[:top_k]
+    cluster_probabilities = np.amax(posterior_probabilities[row_idxs], axis=1)
+    image_idxs_by_probability = np.argsort(cluster_probabilities)[:top_k] # obtain k images of highest inferred cluster probability
 
     images_to_plot = []
-    for idx in image_idxs_by_probability:  # obtain k images of highest inferred cluster probability
-        images_to_plot.append(images[idx].reshape(28, 28))
+    for idx in image_idxs_by_probability:
+        images_to_plot.append(images[idx])
     cluster_probabilities_to_plot = cluster_probabilities[image_idxs_by_probability]
 
     # Plot images
@@ -49,7 +49,7 @@ def plot_images_with_top_cluster_probability(plot_dir: str,
     _, axs = plt.subplots(3, num_imgs_per_row, figsize=(10, 5))
 
     for img, cluster_prob, ax in zip(images_to_plot[::-1], cluster_probabilities_to_plot[::-1], axs.flatten()):
-        ax.imshow(img, cmap=plt.cm.binary,vmin = 0.0 , vmax = 1.0)
+        ax.imshow(img, cmap=plt.cm.binary)
         ax.set_xlabel(f'\n{cluster_prob:.2f}')
         ax.axes.xaxis.set_ticks([])
         ax.axes.yaxis.set_ticks([])
