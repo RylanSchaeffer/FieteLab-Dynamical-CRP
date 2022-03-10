@@ -15,7 +15,7 @@ from rncrp.helpers.dynamics import convert_dynamics_str_to_dynamics_obj
 from rncrp.helpers.torch_helpers import assert_torch_no_nan_no_inf_is_real
 
 
-class DynamicalCRP(BaseModel):
+class RecursiveCRP(BaseModel):
     """
 
     """
