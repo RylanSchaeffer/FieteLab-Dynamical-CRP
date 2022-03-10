@@ -151,7 +151,7 @@ def plot_num_clusters_by_alpha_split_by_hyperparameter_choices(
             linewidth=0,
             color='k')
 
-        plt.ylim(10., 100.)
+        plt.ylim(10., 500.)
         plt.yscale('log')
         plt.xlabel(r'$\alpha$')
         plt.title(hue)
@@ -162,8 +162,9 @@ def plot_num_clusters_by_alpha_split_by_hyperparameter_choices(
 
         plt.tight_layout()
 
-        plt.savefig(os.path.join(plot_dir,
-                                 f'num_clusters_by_alpha_init={hue[0]}_prior={hue[1]}_updatenew={hue[2]}.png'),
+        title_str = f'num_clusters_by_alpha_init={hue[0]}_prior={hue[1]}_updatenew={hue[2]}_rm={hue[3]}.png'
+        plt.title(title_str)
+        plt.savefig(os.path.join(plot_dir, title_str),
                     bbox_inches='tight',
                     dpi=300)
         # plt.show()
@@ -173,7 +174,6 @@ def plot_num_clusters_by_alpha_split_by_hyperparameter_choices(
 def plot_scores_by_alpha_split_by_hyperparameter_choices(sweep_results_df: pd.DataFrame,
                                                          plot_dir: str,
                                                          title_str: str = None):
-
     scores_columns = [col for col in sweep_results_df.columns.values
                       if 'Score' in col]
 
@@ -206,10 +206,103 @@ def plot_scores_by_alpha_split_by_hyperparameter_choices(sweep_results_df: pd.Da
             if title_str is not None:
                 plt.title(title_str)
 
-            plt.ylim(0.35, 0.9)
+            plt.ylim(0., 1.05)
             plt.tight_layout()
-            plt.savefig(os.path.join(plot_dir,
-                                     f'comparison_score={score_column}_by_alpha_init={hue[0]}_prior={hue[1]}_updatenew={hue[2]}.png'),
+            title_str = f'comparison_score={score_column}_by_alpha_init={hue[0]}_prior={hue[1]}_updatenew={hue[2]}_rm={hue[3]}.png'
+            plt.title(title_str)
+            plt.savefig(os.path.join(plot_dir, title_str),
+                        bbox_inches='tight',
+                        dpi=300)
+            # plt.show()
+            plt.close()
+
+
+def plot_scores_by_obs_dim_split_by_hyperparameter_choices(sweep_results_df: pd.DataFrame,
+                                                           plot_dir: str,
+                                                           title_str: str = None):
+    scores_columns = [col for col in sweep_results_df.columns.values
+                      if 'Score' in col]
+
+    for hue in product(('zero', 'observation'), ('DP', 'variational'), (True, False), (True, False)):
+
+        sweep_results_df_subset = sweep_results_df[
+            (sweep_results_df['vi_param_initialization'] == hue[0])
+            & (sweep_results_df['which_prior_prob'] == hue[1])
+            & (sweep_results_df['update_new_cluster_parameters'] == hue[2])
+            & (sweep_results_df['robbins_monro_cavi_updates'] == hue[3])]
+
+        for score_column in scores_columns:
+
+            plt.close()
+
+            # Manually make figure bigger to handle external legend
+            plt.figure(figsize=(9, 4))
+
+            sns.lineplot(data=sweep_results_df_subset,
+                         x='n_features',
+                         y=score_column,
+                         hue='inference_alg_str')
+            plt.xlabel(r'Dimensions')
+            # plt.legend()
+
+            # Move legend outside of plot
+            # See https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot-in-matplotlib
+            plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+
+            # if title_str is not None:
+            #     plt.title(title_str)
+
+            plt.ylim(0., 1.05)
+            plt.tight_layout()
+            title_str = f'comparison_score={score_column}_by_obs_dim_init={hue[0]}_prior={hue[1]}_updatenew={hue[2]}_rm={hue[3]}.png'
+            plt.title(title_str)
+            plt.savefig(os.path.join(plot_dir, title_str),
+                        bbox_inches='tight',
+                        dpi=300)
+            # plt.show()
+            plt.close()
+
+
+def plot_scores_by_snr_split_by_hyperparameter_choices(sweep_results_df: pd.DataFrame,
+                                                       plot_dir: str,
+                                                       title_str: str = None):
+    scores_columns = [col for col in sweep_results_df.columns.values
+                      if 'Score' in col]
+
+    for hue in product(('zero', 'observation'), ('DP', 'variational'), (True, False), (True, False)):
+
+        sweep_results_df_subset = sweep_results_df[
+            (sweep_results_df['vi_param_initialization'] == hue[0])
+            & (sweep_results_df['which_prior_prob'] == hue[1])
+            & (sweep_results_df['update_new_cluster_parameters'] == hue[2])
+            & (sweep_results_df['robbins_monro_cavi_updates'] == hue[3])]
+
+        for score_column in scores_columns:
+
+            plt.close()
+
+            # Manually make figure bigger to handle external legend
+            plt.figure(figsize=(9, 4))
+
+            sns.lineplot(data=sweep_results_df_subset,
+                         x='snr',
+                         y=score_column,
+                         hue='inference_alg_str')
+            plt.xlabel(r'SNR')
+            # plt.legend()
+
+            # Move legend outside of plot
+            # See https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot-in-matplotlib
+            plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+
+            # if title_str is not None:
+            #     plt.title_str(title_str)
+
+            plt.ylim(0., 1.05)
+            plt.tight_layout()
+            title_str = f'comparison_score={score_column}_by_snr_init={hue[0]}_prior={hue[1]}_updatenew={hue[2]}_rm={hue[3]}.png'
+            plt.title(title_str)
+            plt.savefig(os.path.join(plot_dir, title_str),
                         bbox_inches='tight',
                         dpi=300)
             # plt.show()

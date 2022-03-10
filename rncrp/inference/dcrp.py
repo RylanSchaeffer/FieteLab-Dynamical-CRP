@@ -29,10 +29,10 @@ class DynamicalCRP(BaseModel):
                  learning_rate: float = None,
                  record_history: bool = True,
                  cutoff: float = 0.,
-                 robbins_monro_cavi_updates: bool = False,
-                 vi_param_initialization: str = 'zero',
+                 robbins_monro_cavi_updates: bool = True,
+                 vi_param_initialization: str = 'observation',
                  which_prior_prob: str = 'DP',
-                 update_new_cluster_parameters: bool = True,
+                 update_new_cluster_parameters: bool = False,
                  **kwargs,
                  ):
         self.gen_model_params = gen_model_params
