@@ -67,7 +67,8 @@ def plot_analyze_all_inf_algs_results(
 
             ratio_plot_fn(
                 ratio_df=ratio_df,
-                plot_dir=sweep_dynamics_str_dir)
+                plot_dir=sweep_dynamics_str_dir,
+                title_str=title_str)
 
             plt.close('all')
 
