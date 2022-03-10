@@ -68,8 +68,8 @@ class CollapsedGibbsSamplerNew(BaseModel):
                  gen_model_params: Dict[str, Dict[str, float]],
                  model_str: str = 'CGS',
                  plot_dir: str = None,
-                 num_samples: int = 23,
-                 burn_in_steps: int = 20000,
+                 num_samples: int = 50,
+                 burn_in_steps: int = 10000,
                  thinning_num_steps: int = 1000,
                  **kwargs,
                  ):
@@ -160,6 +160,7 @@ class CollapsedGibbsSamplerNew(BaseModel):
             cluster_assignments_one_hot_mcmc_samples=cluster_assignments_one_hot_mcmc_samples,
             cluster_assignment_posteriors_running_sum=None,
             num_inferred_clusters_mcmc_samples=num_inferred_clusters_mcmc_samples,
+            num_inferred_clusters=np.median(num_inferred_clusters_mcmc_samples),
             parameters=params_mcmc_samples,
         )
 
