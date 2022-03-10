@@ -63,10 +63,14 @@ class DynamicalCRP(BaseModel):
         assert which_prior_prob in {'DP', 'variational'}
         self.which_prior_prob = which_prior_prob
         self.update_new_cluster_parameters = update_new_cluster_parameters
-
-        self.record_history = record_history
         self.robbins_monro_cavi_updates = robbins_monro_cavi_updates
+        self.record_history = record_history
         self.fit_results = None
+
+        # For some likelihoods e.g. von Mises-Fisher, we can compute (log)
+        # probability of a new cluster since it doesn't depend on the
+        # observation.
+        self.log_prob_new_cluster = None
 
     def fit(self,
             observations: Union[np.ndarray, torch.utils.data.DataLoader],
@@ -119,16 +123,7 @@ class DynamicalCRP(BaseModel):
             optimize_cluster_assignments_fn = self.optimize_cluster_assignments_multivariate_normal
             optimize_cluster_params_fn = self.optimize_cluster_params_multivariate_normal
 
-            # TODO: What is the right covariance initialization? How should this be determined?
-            # Currently set as an arbitrary choice
-            # A_prefactor = self.gen_model_params['component_prior_params']['centroids_prior_cov_prefactor'] \
-            #               + self.gen_model_params['likelihood_params']['likelihood_cov_prefactor']
-            # A_prefactor = self.gen_model_params['component_prior_params']['centroids_prior_cov_prefactor']
             A_prefactor = self.gen_model_params['likelihood_params']['likelihood_cov_prefactor']
-            # A_prefactor = 1.
-            # Shape: (2 for old and new, max num clusters, obs dim)
-            # A_diag_covs = (A_prefactor * torch.ones(obs_dim).float()[None, None, :]).repeat(
-            #     2, max_num_clusters, 1)
 
             variational_params = dict(
                 assignments=dict(
@@ -188,6 +183,24 @@ class DynamicalCRP(BaseModel):
                         fill_value=self.likelihood_params['likelihood_kappa'],
                         dtype=torch.float32,
                     )))
+
+            # Recall, the log likelihood for a new cluster is:
+            # log(C(k)*C(k)*C(0)) = 2 * log(C(k)) + log(C(0)).
+
+            # Compute log(C(k)).
+            normalizing_const_likelihood = self.compute_vonmisesfisher_normalization(
+                dim=obs_dim,
+                kappa=self.likelihood_params['likelihood_kappa'],
+            )
+
+            # Compute log(C(0)).
+            normalizing_const_prior = self.compute_vonmisesfisher_normalization(
+                dim=obs_dim,
+                kappa=0.)
+
+            # Compute log(C(k)*C(k)*C(0)).
+            self.log_prob_new_cluster = 2. * np.log(normalizing_const_likelihood)\
+                                        + np.log(normalizing_const_prior)
 
         else:
             raise NotImplementedError
@@ -656,25 +669,10 @@ class DynamicalCRP(BaseModel):
         # For the new cluster, the likelihood is N(0, likelihood cov + cluster mean prior cov)
         # Consequently, we need to overwrite the last index with the correct value.
         if self.which_prior_prob == 'DP':
-
-            # Recall, the log likelihood is log(C(k)*C(k)*C(0)) = 2 * log(C(k)) + log(C(0)).
-
-            # Compute log(C(k)).
-            normalizing_const_likelihood = self.compute_vonmisesfisher_normalization(
-                dim=len(torch_observation),
-                kappa=likelihood_params['likelihood_kappa'],
-            )
-
-            # Compute log(C(0)).
-            normalizing_const_prior = self.compute_vonmisesfisher_normalization(
-                dim=len(torch_observation),
-                kappa=0.)
-
-            # Compute log(C(k)*C(k)*C(0)).
-            log_likelihood = 2. * np.log(normalizing_const_likelihood)\
-                             + np.log(normalizing_const_prior)
-
-            term_to_softmax[obs_idx] = term_one[obs_idx] + log_likelihood
+            # Recall, we precompute the log probability of a new cluster in self.fit()
+            # because, for the von-Mises-Fisher distribution, the probability of an
+            # observation with a flat prior on the direction doesn't depend on the observation.
+            term_to_softmax[obs_idx] = term_one[obs_idx] + self.log_prob_new_cluster
 
         cluster_assignment_posterior_params = torch.nn.functional.softmax(
             term_to_softmax,  # shape: (curr max num clusters i.e. obs idx, )
