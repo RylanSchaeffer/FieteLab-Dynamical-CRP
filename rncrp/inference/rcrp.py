@@ -2,8 +2,8 @@ import time
 
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.special
 import tensorflow_probability as tfp
-
 tfd = tfp.distributions
 import torch
 import torch.nn.functional
@@ -15,7 +15,7 @@ from rncrp.helpers.dynamics import convert_dynamics_str_to_dynamics_obj
 from rncrp.helpers.torch_helpers import assert_torch_no_nan_no_inf_is_real
 
 
-class RecursiveCRP(BaseModel):
+class DynamicalCRP(BaseModel):
     """
 
     """
@@ -29,19 +29,16 @@ class RecursiveCRP(BaseModel):
                  learning_rate: float = None,
                  record_history: bool = True,
                  cutoff: float = 0.,
-                 robbins_monro_cavi_updates: bool = False,
-                 vi_param_initialization: str = 'zero',
+                 robbins_monro_cavi_updates: bool = True,
+                 vi_param_initialization: str = 'observation',
                  which_prior_prob: str = 'DP',
-                 update_new_cluster_parameters: bool = True,
+                 update_new_cluster_parameters: bool = False,
                  **kwargs,
                  ):
         self.gen_model_params = gen_model_params
         self.mixing_params = gen_model_params['mixing_params']
         assert self.mixing_params['alpha'] > 0.
         assert self.mixing_params['beta'] == 0.
-
-        if 'b' in self.mixing_params['dynamics_params']:
-            self.mixing_params['dynamics_params']['b'] = 0.
         self.dynamics = convert_dynamics_str_to_dynamics_obj(
             dynamics_str='step',
             dynamics_params=dict(a=1., b=0.),
@@ -66,10 +63,14 @@ class RecursiveCRP(BaseModel):
         assert which_prior_prob in {'DP', 'variational'}
         self.which_prior_prob = which_prior_prob
         self.update_new_cluster_parameters = update_new_cluster_parameters
-
-        self.record_history = record_history
         self.robbins_monro_cavi_updates = robbins_monro_cavi_updates
+        self.record_history = record_history
         self.fit_results = None
+
+        # For some likelihoods e.g. von Mises-Fisher, we can compute (log)
+        # probability of a new cluster since it doesn't depend on the
+        # observation.
+        self.log_prob_new_cluster = None
 
     def fit(self,
             observations: Union[np.ndarray, torch.utils.data.DataLoader],
@@ -122,16 +123,7 @@ class RecursiveCRP(BaseModel):
             optimize_cluster_assignments_fn = self.optimize_cluster_assignments_multivariate_normal
             optimize_cluster_params_fn = self.optimize_cluster_params_multivariate_normal
 
-            # TODO: What is the right covariance initialization? How should this be determined?
-            # Currently set as an arbitrary choice
-            # A_prefactor = self.gen_model_params['component_prior_params']['centroids_prior_cov_prefactor'] \
-            #               + self.gen_model_params['likelihood_params']['likelihood_cov_prefactor']
-            # A_prefactor = self.gen_model_params['component_prior_params']['centroids_prior_cov_prefactor']
             A_prefactor = self.gen_model_params['likelihood_params']['likelihood_cov_prefactor']
-            # A_prefactor = 1.
-            # Shape: (2 for old and new, max num clusters, obs dim)
-            A_diag_covs = (A_prefactor * torch.ones(obs_dim).float()[None, None, :]).repeat(
-                2, max_num_clusters, 1)
 
             variational_params = dict(
                 assignments=dict(
@@ -144,7 +136,7 @@ class RecursiveCRP(BaseModel):
                         size=(2, max_num_clusters, obs_dim),
                         fill_value=0.,
                         dtype=torch.float32),
-                    diag_covs=A_diag_covs))
+                    diag_covs=A_prefactor * torch.ones(2, max_num_clusters, obs_dim)))
 
         elif self.likelihood_params['distribution'] == 'product_bernoullis':
 
@@ -161,11 +153,11 @@ class RecursiveCRP(BaseModel):
                 beta=dict(
                     arg1=torch.full(
                         size=(2, max_num_clusters, obs_dim),  # 2 for past & current
-                        fill_value=0.,
+                        fill_value=self.component_prior_params['beta_arg1'],
                         dtype=torch.float32),
                     arg2=torch.full(
                         size=(2, max_num_clusters, obs_dim),  # 2 for past & current
-                        fill_value=1.,
+                        fill_value=self.component_prior_params['beta_arg2'],
                         dtype=torch.float32,
                     )))
 
@@ -188,9 +180,27 @@ class RecursiveCRP(BaseModel):
                         dtype=torch.float32),
                     concentrations=torch.full(
                         size=(2, max_num_clusters, 1),
-                        fill_value=1.,
+                        fill_value=self.likelihood_params['likelihood_kappa'],
                         dtype=torch.float32,
                     )))
+
+            # Recall, the log likelihood for a new cluster is:
+            # log(C(k)*C(k)*C(0)) = 2 * log(C(k)) + log(C(0)).
+
+            # Compute log(C(k)).
+            normalizing_const_likelihood = self.compute_vonmisesfisher_normalization(
+                dim=obs_dim,
+                kappa=self.likelihood_params['likelihood_kappa'],
+            )
+
+            # Compute log(C(0)).
+            normalizing_const_prior = self.compute_vonmisesfisher_normalization(
+                dim=obs_dim,
+                kappa=0.)
+
+            # Compute log(C(k)*C(k)*C(0)).
+            self.log_prob_new_cluster = 2. * np.log(normalizing_const_likelihood)\
+                                        + np.log(normalizing_const_prior)
 
         else:
             raise NotImplementedError
@@ -303,14 +313,6 @@ class RecursiveCRP(BaseModel):
                                 cluster_assignment_prior=cluster_assignment_prior,
                                 variational_params=variational_params,
                                 likelihood_params=self.gen_model_params['likelihood_params'])
-
-                            # Renormalize
-                            if self.cutoff > 0:
-                                indices_to_zero = variational_params['assignments']['probs'][obs_idx,
-                                                  :obs_idx + 1] < self.cutoff
-                                variational_params['assignments']['probs'][obs_idx, indices_to_zero] = 0.
-                                variational_params['assignments']['probs'][obs_idx, :obs_idx + 1] /= \
-                                    torch.sum(variational_params['assignments']['probs'][obs_idx, :obs_idx + 1])
 
                             # time_2 = time.time()
 
@@ -462,20 +464,38 @@ class RecursiveCRP(BaseModel):
                                                      obs_idx: int,
                                                      variational_params: Dict[str, np.ndarray]):
 
-        variational_params['beta']['arg1'].data[:, obs_idx, :] = \
-            self.component_prior_params['beta_arg1'] + torch_observation
+        if self.vi_param_initialization == 'zero':
+            variational_params['beta']['arg1'].data[:, obs_idx, :] = \
+                self.component_prior_params['beta_arg1']
+            variational_params['beta']['arg2'].data[:, obs_idx, :] = \
+                self.component_prior_params['beta_arg2']
+
+        elif self.vi_param_initialization == 'observation':
+            variational_params['beta']['arg1'].data[:, obs_idx, :] = \
+                self.component_prior_params['beta_arg1'] + torch_observation
+            variational_params['beta']['arg2'].data[:, obs_idx, :] = \
+                self.component_prior_params['beta_arg2'] + (1. - torch_observation)
+
+        else:
+            raise ValueError
         assert_torch_no_nan_no_inf_is_real(variational_params['beta']['arg1'])
-        variational_params['beta']['arg2'].data[:, obs_idx, :] = \
-            self.component_prior_params['beta_arg2'] + (1. - torch_observation)
         assert_torch_no_nan_no_inf_is_real(variational_params['beta']['arg2'])
 
-    @staticmethod
-    def initialize_cluster_params_vonmises_fisher(torch_observation: np.ndarray,
+    def initialize_cluster_params_vonmises_fisher(self,
+                                                  torch_observation: np.ndarray,
                                                   obs_idx: int,
                                                   variational_params: Dict[str, np.ndarray]):
 
         # Data should already lie on sphere, so need to normalize.
+        # if self.vi_param_initialization == 'zero':
+        #     # For von-Mises, zero doesn't make any sense.
+        #     variational_params['means']['means'].data[:, obs_idx, :] = torch_observation
+        # elif self.vi_param_initialization == 'observation':
+        #     variational_params['means']['means'].data[:, obs_idx, :] = torch_observation
+        # else:
+        #     raise ValueError
         variational_params['means']['means'].data[:, obs_idx, :] = torch_observation
+
         assert_torch_no_nan_no_inf_is_real(variational_params['means']['means'])
 
     @staticmethod
@@ -490,9 +510,6 @@ class RecursiveCRP(BaseModel):
                                                          variational_params: Dict[str, dict],
                                                          likelihood_params: Dict[str, float],
                                                          ) -> None:
-
-        # if obs_idx == 5:
-        #     print()
 
         obs_dim = torch_observation.shape[0]
         sigma_obs_squared = self.likelihood_params['likelihood_cov_prefactor']
@@ -552,8 +569,8 @@ class RecursiveCRP(BaseModel):
 
         # print('Cluster assignment posterior: ', np.round(cluster_assignment_posterior.numpy()[:obs_idx + 1], 2))
 
-    @staticmethod
-    def optimize_cluster_assignments_product_bernoullis(torch_observation: torch.Tensor,
+    def optimize_cluster_assignments_product_bernoullis(self,
+                                                        torch_observation: torch.Tensor,
                                                         obs_idx: int,
                                                         vi_idx: int,
                                                         cluster_assignment_prior: torch.Tensor,
@@ -593,6 +610,19 @@ class RecursiveCRP(BaseModel):
         assert_torch_no_nan_no_inf_is_real(term_two)
 
         term_to_softmax = term_one + term_two
+
+        # For the new cluster, the likelihood is N(0, likelihood cov + cluster mean prior cov)
+        # Consequently, we need to overwrite the last index with the correct value.
+        if self.which_prior_prob == 'DP':
+            # new_cluster_var = sigma_obs_squared + self.component_prior_params['centroids_prior_cov_prefactor']
+            # replacement_term_one = term_one[obs_idx]
+            # # Since mean mu_{nk} = 0, term two is 0 and we can skip.
+            # replacement_term_three = -0.5 * torch.square(torch.linalg.norm(torch_observation)) / \
+            #                          new_cluster_var
+            # replacement_term_four = -obs_dim * np.log(2 * np.pi * new_cluster_var) / 2.
+            # term_to_softmax[obs_idx] = replacement_term_one + replacement_term_three + replacement_term_four
+            raise NotImplementedError
+
         cluster_assignment_posterior_params = torch.nn.functional.softmax(
             term_to_softmax,  # shape: (max num clusters, )
             dim=0)
@@ -605,16 +635,14 @@ class RecursiveCRP(BaseModel):
         # Shape: (curr max num clusters i.e. obs idx)
         variational_params['assignments']['probs'][obs_idx, :obs_idx + 1] = cluster_assignment_posterior_params
 
-    @staticmethod
-    def optimize_cluster_assignments_vonmises_fisher(torch_observation: torch.Tensor,
+    def optimize_cluster_assignments_vonmises_fisher(self,
+                                                     torch_observation: torch.Tensor,
                                                      obs_idx: int,
                                                      vi_idx: int,
                                                      cluster_assignment_prior: torch.Tensor,
                                                      variational_params: Dict[str, dict],
                                                      likelihood_params: Dict[str, float],
                                                      ) -> None:
-
-        likelihood_kappa = likelihood_params['likelihood_kappa']
 
         # Term 1: log q(c_n = l | o_{<n})
         # Shape: (max num clusters, )
@@ -630,13 +658,22 @@ class RecursiveCRP(BaseModel):
 
         # Term 2: E[phi_{nk}]^T o_n / sigma_obs^2
         # Shape: (max num clusters, )
-        term_two = likelihood_kappa * torch.einsum(
+        term_two = likelihood_params['likelihood_kappa'] * torch.einsum(
             'kd,d->k',
             torch_means,
             torch_observation)
         assert_torch_no_nan_no_inf_is_real(term_two)
 
         term_to_softmax = term_one + term_two
+
+        # For the new cluster, the likelihood is N(0, likelihood cov + cluster mean prior cov)
+        # Consequently, we need to overwrite the last index with the correct value.
+        if self.which_prior_prob == 'DP':
+            # Recall, we precompute the log probability of a new cluster in self.fit()
+            # because, for the von-Mises-Fisher distribution, the probability of an
+            # observation with a flat prior on the direction doesn't depend on the observation.
+            term_to_softmax[obs_idx] = term_one[obs_idx] + self.log_prob_new_cluster
+
         cluster_assignment_posterior_params = torch.nn.functional.softmax(
             term_to_softmax,  # shape: (curr max num clusters i.e. obs idx, )
             dim=0)
@@ -686,21 +723,27 @@ class RecursiveCRP(BaseModel):
                                                    cum_cluster_assignment_posteriors: torch.Tensor,
                                                    ) -> None:
 
+        if self.update_new_cluster_parameters:
+            max_cluster_idx_to_update = obs_idx + 1  # End index is exclusionary.
+        else:
+            # Recall, we only update the previous clusters' parameters.
+            max_cluster_idx_to_update = obs_idx
+
         new_arg_1 = torch.add(
-            variational_params['beta']['arg1'][0, :obs_idx + 1, :],  # previous parameter values
+            variational_params['beta']['arg1'][0, :max_cluster_idx_to_update, :],  # previous parameter values
             torch.einsum(
                 'c,o->co',
-                variational_params['assignments']['probs'][obs_idx, :obs_idx + 1],  # Shape: (curr max num clusters ,)
+                variational_params['assignments']['probs'][obs_idx, :max_cluster_idx_to_update],  # Shape: (curr max num clusters ,)
                 torch_observation,  # Shape: (obs dim,)
             )
         )
         assert_torch_no_nan_no_inf_is_real(new_arg_1)
 
         new_arg_2 = torch.add(
-            variational_params['beta']['arg2'][0, :obs_idx + 1, :],  # previous parameter values
+            variational_params['beta']['arg2'][0, :max_cluster_idx_to_update, :],  # previous parameter values
             torch.einsum(
                 'c,o->co',
-                variational_params['assignments']['probs'][obs_idx, :obs_idx + 1],  # Shape: (curr max num clusters,)
+                variational_params['assignments']['probs'][obs_idx, :max_cluster_idx_to_update],  # Shape: (curr max num clusters,)
                 1. - torch_observation,  # Shape: (obs dim,)
             ))
         assert_torch_no_nan_no_inf_is_real(new_arg_2)
@@ -710,7 +753,39 @@ class RecursiveCRP(BaseModel):
             variational_params['beta']['arg1'][1, :obs_idx + 1, :] = new_arg_1
             variational_params['beta']['arg2'][1, :obs_idx + 1, :] = new_arg_2
         else:
-            raise NotImplementedError
+            # Take linear combination: step size * new + (1-step size) * old
+            step_size_per_cluster = self.compute_step_size(
+                variational_params=variational_params,
+                obs_idx=obs_idx,
+                max_cluster_idx_to_update=max_cluster_idx_to_update,
+                cum_cluster_assignment_posteriors=cum_cluster_assignment_posteriors,
+            )
+
+            scaled_new_arg_1 = torch.add(
+                torch.multiply(
+                    step_size_per_cluster[:, np.newaxis],  # Shape (max clusters to update, 1)
+                    new_arg_1,  # Shape (curr_max_cluster_idx, obs dim)
+                ),
+                torch.multiply(
+                    1. - step_size_per_cluster[:, np.newaxis],  # Shape (max clusters to update, 1)
+                    variational_params['beta']['arg1'][0, :max_cluster_idx_to_update, :],
+                )
+            )
+
+            scaled_new_arg_2 = torch.add(
+                torch.multiply(
+                    step_size_per_cluster[:, np.newaxis],  # Shape (max clusters to update, 1)
+                    new_arg_2,  # Shape (curr_max_cluster_idx, obs dim)
+                ),
+                torch.multiply(
+                    1. - step_size_per_cluster[:, np.newaxis],  # Shape (max clusters to update, 1)
+                    variational_params['beta']['arg2'][0, :max_cluster_idx_to_update, :],
+                )
+            )
+
+            # Shape: (max clusters to update, obs dim)
+            variational_params['beta']['arg1'][1, :max_cluster_idx_to_update, :] = scaled_new_arg_1
+            variational_params['beta']['arg2'][1, :max_cluster_idx_to_update, :] = scaled_new_arg_2
 
     def optimize_cluster_params_multivariate_normal(self,
                                                     torch_observation: torch.Tensor,
@@ -759,16 +834,12 @@ class RecursiveCRP(BaseModel):
             # Don't reduce effective step size.
             variational_params['means']['diag_covs'][1, :max_cluster_idx_to_update, :] = new_means_diag_covs
         else:
-            # Shape: (curr max num clusters - 1,)
-            numerator = variational_params['assignments']['probs'][obs_idx, :max_cluster_idx_to_update]
-            denominator = numerator + cum_cluster_assignment_posteriors[:max_cluster_idx_to_update]
-            step_size_per_cluster = torch.divide(
-                numerator,
-                denominator)
-
-            # If the cumulative probability mass is 0, the previous few lines
-            # will divide 0/0 and result in NaN. Consequently, we mask those values.
-            step_size_per_cluster[torch.isnan(step_size_per_cluster)] = 0.
+            step_size_per_cluster = self.compute_step_size(
+                variational_params=variational_params,
+                obs_idx=obs_idx,
+                max_cluster_idx_to_update=max_cluster_idx_to_update,
+                cum_cluster_assignment_posteriors=cum_cluster_assignment_posteriors,
+            )
 
             # Shape: (curr max num clusters, obs dim)
             # Take linear combination: step size * new + (1-step size) * old
@@ -805,8 +876,10 @@ class RecursiveCRP(BaseModel):
         # Need to add 1 when repeating because obs_idx starts at 0.
         term_two = torch.einsum(
             'k, kd->kd',
-            variational_params['assignments']['probs'][obs_idx, :max_cluster_idx_to_update],  # Shape: (max clusters to update, )
-            torch_observation.reshape(1, obs_dim).repeat(max_cluster_idx_to_update, 1),  # Shape: (max clusters to update, obs dim)
+            variational_params['assignments']['probs'][obs_idx, :max_cluster_idx_to_update],
+            # Shape: (max clusters to update, )
+            torch_observation.reshape(1, obs_dim).repeat(max_cluster_idx_to_update, 1),
+            # Shape: (max clusters to update, obs dim)
         ) / sigma_obs_squared
 
         new_means_means = torch.einsum(
@@ -838,8 +911,6 @@ class RecursiveCRP(BaseModel):
             # Shape: (max clusters to update, obs dim)
             variational_params['means']['means'][1, :max_cluster_idx_to_update, :] = scaled_new_means_means
 
-            # print('Cluster means: ', variational_params['means']['means'][1][:obs_idx].numpy())
-
     def optimize_cluster_params_vonmises_fisher(self,
                                                 torch_observation: torch.Tensor,
                                                 obs_idx: int,
@@ -851,17 +922,23 @@ class RecursiveCRP(BaseModel):
 
         likelihood_kappa = likelihood_params['likelihood_kappa']
 
+        if self.update_new_cluster_parameters:
+            max_cluster_idx_to_update = obs_idx + 1  # End index is exclusionary.
+        else:
+            # Recall, we only update the previous clusters' parameters.
+            max_cluster_idx_to_update = obs_idx
+
         rhs = torch.add(
-            torch.multiply(variational_params['means']['concentrations'][0, :obs_idx + 1, :],
+            torch.multiply(variational_params['means']['concentrations'][0, :max_cluster_idx_to_update, :],
                            # (curr max num clusters - 1, 1)
-                           variational_params['means']['means'][0, :obs_idx + 1, :],
+                           variational_params['means']['means'][0, :max_cluster_idx_to_update, :],
                            # (curr max num clusters - 1, obs dim)
                            ),  # Shape: (curr max num clusters , obs dim)
             likelihood_kappa * torch.multiply(
-                variational_params['assignments']['probs'][obs_idx, :obs_idx + 1, None],
+                variational_params['assignments']['probs'][obs_idx, :max_cluster_idx_to_update, None],
                 # Shape (curr max num clusters - 1, 1)
                 torch_observation[None, :],  # Shape: (1, obs dim,)
-            ),  # Shape: (max num clusters, obs dim)
+            ),  # Shape: (curr max num clusters, obs dim)
         )  # Shape: (curr max num clusters, obs dim)
 
         magnitudes = torch.norm(rhs, dim=1)  # Shape: (curr max num clusters,)
@@ -871,7 +948,94 @@ class RecursiveCRP(BaseModel):
 
         if not self.robbins_monro_cavi_updates:
             # Don't reduce effective step size.
-            variational_params['means']['concentrations'][1, :obs_idx + 1, 0] = magnitudes
-            variational_params['means']['means'][1, :obs_idx + 1, :] = directions
+            variational_params['means']['concentrations'][1, :max_cluster_idx_to_update, 0] = magnitudes
+            variational_params['means']['means'][1, :max_cluster_idx_to_update, :] = directions
         else:
-            raise NotImplementedError
+            step_size_per_cluster = self.compute_step_size(
+                variational_params=variational_params,
+                obs_idx=obs_idx,
+                max_cluster_idx_to_update=max_cluster_idx_to_update,
+                cum_cluster_assignment_posteriors=cum_cluster_assignment_posteriors,
+            )
+
+            scaled_directions = torch.add(
+                torch.multiply(
+                    step_size_per_cluster[:, np.newaxis],  # Shape (max clusters to update, 1)
+                    directions,  # Shape (curr_max_cluster_idx, obs dim)
+                ),
+                torch.multiply(
+                    1. - step_size_per_cluster[:, np.newaxis],  # Shape (max clusters to update, 1)
+                    variational_params['means']['means'][0, :max_cluster_idx_to_update, :],
+                )
+            )
+
+            scaled_magnitudes = torch.add(
+                torch.multiply(
+                    step_size_per_cluster[:, np.newaxis],  # Shape (max clusters to update, 1)
+                    magnitudes,  # Shape (curr_max_cluster_idx, obs dim)
+                ),
+                torch.multiply(
+                    1. - step_size_per_cluster[:, np.newaxis],  # Shape (max clusters to update, 1)
+                    variational_params['means']['concentrations'][0, :max_cluster_idx_to_update, :],
+                )
+            )
+
+            variational_params['means']['concentrations'][1, :max_cluster_idx_to_update, 0] = scaled_magnitudes
+            variational_params['means']['means'][1, :max_cluster_idx_to_update, :] = scaled_directions
+
+    @staticmethod
+    def compute_step_size(variational_params: Dict[str, Dict[str, torch.Tensor]],
+                          obs_idx: int,
+                          max_cluster_idx_to_update: int,
+                          cum_cluster_assignment_posteriors: torch.Tensor,
+                          ) -> torch.Tensor:
+
+        # Shape: (curr max num clusters - 1,)
+        numerator = variational_params['assignments']['probs'][obs_idx, :max_cluster_idx_to_update]
+        denominator = numerator + cum_cluster_assignment_posteriors[:max_cluster_idx_to_update]
+        step_size_per_cluster = torch.divide(
+            numerator,
+            denominator)
+
+        # If the cumulative probability mass is 0, the previous few lines
+        # will divide 0/0 and result in NaN. Consequently, we mask those values.
+        step_size_per_cluster[torch.isnan(step_size_per_cluster)] = 0.
+
+        return step_size_per_cluster
+
+    # def renormalize_after_cutoff(self):
+    #
+    #     # Renormalize
+    #     if self.cutoff > 0:
+    #         indices_to_zero = variational_params['assignments']['probs'][obs_idx,
+    #                           :obs_idx + 1] < self.cutoff
+    #         variational_params['assignments']['probs'][obs_idx, indices_to_zero] = 0.
+    #         variational_params['assignments']['probs'][obs_idx, :obs_idx + 1] /= \
+    #             torch.sum(variational_params['assignments']['probs'][obs_idx, :obs_idx + 1])
+    #
+    #         negative_indices = variational_params['assignments']['probs'][obs_idx,
+    #                            :obs_idx + 1] < 0.
+    #         if torch.any(negative_indices):
+    #             variational_params['assignments']['probs'][obs_idx, :obs_idx + 1][
+    #                 negative_indices] = 0.
+    #             assert torch.all(cluster_assignment_prior >= 0.)
+
+
+    @staticmethod
+    def compute_vonmisesfisher_normalization(dim: int,
+                                             kappa: float):
+        if kappa > 0.:
+            term1 = np.power(kappa, dim / 2 - 1)
+            term2 = np.power(2 * np.pi, dim / 2)
+            term3 = scipy.special.iv(
+                dim / 2 - 1,  # order
+                kappa,  # argument
+            )
+            normalizing_const = term1 / term2 / term3
+        elif kappa == 0:
+            # If kappa = 0., we need to compute surface area of sphere.
+            # https://en.wikipedia.org/wiki/N-sphere#Volume_and_surface_area
+            normalizing_const = 2. * np.power(np.pi, dim / 2.) / scipy.special.gamma( dim / 2.)
+        else:
+            raise ValueError(f'Impermissible kappa: {kappa}')
+        return normalizing_const
