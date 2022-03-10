@@ -10,7 +10,6 @@ parameters:
         'DP-Means (Offline)',
         'DP-Means (Online)',
         'Dynamical-CRP',
-        'Dynamical-CRP (Cutoff=1e-2)',
         'Dynamical-CRP (Cutoff=1e-4)',
         'K-Means (Offline)',
         'K-Means (Online)',
@@ -30,8 +29,8 @@ parameters:
   n_features:
     values: [3, 6, 9, 12, 15]
   centroids_prior_cov_prefactor:
-    values: [25., 100., 250., 1000.]
+    values: [25., 50., 100., 250., 500., 1000.]
   likelihood_cov_prefactor:
-    values: [5.]
+    values: [5., 10.]
   repeat_idx:
     values: [0, 1, 2]

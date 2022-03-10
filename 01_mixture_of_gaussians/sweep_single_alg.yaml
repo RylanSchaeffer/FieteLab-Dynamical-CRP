@@ -7,14 +7,7 @@ metric:
 parameters:
   inference_alg_str:
     values: [
-        'DP-Means (Offline)',
-        'DP-Means (Online)',
         'Dynamical-CRP',
-        'Dynamical-CRP (Cutoff=1e-4)',
-        'K-Means (Offline)',
-        'K-Means (Online)',
-        'Recursive-CRP',
-        'VI-GMM',
     ]
   dynamics_str:
     values: [
