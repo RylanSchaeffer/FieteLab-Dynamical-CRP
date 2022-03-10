@@ -1,22 +1,25 @@
+import joblib
 import os
 import pandas as pd
 import numpy as np
-import joblib
+from typing import List
 import wandb
 
 
 def download_wandb_project_runs_results(wandb_project_path: str,
-                                        sweep_id: str = None,
+                                        sweep_ids: List[str] = None,
                                         ) -> pd.DataFrame:
     # Download sweep results
     api = wandb.Api()
 
     # Project is specified by <entity/project-name>
-    if sweep_id is None:
+    if sweep_ids is None:
         runs = api.runs(path=wandb_project_path)
     else:
-        runs = api.runs(path=wandb_project_path,
-                        filters={"Sweep": sweep_id})
+        runs = []
+        for sweep_id in sweep_ids:
+            runs.extend(api.runs(path=wandb_project_path,
+                                 filters={"Sweep": sweep_id}))
 
     sweep_results_list = []
     for run in runs:
