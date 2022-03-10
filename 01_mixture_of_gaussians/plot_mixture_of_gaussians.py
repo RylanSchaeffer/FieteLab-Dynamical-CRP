@@ -14,6 +14,7 @@ def plot_analyze_all_inf_algs_results(
         num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df: pd.DataFrame,
         num_true_clusters_div_total_num_true_clusters_by_obs_idx_df: pd.DataFrame,
         plot_dir: str):
+
     os.makedirs(plot_dir, exist_ok=True)
 
     for dynamics_str, sweep_subset_results_df in all_inf_algs_results_df.groupby('dynamics_str'):

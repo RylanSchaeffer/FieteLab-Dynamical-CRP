@@ -12,8 +12,12 @@ os.makedirs(results_dir, exist_ok=True)
 wandb_sweep_path = "rylan/dcrp-mixture-of-gaussians"
 sweep_names = [
     'uvklc6jw',  # DCRP https://wandb.ai/rylan/dcrp-mixture-of-gaussians/sweeps/uvklc6jw/overview?workspace=user-rylan
+    'p3rjl0d6',  # DP-Means (Online and Offline)
+    # 'bxuq6fho',  # K-Means (Online and Offline), R-CRP, VI-GMM
+    # 'ptzgug0n',  # Collapsed Gibbs Sampling
 ]
 sweep_names_str = ','.join(sweep_names)
+print(f'Analyzing sweeps {sweep_names_str}')
 sweep_results_dir_path = os.path.join(results_dir, sweep_names_str)
 os.makedirs(sweep_results_dir_path, exist_ok=True)
 sweep_results_df_path = os.path.join(sweep_results_dir_path, f'sweeps={sweep_names_str}_results.csv')
@@ -34,7 +38,7 @@ if not os.path.isfile(sweep_results_df_path):
 else:
     sweep_results_df = pd.read_csv(sweep_results_df_path)
 
-print(f"Number of runs: {sweep_results_df.shape[0]} for sweep={sweep_names_str}")
+print(f"Number of runs: {sweep_results_df.shape[0]} for sweep(s)={sweep_names_str}")
 
 cluster_ratio_dfs_results = generate_and_save_cluster_ratio_data(
     all_inf_algs_results_df=sweep_results_df,

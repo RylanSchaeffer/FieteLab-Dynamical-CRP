@@ -7,6 +7,7 @@ Example usage:
 01_mixture_of_gaussians/run_one.py
 """
 
+from collections import defaultdict
 import joblib
 import logging
 import numpy as np
@@ -23,15 +24,15 @@ import rncrp.plot.plot_general
 
 
 config_defaults = {
-    # 'inference_alg_str': 'CollapsedGibbsSampler',
+    'inference_alg_str': 'CollapsedGibbsSampler',
     # 'inference_alg_str': 'DP-Means (Offline)',
-    'inference_alg_str': 'Dynamical-CRP',
+    # 'inference_alg_str': 'Dynamical-CRP',
     # 'inference_alg_str': 'Dynamical-CRP (Cutoff=1e-3)',
     # 'inference_alg_str': 'Recursive-CRP',
     # 'inference_alg_str': 'K-Means (Offline)',
     # 'inference_alg_str': 'K-Means (Online)',
     # 'inference_alg_str': 'VI-GMM',
-    'dynamics_str': 'exp',
+    'dynamics_str': 'step',
     'dynamics_a': 1.,
     'dynamics_b': 0.5,
     'dynamics_c': 0.5,
@@ -115,18 +116,45 @@ inference_alg_results = rncrp.helpers.run.run_inference_alg(
     inference_alg_kwargs=inference_alg_kwargs,
 )
 
-scores, map_cluster_assignments = rncrp.metrics.compute_predicted_clusters_scores(
-    cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
-    true_cluster_assignments=mixture_model_results['cluster_assignments'])
+if config['inference_alg_str'] == 'CollapsedGibbsSampler':
+
+    # Score each MCMC sample separately.
+    num_mcmc_samples = inference_alg_results['cluster_assignments_mcmc_samples'].shape[0]
+    scores_per_mcmc_sample = defaultdict(list)
+    map_cluster_assignments_per_mcmc_sample = []
+    for sample_idx in range(num_mcmc_samples):
+
+        # Score the MCMC sample.
+        mcmc_sample_scores, mcmc_sample_map_cluster_assignments = rncrp.metrics.compute_predicted_clusters_scores(
+            cluster_assignment_posteriors=inference_alg_results['cluster_assignments_mcmc_samples'][sample_idx],
+            true_cluster_assignments=mixture_model_results['cluster_assignments'])
+
+        # Store results to be aggregated.
+        for score, score_val in mcmc_sample_scores.items():
+            scores_per_mcmc_sample[score].append(score_val)
+        map_cluster_assignments_per_mcmc_sample.append(mcmc_sample_map_cluster_assignments)
+
+    # Average scores over MCMC samples
+    scores = dict()
+    for score, score_list in scores_per_mcmc_sample.items():
+        scores[score] = np.mean(score_list)
+
+    # TODO: These values don't make sense. This averages over cluster IDs.
+    inference_alg_results['map_cluster_assignments_mcmc_samples'] = np.stack(map_cluster_assignments_per_mcmc_sample)
+
+else:
+    scores, map_cluster_assignments = rncrp.metrics.compute_predicted_clusters_scores(
+        cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
+        true_cluster_assignments=mixture_model_results['cluster_assignments'])
+    inference_alg_results['map_cluster_assignments'] = map_cluster_assignments
 inference_alg_results.update(scores)
-inference_alg_results['map_cluster_assignments'] = map_cluster_assignments
 wandb.log(scores, step=0)
 
-sum_sqrd_distances = rncrp.metrics.compute_sum_of_squared_distances_to_nearest_center(
-    X=mixture_model_results['observations'],
-    centroids=inference_alg_results['inference_alg'].centroids_after_last_obs())
-inference_alg_results['training_reconstruction_error'] = sum_sqrd_distances
-wandb.log({'training_reconstruction_error': sum_sqrd_distances}, step=0)
+# sum_sqrd_distances = rncrp.metrics.compute_sum_of_squared_distances_to_nearest_center(
+#     X=mixture_model_results['observations'],
+#     centroids=inference_alg_results['inference_alg'].centroids_after_last_obs())
+# inference_alg_results['training_reconstruction_error'] = sum_sqrd_distances
+# wandb.log({'training_reconstruction_error': sum_sqrd_distances}, step=0)
 
 
 data_to_store = dict(
@@ -142,7 +170,8 @@ joblib.dump(data_to_store,
 inf_alg_plot_dir_name = ""
 for key, value in dict(config).items():
     # Need to truncate file names because too long
-    if key == 'beta':
+    if key in {'beta', 'vi_param_initialization', 'observation_which_prior_prob',
+               'update_new_cluster_parameters', 'robbins_monro_cavi_updates'}:
         continue
     if key == 'centroids_prior_cov_prefactor':
         key = 'centroids_prior_cov'
@@ -153,17 +182,23 @@ for key, value in dict(config).items():
 inf_alg_plot_dir_path = os.path.join(results_dir_path, inf_alg_plot_dir_name)
 os.makedirs(inf_alg_plot_dir_path, exist_ok=True)
 
-rncrp.plot.plot_general.plot_cluster_assignments_inferred_vs_true(
-    true_cluster_assignments_one_hot=mixture_model_results['cluster_assignments_one_hot'],
-    cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
-    plot_dir=inf_alg_plot_dir_path,
-)
+try:
+    rncrp.plot.plot_general.plot_cluster_assignments_inferred_vs_true(
+        true_cluster_assignments_one_hot=mixture_model_results['cluster_assignments_one_hot'],
+        cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
+        plot_dir=inf_alg_plot_dir_path,
+    )
 
-rncrp.plot.plot_general.plot_cluster_coassignments_inferred_vs_true(
-    true_cluster_assignments=mixture_model_results['cluster_assignments'],
-    cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
-    plot_dir=inf_alg_plot_dir_path,
-)
+    rncrp.plot.plot_general.plot_cluster_coassignments_inferred_vs_true(
+        true_cluster_assignments=mixture_model_results['cluster_assignments'],
+        cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
+        plot_dir=inf_alg_plot_dir_path,
+    )
+
+# Some algorithms e.g. CollapsedGibbsSampler don't have cluster assignments.
+# They will throw a KeyError; we gracefully exit instead.
+except KeyError:
+    pass
 
 
-print(f'Finished 01_mixture_of_gaussians/run_one.py for sweep={wandb.run.id}.')
+print(f'Finished 01_mixture_of_gaussians/run_one.py for run={wandb.run.id}.')
