@@ -941,14 +941,14 @@ class DynamicalCRP(BaseModel):
             ),  # Shape: (curr max num clusters, obs dim)
         )  # Shape: (curr max num clusters, obs dim)
 
-        magnitudes = torch.norm(rhs, dim=1)  # Shape: (curr max num clusters,)
+        magnitudes = torch.norm(rhs, dim=1, keepdim=True) # Shape: (curr max num clusters, 1)
         assert_torch_no_nan_no_inf_is_real(magnitudes)
-        directions = rhs / magnitudes[:, None]  # Shape: (max num clusters, obs dim)
+        directions = rhs / magnitudes  # Shape: (max num clusters, obs dim)
         assert_torch_no_nan_no_inf_is_real(directions)
 
         if not self.robbins_monro_cavi_updates:
             # Don't reduce effective step size.
-            variational_params['means']['concentrations'][1, :max_cluster_idx_to_update, 0] = magnitudes
+            variational_params['means']['concentrations'][1, :max_cluster_idx_to_update, :] = magnitudes
             variational_params['means']['means'][1, :max_cluster_idx_to_update, :] = directions
         else:
             step_size_per_cluster = self.compute_step_size(
@@ -961,7 +961,7 @@ class DynamicalCRP(BaseModel):
             scaled_directions = torch.add(
                 torch.multiply(
                     step_size_per_cluster[:, np.newaxis],  # Shape (max clusters to update, 1)
-                    directions,  # Shape (curr_max_cluster_idx, obs dim)
+                    directions,  # Shape (curr_max_cluster_idx, 1)
                 ),
                 torch.multiply(
                     1. - step_size_per_cluster[:, np.newaxis],  # Shape (max clusters to update, 1)
@@ -980,7 +980,7 @@ class DynamicalCRP(BaseModel):
                 )
             )
 
-            variational_params['means']['concentrations'][1, :max_cluster_idx_to_update, 0] = scaled_magnitudes
+            variational_params['means']['concentrations'][1, :max_cluster_idx_to_update, :] = scaled_magnitudes
             variational_params['means']['means'][1, :max_cluster_idx_to_update, :] = scaled_directions
 
     @staticmethod
@@ -1019,7 +1019,6 @@ class DynamicalCRP(BaseModel):
     #             variational_params['assignments']['probs'][obs_idx, :obs_idx + 1][
     #                 negative_indices] = 0.
     #             assert torch.all(cluster_assignment_prior >= 0.)
-
 
     @staticmethod
     def compute_vonmisesfisher_normalization(dim: int,
