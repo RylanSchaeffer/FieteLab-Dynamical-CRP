@@ -213,7 +213,8 @@ def load_dataset_omniglot_vae(data_dir: str = 'data',
     # The file `omniglot_data.npz` contains Gaussian latent vectors from
     # a VAE with a single Gaussian prior, generated using
     # https://github.com/jmtomczak/vae_vampprior.
-    vae_data = np.load(os.path.join(data_dir, 'omniglot_vae/omniglot_data.npz'))
+    # vae_data = np.load(os.path.join(data_dir, 'omniglot_vae/omniglot_data.npz'))
+    vae_data = np.load(os.path.join(data_dir, 'omniglot_vae/omniglot_data_with_language_labels.npz'))
 
     # transforms = [torchvision.transforms.ToTensor()]
     # omniglot_dataset = torchvision.datasets.Omniglot(
