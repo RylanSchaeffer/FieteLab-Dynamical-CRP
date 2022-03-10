@@ -70,7 +70,7 @@ class CollapsedGibbsSamplerNew(BaseModel):
                  plot_dir: str = None,
                  num_samples: int = 50,
                  burn_in_steps: int = 10000,
-                 thinning_num_steps: int = 1000,
+                 thinning_num_steps: int = 500,
                  **kwargs,
                  ):
         self.gen_model_params = gen_model_params
