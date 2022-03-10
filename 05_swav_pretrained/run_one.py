@@ -28,6 +28,10 @@ config_defaults = {
     'likelihood_kappa': 5.,
     'n_samples': 10,
     'repeat_idx': 0,
+    'vi_param_initialization': 'observation',
+    'which_prior_prob': 'DP',
+    'update_new_cluster_parameters': False,
+    'robbins_monro_cavi_updates': True,
     'imagenet_split': 'val',
 }
 
@@ -83,11 +87,19 @@ gen_model_params = {
     }
 }
 
+inference_alg_kwargs = dict(
+    vi_param_initialization=config['vi_param_initialization'],
+    which_prior_prob=config['which_prior_prob'],
+    update_new_cluster_parameters=config['update_new_cluster_parameters'],
+    robbins_monro_cavi_updates=config['robbins_monro_cavi_updates'],
+)
+
 inference_alg_results = rncrp.helpers.run.run_inference_alg(
     inference_alg_str=config['inference_alg_str'],
     observations=swav_imagenet_dataloader,
     observations_times=observation_times,
     gen_model_params=gen_model_params,
+    inference_alg_kwargs=inference_alg_kwargs,
 )
 
 scores, map_cluster_assignments = rncrp.metrics.compute_predicted_clusters_scores(
