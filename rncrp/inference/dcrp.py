@@ -216,6 +216,8 @@ class DynamicalCRP(BaseModel):
             # if obs_idx == 5:
             #     print()
 
+            # print(obs_idx)
+
             if obs_idx == 0:
 
                 # First customer always goes at first table.
@@ -656,7 +658,7 @@ class DynamicalCRP(BaseModel):
             concentration=variational_params['means']['concentrations'][1, :obs_idx + 1, 0].numpy()).mean()
         torch_means = torch.from_numpy(tf_means.numpy())
 
-        # Term 2: E[phi_{nk}]^T o_n / sigma_obs^2
+        # Term 2: E[phi_{nk}]^T o_n / sigma_obs^2 = kappa * E[phi_{nk}]^T o_n
         # Shape: (max num clusters, )
         term_two = likelihood_params['likelihood_kappa'] * torch.einsum(
             'kd,d->k',
@@ -678,7 +680,7 @@ class DynamicalCRP(BaseModel):
             term_to_softmax,  # shape: (curr max num clusters i.e. obs idx, )
             dim=0)
 
-        # check that Bernoulli probs are all valid
+        # Check that probabilities are all valid.
         assert_torch_no_nan_no_inf_is_real(cluster_assignment_posterior_params)
         assert torch.all(0. <= cluster_assignment_posterior_params)
         assert torch.all(cluster_assignment_posterior_params <= 1.)
@@ -920,8 +922,6 @@ class DynamicalCRP(BaseModel):
                                                 cum_cluster_assignment_posteriors: torch.Tensor,
                                                 ) -> None:
 
-        likelihood_kappa = likelihood_params['likelihood_kappa']
-
         if self.update_new_cluster_parameters:
             max_cluster_idx_to_update = obs_idx + 1  # End index is exclusionary.
         else:
@@ -934,17 +934,19 @@ class DynamicalCRP(BaseModel):
                            variational_params['means']['means'][0, :max_cluster_idx_to_update, :],
                            # (curr max num clusters - 1, obs dim)
                            ),  # Shape: (curr max num clusters , obs dim)
-            likelihood_kappa * torch.multiply(
+            likelihood_params['likelihood_kappa'] * torch.multiply(
                 variational_params['assignments']['probs'][obs_idx, :max_cluster_idx_to_update, None],
                 # Shape (curr max num clusters - 1, 1)
                 torch_observation[None, :],  # Shape: (1, obs dim,)
             ),  # Shape: (curr max num clusters, obs dim)
         )  # Shape: (curr max num clusters, obs dim)
 
-        magnitudes = torch.norm(rhs, dim=1, keepdim=True) # Shape: (curr max num clusters, 1)
+        magnitudes = torch.norm(rhs, dim=1, keepdim=True)  # Shape: (curr max num clusters, 1)
         assert_torch_no_nan_no_inf_is_real(magnitudes)
         directions = rhs / magnitudes  # Shape: (max num clusters, obs dim)
         assert_torch_no_nan_no_inf_is_real(directions)
+
+        # print(f'Obs Idx: {obs_idx}\tVI Idx{vi_idx}\tDirections:\n{directions.numpy()}')
 
         if not self.robbins_monro_cavi_updates:
             # Don't reduce effective step size.
@@ -1024,17 +1026,20 @@ class DynamicalCRP(BaseModel):
     def compute_vonmisesfisher_normalization(dim: int,
                                              kappa: float):
         if kappa > 0.:
-            term1 = np.power(kappa, dim / 2 - 1)
-            term2 = np.power(2 * np.pi, dim / 2)
+            # Relatively confident that this is correct.
+            dim_over_two = dim / 2.
+            term1 = np.power(kappa, dim_over_two - 1)
+            term2 = np.power(2. * np.pi, dim_over_two)
             term3 = scipy.special.iv(
-                dim / 2 - 1,  # order
+                dim_over_two - 1.,  # order
                 kappa,  # argument
             )
             normalizing_const = term1 / term2 / term3
         elif kappa == 0:
             # If kappa = 0., we need to compute surface area of sphere.
             # https://en.wikipedia.org/wiki/N-sphere#Volume_and_surface_area
-            normalizing_const = 2. * np.power(np.pi, dim / 2.) / scipy.special.gamma( dim / 2.)
+            sphere_surface_area = 2. * np.power(np.pi, dim / 2.) / scipy.special.gamma(dim / 2.)
+            normalizing_const = 1. / sphere_surface_area
         else:
             raise ValueError(f'Impermissible kappa: {kappa}')
         return normalizing_const

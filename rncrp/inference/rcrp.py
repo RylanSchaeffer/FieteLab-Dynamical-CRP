@@ -1035,7 +1035,8 @@ class RecursiveCRP(BaseModel):
         elif kappa == 0:
             # If kappa = 0., we need to compute surface area of sphere.
             # https://en.wikipedia.org/wiki/N-sphere#Volume_and_surface_area
-            normalizing_const = 2. * np.power(np.pi, dim / 2.) / scipy.special.gamma( dim / 2.)
+            sphere_surface_area = 2. * np.power(np.pi, dim / 2.) / scipy.special.gamma(dim / 2.)
+            normalizing_const = 1. / sphere_surface_area
         else:
             raise ValueError(f'Impermissible kappa: {kappa}')
         return normalizing_const
