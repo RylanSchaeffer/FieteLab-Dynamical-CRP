@@ -625,10 +625,8 @@ def convert_dynamics_str_to_dynamics_obj(dynamics_str: str,
 
         if 'a' not in dynamics_params:
             dynamics_params['a'] = 1.
-        if 'b' not in dynamics_params:
-            dynamics_params['b'] = 0.
 
-        assert dynamics_params['b'] == 0.
+        dynamics_params['b'] = 0.
 
         if implementation_mode == 'numpy':
             dynamics_fn = LinearFirstOrderNumpy

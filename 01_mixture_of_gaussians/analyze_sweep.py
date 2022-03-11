@@ -11,10 +11,7 @@ results_dir = os.path.join(exp_dir_path, 'results')
 os.makedirs(results_dir, exist_ok=True)
 wandb_sweep_path = "rylan/dcrp-mixture-of-gaussians"
 sweep_names = [
-    'uvklc6jw',  # DCRP https://wandb.ai/rylan/dcrp-mixture-of-gaussians/sweeps/uvklc6jw/overview?workspace=user-rylan
-    'p3rjl0d6',  # DP-Means (Online and Offline)
-    # 'bxuq6fho',  # K-Means (Online and Offline), R-CRP, VI-GMM
-    # 'ptzgug0n',  # Collapsed Gibbs Sampling
+    'w3ytp57f',
 ]
 sweep_names_str = ','.join(sweep_names)
 print(f'Analyzing sweeps {sweep_names_str}')

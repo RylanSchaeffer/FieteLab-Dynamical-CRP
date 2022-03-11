@@ -24,7 +24,7 @@ import rncrp.plot.plot_general
 
 
 config_defaults = {
-    'inference_alg_str': 'CollapsedGibbsSampler',
+    'inference_alg_str': 'Recursive-CRP',
     # 'inference_alg_str': 'DP-Means (Offline)',
     # 'inference_alg_str': 'Dynamical-CRP',
     # 'inference_alg_str': 'Dynamical-CRP (Cutoff=1e-3)',
@@ -32,10 +32,10 @@ config_defaults = {
     # 'inference_alg_str': 'K-Means (Offline)',
     # 'inference_alg_str': 'K-Means (Online)',
     # 'inference_alg_str': 'VI-GMM',
-    'dynamics_str': 'step',
+    'dynamics_str': 'exp',
     'dynamics_a': 1.,
-    'dynamics_b': 0.5,
-    'dynamics_c': 0.5,
+    'dynamics_b': 0.05,
+    'dynamics_c': 0.05,
     'dynamics_omega': np.pi / 2.,
     'n_samples': 1000,
     'n_features': 15,
@@ -76,7 +76,11 @@ mixture_model_results = rncrp.data.synthetic.sample_mixture_model(
     mixing_prior_str='rncrp',
     mixing_distribution_params={'alpha': config['alpha'],
                                 'beta': config['beta'],
-                                'dynamics_str': config['dynamics_str']},
+                                'dynamics_str': config['dynamics_str'],
+                                'dynamics_params': {'a': config['dynamics_a'],
+                                                    'b': config['dynamics_b'],
+                                                    'c': config['dynamics_c'],
+                                                    'omega': config['dynamics_omega']}},
     component_prior_str='gaussian',
     component_prior_params={'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor'],
                             'likelihood_cov_prefactor': config['likelihood_cov_prefactor']})

@@ -34,7 +34,7 @@ if not os.path.isfile(sweep_results_df_path):
 else:
     sweep_results_df = pd.read_csv(sweep_results_df_path)
 
-print(f"Number of runs: {sweep_results_df.shape[0]} for sweep={sweep_names_str}")
+print(f"Number of runs: {sweep_results_df.shape[0]} for sweeps={sweep_names_str}")
 
 cluster_ratio_dfs_results = generate_and_save_cluster_ratio_data(
     all_inf_algs_results_df=sweep_results_df,

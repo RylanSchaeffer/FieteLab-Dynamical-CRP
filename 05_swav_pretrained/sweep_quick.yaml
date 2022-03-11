@@ -1,0 +1,27 @@
+program: 05_swav_pretrained/run_one.py
+project: dcrp-swav-pretrained
+method: grid
+metric:
+  goal: minimize
+  name: training_reconstruction_error
+parameters:
+  inference_alg_str:
+    values: [
+        'Dynamical-CRP',
+    ]
+  dynamics_str:
+    values: [
+        'step']
+  dynamics_a:
+    values: [1.]
+  alpha:
+    values: [0.01, 0.1, 0.5, 1., 2.5, 5., 7.5, 10., 15.,]
+  n_samples:
+    values: [ 10000 ]
+  likelihood_kappa:
+    values: [1., 5., 10., 20., 40., 80., 120.]
+  repeat_idx:
+    values: [0]
+  imagenet_split:
+    values: ['val']
+

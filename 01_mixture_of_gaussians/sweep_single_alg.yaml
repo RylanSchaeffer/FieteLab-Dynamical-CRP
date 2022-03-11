@@ -7,7 +7,7 @@ metric:
 parameters:
   inference_alg_str:
     values: [
-      'CollapsedGibbsSampler',
+      'Dynamical-CRP',
     ]
   dynamics_str:
     values: [
@@ -15,6 +15,14 @@ parameters:
         'exp',
         'sinusoid',
         'hyperbolic']
+  'dynamics_a':
+    values: [1.]
+  'dynamics_b':
+    values: [0.05]
+  'dynamics_c':
+    values: [0.05]
+  'dynamics_omega':
+    values: [0.15]
   alpha:
     values: [ 5.0, 10.0, 15.0, 20.0, 25.0]
   n_samples:

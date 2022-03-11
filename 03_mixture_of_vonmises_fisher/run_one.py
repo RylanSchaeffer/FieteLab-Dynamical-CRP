@@ -22,10 +22,10 @@ import rncrp.plot.plot_general
 config_defaults = {
     'inference_alg_str': 'Dynamical-CRP',
     'dynamics_str': 'step',
-    # 'dynamics_a': 1.,
-    # 'dynamics_b': 1.,
-    # 'dynamics_c': 1.,
-    # 'dynamics_omega': np.pi / 2.,
+    'dynamics_a': 1.,
+    'dynamics_b': 0.03,
+    'dynamics_c': 0.03,
+    'dynamics_omega': np.pi / 2.,
     'n_samples': 1000,
     'n_features': 2,
     'alpha': 1.1,
@@ -65,7 +65,11 @@ mixture_model_results = rncrp.data.synthetic.sample_mixture_model(
     mixing_prior_str='rncrp',
     mixing_distribution_params={'alpha': config['alpha'],
                                 'beta': config['beta'],
-                                'dynamics_str': config['dynamics_str']},
+                                'dynamics_str': config['dynamics_str'],
+                                'dynamics_params': {'a': config['dynamics_a'],
+                                                    'b': config['dynamics_b'],
+                                                    'c': config['dynamics_c'],
+                                                    'omega': config['dynamics_omega']}},
     component_prior_str='vonmises_fisher',
     component_prior_params={'likelihood_kappa': config['likelihood_kappa']})
 
@@ -133,10 +137,6 @@ for key, value in dict(config).items():
     if key in {'beta', 'vi_param_initialization', 'observation_which_prior_prob',
                'update_new_cluster_parameters', 'robbins_monro_cavi_updates'}:
         continue
-    if key == 'centroids_prior_cov_prefactor':
-        key = 'centroids_prior_cov'
-    if key == 'likelihood_cov_prefactor':
-        key = 'likelihood_cov'
 
     inf_alg_plot_dir_name += f"{key}={value}_"
 
