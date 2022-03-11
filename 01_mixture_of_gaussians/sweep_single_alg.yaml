@@ -7,7 +7,7 @@ metric:
 parameters:
   inference_alg_str:
     values: [
-      'K-Means (Online)',
+      'CollapsedGibbsSampler',
     ]
   dynamics_str:
     values: [

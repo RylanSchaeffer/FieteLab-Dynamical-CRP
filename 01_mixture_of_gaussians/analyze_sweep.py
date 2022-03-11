@@ -12,14 +12,20 @@ os.makedirs(results_dir, exist_ok=True)
 wandb_sweep_path = "rylan/dcrp-mixture-of-gaussians"
 sweep_names = [
     'w3ytp57f',  # D-CRP
+    'wlrc2asb',  # R-CRP
     'lovo5rgf',  # K-Means (Offline)
-    '',  #
+    'ro1zrkea',  # K-Means (Online)
+    'i1h6gz8e',  # VI-GMM
+    'bj7ihoq8',  # DP-Means (Offline)
+    '6yypeu59',  # DP-Means (Online)
+    # '',  # Collapsed Gibbs Sampler
 ]
 sweep_names_str = ','.join(sweep_names)
 print(f'Analyzing sweeps {sweep_names_str}')
 sweep_results_dir_path = os.path.join(results_dir, sweep_names_str)
 os.makedirs(sweep_results_dir_path, exist_ok=True)
 sweep_results_df_path = os.path.join(sweep_results_dir_path, f'sweeps={sweep_names_str}_results.csv')
+
 
 if not os.path.isfile(sweep_results_df_path):
 

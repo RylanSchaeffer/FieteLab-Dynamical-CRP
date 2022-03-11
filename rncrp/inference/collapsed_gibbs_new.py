@@ -68,8 +68,8 @@ class CollapsedGibbsSamplerNew(BaseModel):
                  gen_model_params: Dict[str, Dict[str, float]],
                  model_str: str = 'CGS',
                  plot_dir: str = None,
-                 num_samples: int = 50,
-                 burn_in_steps: int = 10000,
+                 num_samples: int = 25,
+                 burn_in_steps: int = 5000,
                  thinning_num_steps: int = 500,
                  **kwargs,
                  ):
