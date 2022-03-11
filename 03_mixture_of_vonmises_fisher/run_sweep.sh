@@ -13,6 +13,6 @@
 
 for i in {1..12}
 do
-  sbatch 03_mixture_of_vonmises_fisher/run_one.sh axi0h0qe
+  sbatch 03_mixture_of_vonmises_fisher/run_one.sh ij8tk0n1
   sleep 5
 done

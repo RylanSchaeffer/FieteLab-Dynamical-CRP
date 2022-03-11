@@ -10,7 +10,7 @@ results_dir = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir, exist_ok=True)
 wandb_sweep_path = "rylan/dcrp-mixture-of-vonmises-fisher"
 sweep_names = [
-    'axi0h0qe',  # D-CRP and R-CRP
+    'ij8tk0n1',  # D-CRP and R-CRP
 ]
 sweep_names_str = ','.join(sweep_names)
 print(f'Analyzing sweeps {sweep_names_str}')

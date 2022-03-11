@@ -15,7 +15,7 @@ parameters:
   dynamics_a:
     values: [1.]
   alpha:
-    values: [0.01, 0.05, 0.1, 0.5, 1., 2.5, 5., 7.5, 10., 15.,]
+    values: [0.01, 0.1, 0.5, 1., 2.5, 5., 7.5, 10., 15.,]
   n_samples:
     values: [ 10000 ]
   likelihood_kappa:

@@ -75,9 +75,6 @@ def plot_analyze_all_inf_algs_results(all_inf_algs_results_df: pd.DataFrame,
             rncrp.plot.plot_general.plot_scores_by_snr_colored_by_alg,
             rncrp.plot.plot_general.plot_scores_by_alpha_colored_by_alg,
             rncrp.plot.plot_general.plot_cluster_multiclass_classification_score_by_alpha_by_alg,
-            rncrp.plot.plot_general.plot_num_inferred_clusters_div_num_true_clusters_by_obs_idx,
-            rncrp.plot.plot_general.plot_num_inferred_clusters_div_total_num_true_clusters_by_obs_idx,
-            rncrp.plot.plot_general.plot_num_true_clusters_div_total_num_true_clusters_by_obs_idx,
         ]
 
         for plot_fn in plot_fns:
@@ -108,6 +105,7 @@ def plot_cluster_multiclass_classification_score_by_alpha_cross_kappa(
                  legend='full',  # Ensures hue is treated as continuum & not binned.
                  )
     plt.xlabel(r'$\alpha$')
+    plt.ylabel('Avg Finetune Acc')
     plt.title('Dynamical CRP')
     plt.legend()
     # plt.ylim(0., 1.05)

@@ -472,7 +472,7 @@ def plot_runtime_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
 
     # Move legend outside of plot
     # See https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot-in-matplotlib
-    plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir,
@@ -506,7 +506,7 @@ def plot_runtime_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
 
     # Move legend outside of plot
     # See https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot-in-matplotlib
-    plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir,
@@ -540,7 +540,8 @@ def plot_scores_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
 
         # Move legend outside of plot
         # See https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot-in-matplotlib
-        plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+        # plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+        plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
         if title_str is not None:
             plt.title(title_str)
@@ -577,7 +578,7 @@ def plot_scores_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
         # plt.legend()
         # Move legend outside of plot
         # See https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot-in-matplotlib
-        plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+        plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
         if title_str is not None:
             plt.title(title_str)
@@ -616,7 +617,9 @@ def plot_scores_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
 
         # Move legend outside of plot
         # See https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot-in-matplotlib
-        plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+        # plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+        # plt.legend(bbox_to_anchor=(1.04, 1))
+        plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
         if title_str is not None:
             plt.title(title_str)

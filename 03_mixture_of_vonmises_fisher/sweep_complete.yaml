@@ -19,11 +19,11 @@ parameters:
   dynamics_a:
     values: [1.]
   dynamics_b:
-    values: [ 0.5 ]
+    values: [ 0.05 ]
   dynamics_c:
-    values: [ 0.5 ]
+    values: [ 0.05 ]
   dynamics_omega:
-    values: [ 1. ]
+    values: [ 0.15 ]
   alpha:
     values: [ 2.5, 5., 7.5, 10., 15.]
   n_samples:

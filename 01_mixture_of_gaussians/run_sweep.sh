@@ -14,6 +14,6 @@
 
 for i in {1..10}
 do
-  sbatch 01_mixture_of_gaussians/run_one.sh w3ytp57f
+  sbatch 01_mixture_of_gaussians/run_one.sh ro1zrkea
   sleep 5
 done

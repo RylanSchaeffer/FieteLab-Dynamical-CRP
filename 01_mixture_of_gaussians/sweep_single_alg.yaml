@@ -7,7 +7,7 @@ metric:
 parameters:
   inference_alg_str:
     values: [
-      'Dynamical-CRP',
+      'K-Means (Online)',
     ]
   dynamics_str:
     values: [

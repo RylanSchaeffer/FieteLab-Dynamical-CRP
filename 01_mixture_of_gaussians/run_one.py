@@ -24,12 +24,12 @@ import rncrp.plot.plot_general
 
 
 config_defaults = {
-    'inference_alg_str': 'Recursive-CRP',
+    # 'inference_alg_str': 'Recursive-CRP',
     # 'inference_alg_str': 'DP-Means (Offline)',
     # 'inference_alg_str': 'Dynamical-CRP',
     # 'inference_alg_str': 'Dynamical-CRP (Cutoff=1e-3)',
     # 'inference_alg_str': 'Recursive-CRP',
-    # 'inference_alg_str': 'K-Means (Offline)',
+    'inference_alg_str': 'K-Means (Offline)',
     # 'inference_alg_str': 'K-Means (Online)',
     # 'inference_alg_str': 'VI-GMM',
     'dynamics_str': 'exp',

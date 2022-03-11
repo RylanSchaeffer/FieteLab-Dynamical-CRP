@@ -96,7 +96,7 @@ def run_inference_alg(inference_alg_str: str,
             inference_alg_kwargs['max_iter'] = 1
             inference_alg_kwargs['num_initializations'] = 1
         else:
-            raise ValueError('Invalid KMeans Means')
+            raise ValueError('Invalid KMeans')
 
         inference_alg = KMeans(
             gen_model_params=gen_model_params,
