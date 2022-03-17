@@ -91,8 +91,15 @@ def generate_and_save_cluster_ratio_data(all_inf_algs_results_df: pd.DataFrame,
                 continue
 
             # Obtain number of inferred clusters
-            cluster_assignment_posteriors = joblib_file['inference_alg_results'][
-                'cluster_assignment_posteriors']
+            try:
+                cluster_assignment_posteriors = joblib_file['inference_alg_results'][
+                    'cluster_assignment_posteriors']
+            except KeyError:
+                # TODO: What to do for collapsed Gibbs sampling?
+                # cluster_assignment_posteriors = np.mean(
+                #     joblib_file['inference_alg_results']['cluster_assignments_one_hot_mcmc_samples'],
+                #     axis=0)
+                continue
             inferred_cluster_assignments = cluster_assignment_posteriors.argmax(axis=1)
             num_inferred_clusters_by_obs_idx = np.array([
                 len(np.unique(inferred_cluster_assignments[:i + 1]))
