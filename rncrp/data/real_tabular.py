@@ -525,7 +525,7 @@ def load_dataset_dinari_gaussian_2d_2022(data_dir: str = 'data',
 def load_dataset_dinari_imagenet_full_2022(data_dir: str = 'data',
                                            **kwargs,
                                            ) -> Dict[str, Union[np.ndarray, pd.DataFrame]]:
-    dataset_dir = os.path.join(data_dir, 'dinari_covertype_2022')
+    dataset_dir = os.path.join(data_dir, 'dinari_imagenet_full_2022')
     data_path = os.path.join(dataset_dir, 'imagenet_full.csv')
 
     data = pd.read_csv(data_path, index_col=False, header=False).values
@@ -540,7 +540,7 @@ def load_dataset_dinari_imagenet_full_2022(data_dir: str = 'data',
 def load_dataset_dinari_imagenet_short_2022(data_dir: str = 'data',
                                             **kwargs,
                                             ) -> Dict[str, Union[np.ndarray, pd.DataFrame]]:
-    dataset_dir = os.path.join(data_dir, 'dinari_covertype_2022')
+    dataset_dir = os.path.join(data_dir, 'dinari_imagenet_short_2022')
     data_path = os.path.join(dataset_dir, 'imagenet_short.csv')
 
     data = pd.read_csv(data_path, index_col=False, header=False).values
@@ -555,8 +555,8 @@ def load_dataset_dinari_imagenet_short_2022(data_dir: str = 'data',
 def load_dataset_dinari_multinomial_2022(data_dir: str = 'data',
                                          **kwargs,
                                          ) -> Dict[str, Union[np.ndarray, pd.DataFrame]]:
-    dataset_dir = os.path.join(data_dir, 'dinari_covertype_2022')
-    data_path = os.path.join(dataset_dir, 'imagenet_full.csv')
+    dataset_dir = os.path.join(data_dir, 'dinari_multinomial_2022')
+    data_path = os.path.join(dataset_dir, 'multinomial.csv')
 
     data = pd.read_csv(data_path, index_col=False, header=False).values
     observations = data.values[:, :-1]
@@ -570,8 +570,8 @@ def load_dataset_dinari_multinomial_2022(data_dir: str = 'data',
 def load_dataset_dinari_newsgroup_2022(data_dir: str = 'data',
                                        **kwargs,
                                        ) -> Dict[str, Union[np.ndarray, pd.DataFrame]]:
-    dataset_dir = os.path.join(data_dir, 'dinari_covertype_2022')
-    data_path = os.path.join(dataset_dir, 'imagenet_full.csv')
+    dataset_dir = os.path.join(data_dir, 'dinari_newsgroup_2022')
+    data_path = os.path.join(dataset_dir, 'newsgroup.csv')
 
     data = pd.read_csv(data_path, index_col=False, header=False).values
     observations = data.values[:, :-1]
