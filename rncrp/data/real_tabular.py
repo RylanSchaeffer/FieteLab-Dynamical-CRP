@@ -31,12 +31,22 @@ def load_dataset(dataset_name: str,
         load_dataset_fn = load_dataset_boston_housing_1993
     elif dataset_name == 'cancer_gene_expression_2016':
         load_dataset_fn = load_dataset_cancer_gene_expression_2016
-    elif dataset_name == 'covertype_1998':
-        load_dataset_fn = load_dataset_covertype_1998
     elif dataset_name == 'covid_hospital_treatment_2020':
         load_dataset_fn = load_dataset_covid_hospital_treatment_2020
     elif dataset_name == 'diabetes_hospitals_2014':
         load_dataset_fn = load_dataset_diabetes_hospitals_2014
+    elif dataset_name == 'dinari_covertype_2022':
+        load_dataset_fn = load_dataset_dinari_covertype_2022
+    elif dataset_name == 'dinari_covertype_2022':
+        load_dataset_fn = load_dataset_dinari_gaussian_2d_2022
+    elif dataset_name == 'dinari_imagenet_full_2022':
+        load_dataset_fn = load_dataset_dinari_imagenet_full_2022
+    elif dataset_name == 'dinari_imagenet_short_2022':
+        load_dataset_fn = load_dataset_dinari_imagenet_short_2022
+    elif dataset_name == 'dinari_imagenet_multinomial_2022':
+        load_dataset_fn = load_dataset_dinari_multinomial_2022
+    elif dataset_name == 'dinari_covertype_2022':
+        load_dataset_fn = load_dataset_dinari_newsgroup_2022
     elif dataset_name == 'electric_grid_stability_2016':
         load_dataset_fn = load_dataset_electric_grid_stability_2016
     elif dataset_name == 'swav_imagenet_2021':
@@ -482,23 +492,93 @@ def load_dataset_covid_tracking_2021(data_dir: str = 'data',
     return dataset_dict
 
 
-def load_dataset_covertype_1998(data_dir: str = 'data',
-                                **kwargs,
-                                ) -> Dict[str, Union[np.ndarray, pd.DataFrame]]:
+def load_dataset_dinari_covertype_2022(data_dir: str = 'data',
+                                       **kwargs,
+                                       ) -> Dict[str, Union[np.ndarray, pd.DataFrame]]:
+    dataset_dir = os.path.join(data_dir, 'dinari_covertype_2022')
+    data_path = os.path.join(dataset_dir, 'forest_normalized.csv')
 
-    dataset_dir = os.path.join(data_dir,
-                               'covertype_1998')
-    data_path = os.path.join(dataset_dir, 'covtype.data')
-
-    data = pd.read_csv(data_path, index_col=False)
-    observations = data.loc[:, ~data.columns.isin(['id', 'diagnosis'])]
-    labels = data['diagnosis'].astype('category').cat.codes
-
+    data = pd.read_csv(data_path, index_col=False, header=False).values
+    observations = data.values[:, :-1]
+    labels = data[:, -1].astype(np.int)
     dataset_dict = dict(
-        observations=observations.values,
-        labels=labels.values,
-    )
+        observations=observations,
+        labels=labels)
+    return dataset_dict
 
+
+def load_dataset_dinari_gaussian_2d_2022(data_dir: str = 'data',
+                                         **kwargs,
+                                         ) -> Dict[str, Union[np.ndarray, pd.DataFrame]]:
+    dataset_dir = os.path.join(data_dir, 'dinari_gaussian_2d_2022')
+    data_path = os.path.join(dataset_dir, '2d_moving_clusters.csv')
+
+    data = pd.read_csv(data_path, index_col=False, header=False).values
+    observations = data.values[:, :-1]
+    labels = data[:, -1].astype(np.int)
+    dataset_dict = dict(
+        observations=observations,
+        labels=labels)
+    return dataset_dict
+
+
+def load_dataset_dinari_imagenet_full_2022(data_dir: str = 'data',
+                                           **kwargs,
+                                           ) -> Dict[str, Union[np.ndarray, pd.DataFrame]]:
+    dataset_dir = os.path.join(data_dir, 'dinari_covertype_2022')
+    data_path = os.path.join(dataset_dir, 'imagenet_full.csv')
+
+    data = pd.read_csv(data_path, index_col=False, header=False).values
+    observations = data.values[:, :-1]
+    labels = data[:, -1].astype(np.int)
+    dataset_dict = dict(
+        observations=observations,
+        labels=labels)
+    return dataset_dict
+
+
+def load_dataset_dinari_imagenet_short_2022(data_dir: str = 'data',
+                                            **kwargs,
+                                            ) -> Dict[str, Union[np.ndarray, pd.DataFrame]]:
+    dataset_dir = os.path.join(data_dir, 'dinari_covertype_2022')
+    data_path = os.path.join(dataset_dir, 'imagenet_short.csv')
+
+    data = pd.read_csv(data_path, index_col=False, header=False).values
+    observations = data.values[:, :-1]
+    labels = data[:, -1].astype(np.int)
+    dataset_dict = dict(
+        observations=observations,
+        labels=labels)
+    return dataset_dict
+
+
+def load_dataset_dinari_multinomial_2022(data_dir: str = 'data',
+                                         **kwargs,
+                                         ) -> Dict[str, Union[np.ndarray, pd.DataFrame]]:
+    dataset_dir = os.path.join(data_dir, 'dinari_covertype_2022')
+    data_path = os.path.join(dataset_dir, 'imagenet_full.csv')
+
+    data = pd.read_csv(data_path, index_col=False, header=False).values
+    observations = data.values[:, :-1]
+    labels = data[:, -1].astype(np.int)
+    dataset_dict = dict(
+        observations=observations,
+        labels=labels)
+    return dataset_dict
+
+
+def load_dataset_dinari_newsgroup_2022(data_dir: str = 'data',
+                                       **kwargs,
+                                       ) -> Dict[str, Union[np.ndarray, pd.DataFrame]]:
+    dataset_dir = os.path.join(data_dir, 'dinari_covertype_2022')
+    data_path = os.path.join(dataset_dir, 'imagenet_full.csv')
+
+    data = pd.read_csv(data_path, index_col=False, header=False).values
+    observations = data.values[:, :-1]
+    labels = data[:, -1].astype(np.int)
+    dataset_dict = dict(
+        observations=observations,
+        labels=labels)
     return dataset_dict
 
 
