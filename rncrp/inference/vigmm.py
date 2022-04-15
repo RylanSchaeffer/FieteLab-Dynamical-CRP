@@ -43,7 +43,7 @@ class VariationalInferenceGMM(BaseModel):
             max_iter=self.max_iter,
             n_init=self.num_initializations,
             covariance_type='spherical',
-            init_params='random',
+            init_params='random',  # TODO: switch to K-Means initialization
             weight_concentration_prior_type='dirichlet_process',
             weight_concentration_prior=self.mixing_params['alpha'])
         var_dp_gmm.fit(observations)
@@ -55,6 +55,7 @@ class VariationalInferenceGMM(BaseModel):
                       covs=var_dp_gmm.covariances_)
 
         total_mass_per_cluster = np.sum(cluster_assignment_posteriors, axis=0)
+        # TODO: figure out the right way to compute the number of inferred clusters under soft assignment
         num_inferred_clusters = np.sum(total_mass_per_cluster >= 1.)
 
         self.fit_results = dict(

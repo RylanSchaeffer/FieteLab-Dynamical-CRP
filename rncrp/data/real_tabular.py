@@ -31,6 +31,8 @@ def load_dataset(dataset_name: str,
         load_dataset_fn = load_dataset_boston_housing_1993
     elif dataset_name == 'cancer_gene_expression_2016':
         load_dataset_fn = load_dataset_cancer_gene_expression_2016
+    elif dataset_name == 'covertype_1998':
+        load_dataset_fn = load_dataset_covertype_1998
     elif dataset_name == 'covid_hospital_treatment_2020':
         load_dataset_fn = load_dataset_covid_hospital_treatment_2020
     elif dataset_name == 'diabetes_hospitals_2014':
@@ -102,7 +104,6 @@ def load_dataset_ames_housing_2011(data_dir: str = 'data',
 def load_dataset_arxiv_2022(data_dir: str = 'data',
                             **kwargs,
                             ) -> Dict[str, pd.DataFrame]:
-
     dataset_dir = os.path.join(data_dir, 'arxiv_2022')
     data_json_path = os.path.join(dataset_dir, 'arxiv-metadata-oai-snapshot.json')
     data_trimmed_path = os.path.join(dataset_dir, 'arxiv-metadata-trimmed.csv')
@@ -248,7 +249,8 @@ def create_data_for_label_generation(site_df,
         site_metrics_df.loc[:, "Tn"] = df.groupby(["year"]).TMIN.mean().reset_index().set_index(["year"])
         site_metrics_df.loc[:, "Tx"] = df.groupby(["year"]).TMAX.mean().reset_index().set_index(["year"])
         site_metrics_df.loc[:, "Tm"] = df.groupby(["year"]).TAVG.mean().reset_index().set_index(["year"])
-        site_metrics_df.loc[:, "Tm"] = np.where(np.isnan(site_metrics_df.Tm), (site_metrics_df.Tn + site_metrics_df.Tx) / 2., site_metrics_df.Tm)
+        site_metrics_df.loc[:, "Tm"] = np.where(np.isnan(site_metrics_df.Tm),
+                                                (site_metrics_df.Tn + site_metrics_df.Tx) / 2., site_metrics_df.Tm)
 
     elif periodicity == 'monthly':
         df["month"] = df.DATE.apply(lambda x: int(x[5:7]))
@@ -258,11 +260,16 @@ def create_data_for_label_generation(site_df,
         index = pd.MultiIndex.from_product([year_iterable, month_iterable], names=["year", "month"])
         site_metrics_df = pd.DataFrame(columns=index).T
 
-        site_metrics_df.loc[:, "P"] = df.groupby(["year", "month"]).PRCP.mean().reset_index().set_index(["year", "month"])
-        site_metrics_df.loc[:, "Tn"] = df.groupby(["year", "month"]).TMIN.mean().reset_index().set_index(["year", "month"])
-        site_metrics_df.loc[:, "Tx"] = df.groupby(["year", "month"]).TMAX.mean().reset_index().set_index(["year", "month"])
-        site_metrics_df.loc[:, "Tm"] = df.groupby(["year", "month"]).TAVG.mean().reset_index().set_index(["year", "month"])
-        site_metrics_df.loc[:, "Tm"] = np.where(np.isnan(site_metrics_df.Tm), (site_metrics_df.Tn + site_metrics_df.Tx) / 2., site_metrics_df.Tm)
+        site_metrics_df.loc[:, "P"] = df.groupby(["year", "month"]).PRCP.mean().reset_index().set_index(
+            ["year", "month"])
+        site_metrics_df.loc[:, "Tn"] = df.groupby(["year", "month"]).TMIN.mean().reset_index().set_index(
+            ["year", "month"])
+        site_metrics_df.loc[:, "Tx"] = df.groupby(["year", "month"]).TMAX.mean().reset_index().set_index(
+            ["year", "month"])
+        site_metrics_df.loc[:, "Tm"] = df.groupby(["year", "month"]).TAVG.mean().reset_index().set_index(
+            ["year", "month"])
+        site_metrics_df.loc[:, "Tm"] = np.where(np.isnan(site_metrics_df.Tm),
+                                                (site_metrics_df.Tn + site_metrics_df.Tx) / 2., site_metrics_df.Tm)
 
     else:
         raise ValueError('Impermissible computation interval:', periodicity)
@@ -363,7 +370,6 @@ def load_dataset_climate(data_dir: str = 'data',
                          monthly_or_annually: str = 'monthly',
                          with_or_without_subclasses: str = 'with',
                          ) -> Dict[str, pd.DataFrame]:
-
     assert monthly_or_annually in {'monthly', 'annually'}
     assert with_or_without_subclasses in {'with', 'without'}
     dataset_dir_path = os.path.join(data_dir, 'climate_change')
@@ -371,7 +377,6 @@ def load_dataset_climate(data_dir: str = 'data',
     climate_df_path = os.path.join(dataset_dir_path, 'climate_data.csv')
 
     if not os.path.isfile(climate_df_path):
-
         climate_data = load_dataset_climate_helper(qualifying_sites_path=qualifying_sites_path,
                                                    periodicity=monthly_or_annually,
                                                    end_year=end_year,
@@ -468,6 +473,26 @@ def load_dataset_covid_tracking_2021(data_dir: str = 'data',
 
     observations = unmelted_data.loc[:, ~unmelted_data.columns.isin(['id', 'diagnosis'])]
     labels = unmelted_data['diagnosis'].astype('category').cat.codes
+
+    dataset_dict = dict(
+        observations=observations.values,
+        labels=labels.values,
+    )
+
+    return dataset_dict
+
+
+def load_dataset_covertype_1998(data_dir: str = 'data',
+                                **kwargs,
+                                ) -> Dict[str, Union[np.ndarray, pd.DataFrame]]:
+
+    dataset_dir = os.path.join(data_dir,
+                               'covertype_1998')
+    data_path = os.path.join(dataset_dir, 'covtype.data')
+
+    data = pd.read_csv(data_path, index_col=False)
+    observations = data.loc[:, ~data.columns.isin(['id', 'diagnosis'])]
+    labels = data['diagnosis'].astype('category').cat.codes
 
     dataset_dict = dict(
         observations=observations.values,

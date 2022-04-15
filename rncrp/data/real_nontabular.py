@@ -8,7 +8,7 @@ import torchvision.transforms
 from typing import Dict, List, Tuple, Union
 
 
-class SwavImageNet2011Dataset(Dataset):
+class SwavImageNet2021Dataset(Dataset):
 
     def __init__(self,
                  dataset_dir,
@@ -59,7 +59,7 @@ def load_dataloader_swav_imagenet_2021(data_dir: str = 'data',
                                        dataloader_kwargs: Dict = None):
     dataset_dir = os.path.join(data_dir, 'swav_imagenet_2021')
 
-    dataset = SwavImageNet2011Dataset(
+    dataset = SwavImageNet2021Dataset(
         dataset_dir=dataset_dir,
         split=split,
         include_images=include_images,

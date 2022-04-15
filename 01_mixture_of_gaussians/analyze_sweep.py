@@ -18,7 +18,7 @@ sweep_names = [
     'i1h6gz8e',  # VI-GMM
     'bj7ihoq8',  # DP-Means (Offline)
     '6yypeu59',  # DP-Means (Online)
-    # '',  # Collapsed Gibbs Sampler
+    'a56b0b8r',  # Collapsed Gibbs Sampler
 ]
 sweep_names_str = ','.join(sweep_names)
 print(f'Analyzing sweeps {sweep_names_str}')

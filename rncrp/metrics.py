@@ -1,9 +1,27 @@
 import numpy as np
 import sklearn.metrics
 from sklearn.metrics import adjusted_rand_score, rand_score, adjusted_mutual_info_score, \
-    normalized_mutual_info_score
+    normalized_mutual_info_score, f1_score
+import sklearn.metrics.cluster
 from sklearn.metrics.pairwise import euclidean_distances
 from typing import Dict, Tuple
+
+
+def purity_score(labels_true: np.ndarray,
+                 labels_pred: np.ndarray):
+    """
+    Purity: For each cluster, assign it the cluster label that is most prevalent amongst
+    points assinged to the cluster. Purity is the number of correctly matched class
+    and cluster labels, divided by the number of total data points
+
+    See: https://nlp.stanford.edu/IR-book/html/htmledition/evaluation-of-clustering-1.html
+
+    Implementation copied from https://stackoverflow.com/a/51672699/4570472
+    """
+    # compute contingency matrix (also called confusion matrix)
+    contingency_matrix = sklearn.metrics.cluster.contingency_matrix(labels_true, labels_pred)
+    # return purity
+    return np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
 
 
 def compute_predicted_clusters_scores(cluster_assignment_posteriors: np.ndarray,
@@ -38,11 +56,19 @@ def compute_predicted_clusters_scores(cluster_assignment_posteriors: np.ndarray,
     norm_mut_inf_score = normalized_mutual_info_score(labels_pred=pred_cluster_labels,
                                                       labels_true=true_cluster_assignments)
 
+    pur_score = purity_score(labels_true=true_cluster_assignments,
+                             labels_pred=pred_cluster_labels)
+
+    # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
+    f_score = f1_score(true_cluster_assignments, pred_cluster_labels)
+
     scores_results = {
         'Rand Score': rnd_score,
         'Adjusted Rand Score': adj_rnd_score,
         'Adjusted Mutual Info Score': adj_mut_inf_score,
         'Normalized Mutual Info Score': norm_mut_inf_score,
+        'Purity Score': pur_score,
+        'F Score': f_score,
     }
 
     return scores_results, pred_cluster_labels

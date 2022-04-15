@@ -8,6 +8,7 @@
 #rsync -avh --exclude='*.joblib' --exclude="*.csv" rylansch@openmind-dtn.mit.edu:/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/01_mixture_of_gaussians/results/uvklc6jw,p3rjl0d6/ 01_mixture_of_gaussians/results/uvklc6jw,p3rjl0d6/
 #rsync -avh --exclude='*.joblib' --exclude="*.csv" rylansch@openmind-dtn.mit.edu:/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/01_mixture_of_gaussians/results/uvklc6jw,p3rjl0d6,bxuq6fho/ 01_mixture_of_gaussians/results/uvklc6jw,p3rjl0d6,bxuq6fho/
 #rsync -avh --exclude='*.joblib' --exclude="*.csv" rylansch@openmind-dtn.mit.edu:/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/01_mixture_of_gaussians/results/w3ytp57f,wlrc2asb,lovo5rgf,ro1zrkea,i1h6gz8e,bj7ihoq8,6yypeu59/ 01_mixture_of_gaussians/results/w3ytp57f,wlrc2asb,lovo5rgf,ro1zrkea,i1h6gz8e,bj7ihoq8,6yypeu59/
+#rsync -avh --exclude='*.joblib' --exclude="*.csv" rylansch@openmind-dtn.mit.edu:/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/01_mixture_of_gaussians/results/w3ytp57f,wlrc2asb,lovo5rgf,ro1zrkea,i1h6gz8e,bj7ihoq8,6yypeu59,a56b0b8r/ 01_mixture_of_gaussians/results/w3ytp57f,wlrc2asb,lovo5rgf,ro1zrkea,i1h6gz8e,bj7ihoq8,6yypeu59,a56b0b8r/
 #rsync -avh --exclude='*.joblib' rylansch@openmind-dtn.mit.edu:/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/01_mixture_of_gaussians/results/vfbxmqii/step/ 01_mixture_of_gaussians/results/vfbxmqii/step/
 
 
