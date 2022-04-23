@@ -584,7 +584,10 @@ def plot_scores_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
         if title_str is not None:
             plt.title(title_str)
 
-        # plt.ylim(0., 1.05)
+        # Standardize y axis for NMI metric.
+        if score_column == 'Normalized Mutual Info Score':
+            plt.ylim(0.0, 1.0)
+
         plt.tight_layout()
         plt.savefig(os.path.join(plot_dir,
                                  f'comparison_score={score_column}_by_alpha.png'),

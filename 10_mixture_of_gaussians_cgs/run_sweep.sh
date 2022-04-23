@@ -13,5 +13,5 @@
 for i in {1..10}
 do
   sbatch 10_mixture_of_gaussians_cgs/run_one.sh kavbcfgx
-  sleep 5
+  sleep 2
 done

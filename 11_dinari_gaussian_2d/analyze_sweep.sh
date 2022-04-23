@@ -6,5 +6,5 @@
 #SBATCH --mail-type=FAIL
 
 export PYTHONPATH=.
-python -u 01_mixture_of_gaussians/analyze_sweep.py       # -u flushes output buffer immediately
+python -u 11_dinari_gaussian_2d/analyze_sweep.py       # -u flushes output buffer immediately
 

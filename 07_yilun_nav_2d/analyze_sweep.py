@@ -1,11 +1,8 @@
 import joblib
-import numpy as np
 import os
-import pandas as pd
 
 import rncrp.data.real_nontabular
-from rncrp.helpers.analyze import download_wandb_project_runs_configs, \
-    generate_and_save_cluster_ratio_data
+from rncrp.helpers.analyze import download_wandb_project_runs_configs
 import plot_yilun_nav_2d
 
 exp_dir = '07_yilun_nav_2d'
@@ -19,7 +16,6 @@ sweep_names_str = ','.join(sweep_names)
 print(f'Analyzing sweeps {sweep_names_str}')
 sweep_results_dir_path = os.path.join(results_dir, sweep_names_str)
 os.makedirs(sweep_results_dir_path, exist_ok=True)
-sweep_results_df_path = os.path.join(sweep_results_dir_path, f'sweeps={sweep_names_str}_results.csv')
 
 all_inf_algs_results_df = download_wandb_project_runs_configs(
     wandb_project_path=wandb_sweep_path,

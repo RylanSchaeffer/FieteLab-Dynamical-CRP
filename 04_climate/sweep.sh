@@ -15,5 +15,5 @@
 for i in {1..5}
 do
   sbatch exp2_climate/run_one.sh 0flwonho ## <-- TODO: REPLACE NAME??
-  sleep 5
+  sleep 2
 done

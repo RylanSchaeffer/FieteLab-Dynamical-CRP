@@ -13,13 +13,13 @@ parameters:
     values: [
         'exp',]
   dynamics_a:
-    values: [0.01, 0.1, 1.,]
+    values: [0.00001, 0.001, 0.01, 0.1, 1.,]
   dynamics_b:
     values: [ 1. ]
   alpha:
-    values: [0.5, 1. 1.5]
+    values: [0.5, 1.]
   centroids_prior_cov_prefactor:
-    values: [1., 5., 10.]
+    values: [1., 5.]
   likelihood_cov_prefactor:
     values: [0.5, 1., 2.5]
   n_samples:

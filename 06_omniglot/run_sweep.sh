@@ -13,5 +13,5 @@
 for i in {1..12}
 do
   sbatch 06_omniglot/run_one.sh opi7cxik
-  sleep 5
+  sleep 2
 done

@@ -42,7 +42,7 @@ plot_dinari_covertype.plot_analyze_all_inf_algs_results(
 dinari_covertype_data = rncrp.data.real_tabular.load_dataset_dinari_covertype_2022()
 
 n_samples = all_inf_algs_results_df['n_samples'].unique()[0]
-plot_dinari_covertype.plot_dinari_covertype_labels(
+plot_dinari_covertype.plot_dinari_covertype_labels_by_obs_idx(
     labels=dinari_covertype_data['labels'][:n_samples],
     plot_dir=sweep_results_dir_path,
 )

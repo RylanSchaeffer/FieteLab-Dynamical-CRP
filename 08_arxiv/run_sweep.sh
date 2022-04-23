@@ -13,5 +13,5 @@
 for i in {1..10}
 do
   sbatch 08_arxiv/run_one.sh nhj1s21j
-  sleep 5
+  sleep 2
 done

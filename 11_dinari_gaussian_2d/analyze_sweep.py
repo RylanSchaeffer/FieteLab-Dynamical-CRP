@@ -2,14 +2,14 @@ import numpy as np
 import os
 import pandas as pd
 
-import plot_mixture_of_gaussians
+import plot_dinari_gaussian_2d
 from rncrp.helpers.analyze import download_wandb_project_runs_results, \
     generate_and_save_cluster_ratio_data
 
-exp_dir_path = '01_mixture_of_gaussians'
+exp_dir_path = '11_dinari_gaussian_2d'
 results_dir = os.path.join(exp_dir_path, 'results')
 os.makedirs(results_dir, exist_ok=True)
-wandb_sweep_path = "rylan/dcrp-mixture-of-gaussians"
+wandb_sweep_path = "rylan/dcrp-dinari-gaussians"
 sweep_names = [
     'w3ytp57f',  # D-CRP
     'wlrc2asb',  # R-CRP
@@ -83,4 +83,4 @@ plot_mixture_of_gaussians.plot_analyze_all_inf_algs_results(
     plot_dir=sweep_results_dir_path,
 )
 
-print(f'Finished 01_mixture_of_gaussians/analyze_sweep.py for sweep={sweep_names_str}.')
+print(f'Finished 11_dinari_gaussian_2d/analyze_sweep.py for sweep={sweep_names_str}.')
