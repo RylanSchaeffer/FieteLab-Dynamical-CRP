@@ -7,16 +7,11 @@ metric:
 parameters:
   inference_alg_str:
     values: [
-        'VI-GMM',
-        'DP-Means (Offline)',
-        'DP-Means (Online)',
         'Dynamical-CRP',
     ]
   dynamics_str:
     values: [
-        'step',
         'exp',
-        'sinusoid',
         'hyperbolic']
   dynamics_a:
     values: [1.]
@@ -27,8 +22,8 @@ parameters:
   dynamics_omega:
     values: [ 1. ]
   alpha:
-    values: [ 1., 2.5, 5., 7.5, 10., 15., 20.]
+    values: [0.5, 1., 2.5]
   centroids_prior_cov_prefactor:
-    values: [5., 10., 50.]
+    values: [1., 5., 10.]
   likelihood_cov_prefactor:
-    values: [1., 5., 10., 20.]
+    values: [0.5, 1., 2.5]

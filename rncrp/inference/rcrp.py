@@ -74,7 +74,8 @@ class RecursiveCRP(BaseModel):
 
     def fit(self,
             observations: Union[np.ndarray, torch.utils.data.DataLoader],
-            observations_times: np.ndarray):
+            observations_times: np.ndarray,
+            max_num_clusters: int = None):
 
         if isinstance(observations, np.ndarray):
             num_obs, obs_dim = observations.shape
@@ -86,7 +87,8 @@ class RecursiveCRP(BaseModel):
         else:
             raise ValueError
 
-        max_num_clusters = num_obs
+        if max_num_clusters is None:
+            max_num_clusters = num_obs
 
         torch_observations_times = torch.from_numpy(observations_times).float()
 

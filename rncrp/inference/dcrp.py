@@ -1,14 +1,14 @@
-import time
-
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.special
 import tensorflow_probability as tfp
-tfd = tfp.distributions
+import time
 import torch
 import torch.nn.functional
 import torch.utils.data
 from typing import Callable, Dict, Union
+
+tfd = tfp.distributions
 
 from rncrp.inference.base import BaseModel
 from rncrp.helpers.dynamics import convert_dynamics_str_to_dynamics_obj
@@ -16,9 +16,6 @@ from rncrp.helpers.torch_helpers import assert_torch_no_nan_no_inf_is_real
 
 
 class DynamicalCRP(BaseModel):
-    """
-
-    """
 
     def __init__(self,
                  gen_model_params: Dict[str, Dict],
@@ -33,6 +30,7 @@ class DynamicalCRP(BaseModel):
                  vi_param_initialization: str = 'observation',
                  which_prior_prob: str = 'DP',
                  update_new_cluster_parameters: bool = False,
+                 max_num_clusters: int = None,
                  **kwargs,
                  ):
         self.gen_model_params = gen_model_params
@@ -48,6 +46,7 @@ class DynamicalCRP(BaseModel):
         self.model_str = model_str
         self.num_coord_ascent_steps_per_obs = num_coord_ascent_steps_per_obs
         self.numerically_optimize = numerically_optimize
+        self.max_num_clusters = max_num_clusters
 
         # Note: Learning rate is currently unused.
         if self.numerically_optimize:
@@ -86,17 +85,18 @@ class DynamicalCRP(BaseModel):
         else:
             raise ValueError
 
-        max_num_clusters = num_obs
+        if self.max_num_clusters is None:
+            self.max_num_clusters = num_obs
 
         torch_observations_times = torch.from_numpy(observations_times).float()
 
-        cluster_assignment_priors = torch.zeros(size=(num_obs, max_num_clusters),
+        cluster_assignment_priors = torch.zeros(size=(num_obs, self.max_num_clusters),
                                                 dtype=torch.float32)
 
-        cum_cluster_assignment_posteriors = torch.zeros(size=(max_num_clusters,),
+        cum_cluster_assignment_posteriors = torch.zeros(size=(self.max_num_clusters,),
                                                         dtype=torch.float32)
 
-        num_clusters_posteriors = torch.zeros(size=(num_obs, max_num_clusters),
+        num_clusters_posteriors = torch.zeros(size=(num_obs, self.max_num_clusters),
                                               dtype=torch.float32)
 
         if self.likelihood_params['distribution'] == 'dirichlet_multinomial':
@@ -128,15 +128,15 @@ class DynamicalCRP(BaseModel):
             variational_params = dict(
                 assignments=dict(
                     probs=torch.full(
-                        size=(num_obs, max_num_clusters),
+                        size=(num_obs, self.max_num_clusters),
                         fill_value=0.,
                         dtype=torch.float32)),
                 means=dict(
                     means=torch.full(
-                        size=(2, max_num_clusters, obs_dim),
+                        size=(2, self.max_num_clusters, obs_dim),
                         fill_value=0.,
                         dtype=torch.float32),
-                    diag_covs=A_prefactor * torch.ones(2, max_num_clusters, obs_dim)))
+                    diag_covs=A_prefactor * torch.ones(2, self.max_num_clusters, obs_dim)))
 
         elif self.likelihood_params['distribution'] == 'product_bernoullis':
 
@@ -147,16 +147,16 @@ class DynamicalCRP(BaseModel):
             variational_params = dict(
                 assignments=dict(
                     probs=torch.full(
-                        size=(num_obs, max_num_clusters),
+                        size=(num_obs, self.max_num_clusters),
                         fill_value=0.,
                         dtype=torch.float32)),
                 beta=dict(
                     arg1=torch.full(
-                        size=(2, max_num_clusters, obs_dim),  # 2 for past & current
+                        size=(2, self.max_num_clusters, obs_dim),  # 2 for past & current
                         fill_value=self.component_prior_params['beta_arg1'],
                         dtype=torch.float32),
                     arg2=torch.full(
-                        size=(2, max_num_clusters, obs_dim),  # 2 for past & current
+                        size=(2, self.max_num_clusters, obs_dim),  # 2 for past & current
                         fill_value=self.component_prior_params['beta_arg2'],
                         dtype=torch.float32,
                     )))
@@ -170,16 +170,16 @@ class DynamicalCRP(BaseModel):
             variational_params = dict(
                 assignments=dict(
                     probs=torch.full(
-                        size=(num_obs, max_num_clusters),
+                        size=(num_obs, self.max_num_clusters),
                         fill_value=0.,
                         dtype=torch.float32)),
                 means=dict(
                     means=torch.full(
-                        size=(2, max_num_clusters, obs_dim),
+                        size=(2, self.max_num_clusters, obs_dim),
                         fill_value=0.,
                         dtype=torch.float32),
                     concentrations=torch.full(
-                        size=(2, max_num_clusters, 1),
+                        size=(2, self.max_num_clusters, 1),
                         fill_value=self.likelihood_params['likelihood_kappa'],
                         dtype=torch.float32,
                     )))
@@ -199,7 +199,7 @@ class DynamicalCRP(BaseModel):
                 kappa=0.)
 
             # Compute log(C(k)*C(k)*C(0)).
-            self.log_prob_new_cluster = 2. * np.log(normalizing_const_likelihood)\
+            self.log_prob_new_cluster = 2. * np.log(normalizing_const_likelihood) \
                                         + np.log(normalizing_const_prior)
 
         else:
@@ -729,7 +729,8 @@ class DynamicalCRP(BaseModel):
             variational_params['beta']['arg1'][0, :max_cluster_idx_to_update, :],  # previous parameter values
             torch.einsum(
                 'c,o->co',
-                variational_params['assignments']['probs'][obs_idx, :max_cluster_idx_to_update],  # Shape: (curr max num clusters ,)
+                variational_params['assignments']['probs'][obs_idx, :max_cluster_idx_to_update],
+                # Shape: (curr max num clusters ,)
                 torch_observation,  # Shape: (obs dim,)
             )
         )
@@ -739,7 +740,8 @@ class DynamicalCRP(BaseModel):
             variational_params['beta']['arg2'][0, :max_cluster_idx_to_update, :],  # previous parameter values
             torch.einsum(
                 'c,o->co',
-                variational_params['assignments']['probs'][obs_idx, :max_cluster_idx_to_update],  # Shape: (curr max num clusters,)
+                variational_params['assignments']['probs'][obs_idx, :max_cluster_idx_to_update],
+                # Shape: (curr max num clusters,)
                 1. - torch_observation,  # Shape: (obs dim,)
             ))
         assert_torch_no_nan_no_inf_is_real(new_arg_2)
@@ -803,9 +805,9 @@ class DynamicalCRP(BaseModel):
 
         prev_means_means = variational_params['means']['means'][0, :max_cluster_idx_to_update, :].clone()
 
-        time_2_1 = time.time()
+        # time_2_1 = time.time()
         prev_means_diag_precisions = 1. / variational_params['means']['diag_covs'][0, :max_cluster_idx_to_update, :]
-        time_2_2 = time.time()
+        # time_2_2 = time.time()
         # print(f'Time2.2 - Time2.1: {time_2_2 - time_2_1}')
 
         obs_dim = torch_observation.shape[0]
@@ -823,7 +825,7 @@ class DynamicalCRP(BaseModel):
         new_mean_diag_precisions = torch.add(prev_means_diag_precisions, weighted_diag_eyes)
         new_means_diag_covs = 1. / new_mean_diag_precisions
 
-        time_2_3 = time.time()
+        # time_2_3 = time.time()
         # print(f'Time2.3 - Time2.2: {time_2_3 - time_2_2}')
 
         if not self.robbins_monro_cavi_updates:
@@ -853,13 +855,13 @@ class DynamicalCRP(BaseModel):
             variational_params['means']['diag_covs'][1, :max_cluster_idx_to_update, :] = scaled_new_means_diag_covs
 
         # Slowest piece
-        time_2_3_1 = time.time()
+        # time_2_3_1 = time.time()
         # print(f'Time2.3.1 - Time2.3: {time_2_3_1 - time_2_3}')
 
         assert_torch_no_nan_no_inf_is_real(
             variational_params['means']['diag_covs'][1, :max_cluster_idx_to_update, :])
 
-        time_2_4 = time.time()
+        # time_2_4 = time.time()
         # print(f'Time2.4 - Time2.3: {time_2_4 - time_2_3}')
 
         # Step 2: Use updated covariances to compute updated means
@@ -884,7 +886,7 @@ class DynamicalCRP(BaseModel):
             torch.add(term_one, term_two),  # shape: (curr max num clusters -1, obs dim)
         )
 
-        time_2_5 = time.time()
+        # time_2_5 = time.time()
         # print(f'Time2.5 - Time2.4: {time_2_5 - time_2_4}')
         assert_torch_no_nan_no_inf_is_real(new_means_means)
 

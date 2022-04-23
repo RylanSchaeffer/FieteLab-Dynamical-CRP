@@ -99,6 +99,7 @@ inference_alg_results = rncrp.helpers.run.run_inference_alg(
     observations=observations,
     observations_times=observations_times,
     gen_model_params=gen_model_params,
+    inference_alg_kwargs=dict(max_num_clusters=1000),
 )
 
 scores, map_cluster_assignments = rncrp.metrics.compute_predicted_clusters_scores(
