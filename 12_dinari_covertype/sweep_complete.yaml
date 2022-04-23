@@ -32,3 +32,5 @@ parameters:
     values: [5., 10., 50.]
   likelihood_cov_prefactor:
     values: [1., 5., 10., 20.]
+  n_samples:
+    values: [1000]

@@ -11,19 +11,16 @@ parameters:
     ]
   dynamics_str:
     values: [
-        'exp',
-        'hyperbolic']
+        'exp',]
   dynamics_a:
-    values: [1.]
+    values: [0.01, 0.1, 1.,]
   dynamics_b:
     values: [ 1. ]
-  dynamics_c:
-    values: [ 1. ]
-  dynamics_omega:
-    values: [ 1. ]
   alpha:
-    values: [0.5, 1., 2.5]
+    values: [0.5, 1. 1.5]
   centroids_prior_cov_prefactor:
     values: [1., 5., 10.]
   likelihood_cov_prefactor:
     values: [0.5, 1., 2.5]
+  n_samples:
+    values: [1000]

@@ -505,8 +505,8 @@ def load_dataset_dinari_covertype_2022(data_dir: str = 'data',
     # This file is publicly available on Dinari's Google Drive.
     data_path = os.path.join(dataset_dir, 'forest_normalized.csv')
     preprocessed_data = pd.read_csv(data_path, index_col=False, header=None).values
-    observations = preprocessed_data[:100, :-1]
-    labels = preprocessed_data[:100, -1].astype(np.int)
+    observations = preprocessed_data[:, :-1]
+    labels = preprocessed_data[:, -1].astype(np.int)
 
     dataset_dict = dict(
         observations=observations,

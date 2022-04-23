@@ -33,6 +33,7 @@ config_defaults = {
     'beta': 0.,
     'centroids_prior_cov_prefactor': 5.,
     'likelihood_cov_prefactor': 50.,
+    'n_samples': 1000,
     'repeat_idx': 0,
 }
 
@@ -56,11 +57,11 @@ wandb.log({'inf_alg_results_path': inf_alg_results_path},
 # Set seeds.
 rncrp.helpers.run.set_seed(seed=config['repeat_idx'])
 
-# Load data and sort based on date.
+# Load data.
 dinari_covertype_data = rncrp.data.real_tabular.load_dataset_dinari_covertype_2022()
-observations = dinari_covertype_data['observations']
+observations = dinari_covertype_data['observations'][:config['n_samples']]
 observations_times = 1 + np.arange(len(observations))
-true_cluster_assignments = dinari_covertype_data['labels']
+true_cluster_assignments = dinari_covertype_data['labels'][:config['n_samples']]
 
 # Compute and log the number of true clusters.
 wandb.log({'n_clusters': len(np.unique(true_cluster_assignments))}, step=0)

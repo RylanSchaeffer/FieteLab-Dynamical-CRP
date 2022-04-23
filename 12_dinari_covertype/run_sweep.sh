@@ -11,6 +11,6 @@
 
 for i in {1..5}
 do
-  sbatch 12_dinari_covertype/run_one.sh 5vkotbim
+  sbatch 12_dinari_covertype/run_one.sh e8xxtb2x
   sleep 2
 done
