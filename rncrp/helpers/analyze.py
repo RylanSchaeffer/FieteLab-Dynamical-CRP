@@ -6,53 +6,121 @@ from typing import List
 import wandb
 
 
-def download_wandb_project_runs_results(wandb_project_path: str,
+def download_wandb_project_runs_configs(wandb_project_path: str,
+                                        data_dir: str,
                                         sweep_ids: List[str] = None,
+                                        finished_only: bool = True,
+                                        refresh: bool = False,
                                         ) -> pd.DataFrame:
-    # Download sweep results
-    api = wandb.Api()
+    runs_configs_df_path = os.path.join(
+        data_dir,
+        'sweeps=' + ','.join(sweep_ids) + '_runs_configs.csv')
+    if refresh or not os.path.isfile(runs_configs_df_path):
 
-    # Project is specified by <entity/project-name>
-    if sweep_ids is None:
-        runs = api.runs(path=wandb_project_path)
+        # Download sweep results
+        api = wandb.Api(timeout=60)
+
+        # Project is specified by <entity/project-name>
+        if sweep_ids is None:
+            runs = api.runs(path=wandb_project_path)
+        else:
+            runs = []
+            for sweep_id in sweep_ids:
+                runs.extend(api.runs(path=wandb_project_path,
+                                     filters={"Sweep": sweep_id}))
+
+        sweep_results_list = []
+        for run in runs:
+            # .summary contains the output keys/values for metrics like accuracy.
+            #  We call ._json_dict to omit large files
+            summary = run.summary._json_dict
+
+            # .config contains the hyperparameters.
+            #  We remove special values that start with _.
+            summary.update(
+                {k: v for k, v in run.config.items()
+                 if not k.startswith('_')})
+
+            summary.update({'State': run.state,
+                            'Sweep': run.sweep.id if run.sweep is not None else None,
+                            'run_id': run.id})
+            # .name is the human-readable name of the run.
+            summary.update({'run_name': run.name})
+            sweep_results_list.append(summary)
+
+        runs_configs_df = pd.DataFrame(sweep_results_list)
+
+        runs_configs_df.to_csv(runs_configs_df_path, index=False)
+        print(f'Wrote {runs_configs_df_path} to disk.')
     else:
-        runs = []
-        for sweep_id in sweep_ids:
-            runs.extend(api.runs(path=wandb_project_path,
-                                 filters={"Sweep": sweep_id}))
-
-    sweep_results_list = []
-    for run in runs:
-        # .summary contains the output keys/values for metrics like accuracy.
-        #  We call ._json_dict to omit large files
-        summary = run.summary._json_dict
-
-        # .config contains the hyperparameters.
-        #  We remove special values that start with _.
-        summary.update(
-            {k: v for k, v in run.config.items()
-             if not k.startswith('_')})
-
-        summary.update({'State': run.state,
-                        'Sweep': run.sweep.id if run.sweep is not None else None})
-        # .name is the human-readable name of the run.
-        summary.update({'run_name': run.name})
-        sweep_results_list.append(summary)
-
-    sweep_results_df = pd.DataFrame(sweep_results_list)
+        runs_configs_df = pd.read_csv(runs_configs_df_path)
+        print(f'Loaded {runs_configs_df_path} from disk.')
 
     # Keep only finished runs
-    finished_runs = sweep_results_df['State'] == 'finished'
-    print(f"% of successfully finished runs: {finished_runs.mean()}")
-    sweep_results_df = sweep_results_df[finished_runs]
+    finished_runs = runs_configs_df['State'] == 'finished'
 
-    # Check that we don't have an empty data frame.
-    assert len(sweep_results_df) > 0
+    print(
+        f"% of successfully finished runs: {np.round(finished_runs.mean(), 4)} ({finished_runs.sum()} / {len(finished_runs)})")
 
-    # Ensure we aren't working with a slice.
-    sweep_results_df = sweep_results_df.copy()
+    if finished_only:
+        runs_configs_df = runs_configs_df[finished_runs]
 
-    return sweep_results_df
+        # Check that we don't have an empty data frame.
+        assert len(runs_configs_df) > 0
+
+        # Ensure we aren't working with a slice.
+        runs_configs_df = runs_configs_df.copy()
+
+    return runs_configs_df
+
+
+def download_wandb_project_runs_histories(wandb_project_path: str,
+                                          data_dir: str,
+                                          sweep_ids: List[str] = None,
+                                          num_samples: int = 10000,
+                                          refresh: bool = False
+                                          ) -> pd.DataFrame:
+    runs_histories_df_path = os.path.join(
+        data_dir,
+        'sweeps=' + ','.join(sweep_ids) + '_runs_histories.csv')
+    if refresh or not os.path.isfile(runs_histories_df_path):
+
+        # Download sweep results
+        api = wandb.Api(timeout=60)
+
+        # Project is specified by <entity/project-name>
+        if sweep_ids is None:
+            runs = api.runs(path=wandb_project_path)
+        else:
+            runs = []
+            for sweep_id in sweep_ids:
+                runs.extend(api.runs(path=wandb_project_path,
+                                     filters={"Sweep": sweep_id}))
+
+        runs_histories_list = []
+        for run_idx, run in enumerate(runs):
+            run_history_df = run.history(samples=num_samples)
+            run_history_df['run_id'] = run.id
+            runs_histories_list.append(run_history_df)
+
+            # if run_idx > 15:
+            #     break
+
+        runs_histories_df = pd.concat(runs_histories_list)
+
+        # Sort
+        runs_histories_df.sort_values(
+            ['run_id', '_step'],
+            ascending=True,
+            inplace=True)
+
+        runs_histories_df.to_csv(runs_histories_df_path, index=False)
+        print(f'Wrote {runs_histories_df_path} to disk')
+    else:
+        runs_histories_df = pd.read_csv(runs_histories_df_path)
+        print(f'Loaded {runs_histories_df_path} from disk.')
+
+    return runs_histories_df
 
 
 def generate_and_save_cluster_ratio_data(all_inf_algs_results_df: pd.DataFrame,
