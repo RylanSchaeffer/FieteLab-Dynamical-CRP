@@ -559,6 +559,7 @@ def plot_scores_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
 def plot_scores_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
                                         plot_dir: str,
                                         title_str: str = None):
+
     scores_columns = [col for col in sweep_results_df.columns.values
                       if 'Score' in col]
 

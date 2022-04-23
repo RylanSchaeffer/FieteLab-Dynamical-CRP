@@ -8,36 +8,30 @@ import seaborn as sns
 from typing import Dict
 
 import rncrp.plot.plot_general
+from rncrp.plot.plot_general import algorithm_color_map
 
 
 def plot_analyze_all_inf_algs_results(all_inf_algs_results_df: pd.DataFrame,
                                       plot_dir: str):
-    for dynamics_str, sweep_subset_results_df in all_inf_algs_results_df.groupby('dynamics_str'):
-        sweep_dynamics_str_dir = os.path.join(plot_dir, dynamics_str)
-        os.makedirs(sweep_dynamics_str_dir, exist_ok=True)
-        print(f'Plotting dynamics {dynamics_str}')
+    os.makedirs(plot_dir, exist_ok=True)
 
-        os.makedirs(plot_dir, exist_ok=True)
+    plot_fns = [
+        plot_scores_by_alpha_colored_by_alg_cross_hyperparameters,
+        rncrp.plot.plot_general.plot_num_clusters_by_alpha_colored_by_alg,
+        rncrp.plot.plot_general.plot_runtime_by_alpha_colored_by_alg,
+        # rncrp.plot.plot_general.plot_scores_by_alpha_colored_by_alg,
+    ]
 
-        plot_fns = [
-            rncrp.plot.plot_general.plot_num_clusters_by_alpha_colored_by_alg,
-            rncrp.plot.plot_general.plot_runtime_by_alpha_colored_by_alg,
-            rncrp.plot.plot_general.plot_scores_by_alpha_colored_by_alg,
-            # rncrp.plot.plot_general.plot_num_inferred_clusters_div_num_true_clusters_by_obs_idx,
-            # rncrp.plot.plot_general.plot_num_inferred_clusters_div_total_num_true_clusters_by_obs_idx,
-            # rncrp.plot.plot_general.plot_num_true_clusters_div_total_num_true_clusters_by_obs_idx,
-        ]
+    for plot_fn in plot_fns:
+        # try:
+        plot_fn(sweep_results_df=all_inf_algs_results_df,
+                plot_dir=plot_dir)
+        # except Exception as e:
+        #     print(f'Exception: {e}')
 
-        for plot_fn in plot_fns:
-            # try:
-            plot_fn(sweep_results_df=sweep_subset_results_df,
-                    plot_dir=sweep_dynamics_str_dir)
-            # except Exception as e:
-            #     print(f'Exception: {e}')
-
-            # Close all figure windows to not interfere with next plots
-            plt.close('all')
-            print(f'Plotted {str(plot_fn)}')
+        # Close all figure windows to not interfere with next plots
+        plt.close('all')
+        print(f'Plotted {str(plot_fn)}')
 
 
 def expand_prev(edge, ix):
@@ -144,7 +138,6 @@ def plot_room_clusters_on_one_run(yilun_nav_2d_dataset: Dict[str, np.ndarray],
                                   run_config: Dict[str, dict],
                                   plot_dir: str,
                                   env_idx: int):
-
     edge = yilun_nav_2d_dataset['edges'][env_idx]
     room_list = yilun_nav_2d_dataset['room_lists'][env_idx]
     landmark = yilun_nav_2d_dataset['landmarks'][env_idx]
@@ -190,7 +183,8 @@ def plot_room_clusters_on_one_run(yilun_nav_2d_dataset: Dict[str, np.ndarray],
     plt.legend()
     plt.setp(plt.gca().get_xticklabels(), visible=False)
     plt.setp(plt.gca().get_yticklabels(), visible=False)
-    plt.title(rf"D-CRP($\alpha$={run_config['alpha']}), Comp Prior: Beta({run_config['beta_arg1']}, {run_config['beta_arg2']})")
+    plt.title(
+        rf"D-CRP($\alpha$={run_config['alpha']}), Comp Prior: Beta({run_config['beta_arg1']}, {run_config['beta_arg2']})")
     # plt.show()
     file_name = f"dyn={run_config['dynamics_str']}_a={run_config['dynamics_a']}_b={run_config['dynamics_b']}" \
                 f"_alpha={run_config['alpha']}_b1={run_config['beta_arg1']}_b2={run_config['beta_arg2']}" \
@@ -207,3 +201,63 @@ def plot_room_clusters_on_one_run(yilun_nav_2d_dataset: Dict[str, np.ndarray],
     plt.close()
 
 
+def plot_scores_by_alpha_colored_by_alg_cross_hyperparameters(
+        sweep_results_df: pd.DataFrame,
+        plot_dir: str,
+        title_str: str = None):
+    scores_columns = [col for col in sweep_results_df.columns.values
+                      if 'Score' in col]
+
+    unique_dynamics_as = sweep_results_df['dynamics_a'].unique()
+
+    for score_column in scores_columns:
+
+        plt.close()
+
+        # Manually make figure bigger to handle external legend
+        fig, axes = plt.subplots(
+            nrows=1,
+            ncols=1 + len(unique_dynamics_as),
+            sharex=True,
+            sharey=True,
+            figsize=(16, 4))
+
+        # Plot R-CRP
+        ax = axes[0]
+        ax.set_title(r'R-CRP($\alpha=2$)')
+        g = sns.lineplot(data=sweep_results_df[sweep_results_df['inference_alg_str'] == 'Recursive-CRP'],
+                         x='beta_arg1',
+                         y=score_column,
+                         hue='beta_arg2',
+                         legend='full',
+                         ax=ax)
+        ax.set_xlabel('Beta Prior Param 1')
+        g.get_legend().set_title('Beta Prior Param 2')
+
+        # Plot D-CRP for each dynamics a
+        for ax_idx, unique_dynamics_a in enumerate(unique_dynamics_as, start=1):
+            ax = axes[ax_idx]
+            ax.set_title(rf'D-CRP($\exp(\tau={unique_dynamics_a}), \alpha=2$)')
+            sweep_results_subset_df = sweep_results_df[
+                (sweep_results_df['inference_alg_str'] == 'Dynamical-CRP') &
+                (sweep_results_df['dynamics_a'] == unique_dynamics_a)]
+            g = sns.lineplot(data=sweep_results_subset_df,
+                             x='beta_arg1',
+                             y=score_column,
+                             hue='beta_arg2',
+                             legend='full',
+                             ax=ax)
+            ax.set_xlabel('Beta Prior Param 1')
+            g.get_legend().set_title('Beta Prior Param 2')
+
+        if title_str is not None:
+            plt.title(title_str)
+
+        # plt.ylim(0., 1.05)
+        plt.tight_layout()
+        plt.savefig(os.path.join(plot_dir,
+                                 f'comparison_score={score_column}_by_alpha.png'),
+                    bbox_inches='tight',
+                    dpi=300)
+        # plt.show()
+        plt.close()
