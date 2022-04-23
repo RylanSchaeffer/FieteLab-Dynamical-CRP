@@ -1,0 +1,37 @@
+program: 01_mixture_of_gaussians/run_one.py
+project: dcrp-mixture-of-gaussians
+method: grid
+metric:
+  goal: minimize
+  name: training_reconstruction_error
+parameters:
+  inference_alg_str:
+    values: [
+      'CollapsedGibbsSampler',
+    ]
+  dynamics_str:
+    values: [
+        'step',
+        'exp',
+        'sinusoid',
+        'hyperbolic']
+  'dynamics_a':
+    values: [1.]
+  'dynamics_b':
+    values: [0.05]
+  'dynamics_c':
+    values: [0.05]
+  'dynamics_omega':
+    values: [0.15]
+  alpha:
+    values: [ 5.0, 10.0, 15.0, 20.0, 25.0]
+  n_samples:
+    values: [1000]
+  n_features:
+    values: [3, 6, 9, 12, 15]
+  centroids_prior_cov_prefactor:
+    values: [25., 50., 100., 250., 500., 1000.]
+  likelihood_cov_prefactor:
+    values: [5., 10.]
+  repeat_idx:
+    values: [0, 1, 2]

@@ -88,7 +88,7 @@ gen_model_params = {
         'alpha': config['alpha'],
         'beta': config['beta'],
         'dynamics_str': config['dynamics_str'],
-        'dynamics_params': {'a': config['dynamics_a'], 'b': 1.0},
+        'dynamics_params': {'a': config['dynamics_a'], 'b': config['dynamics_b']},
     },
     'component_prior_params': {
         'beta_arg1': config['beta_arg1'],
@@ -104,15 +104,16 @@ inference_alg_results = rncrp.helpers.run.run_inference_alg(
     observations=observations,
     observations_times=observation_times,
     gen_model_params=gen_model_params,
+    inference_alg_kwargs=dict(which_prior_prob='variational')  # TODO: Implement DP prior for product of Bernoullis
 )
 
 scores, map_cluster_assignments = rncrp.metrics.compute_predicted_clusters_scores(
     cluster_assignment_posteriors=inference_alg_results['cluster_assignment_posteriors'],
     true_cluster_assignments=true_cluster_assignments,
 )
+wandb.log(scores, step=0)
 inference_alg_results.update(scores)
 inference_alg_results['map_cluster_assignments'] = map_cluster_assignments
-wandb.log(scores, step=0)
 
 data_to_store = dict(
     config=dict(config),  # Need to convert WandB config to proper dict

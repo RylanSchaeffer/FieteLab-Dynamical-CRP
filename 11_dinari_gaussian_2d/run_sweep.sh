@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -p normal
+#SBATCH -p fiete
 #SBATCH -n 1                    # two cores
 #SBATCH --mem=1G                # RAM
 #SBATCH --time=99:99:99         # total run time limit (HH:MM:SS)
@@ -8,10 +8,12 @@
 
 # Run this, then pipe sweep ID to each individual run
 # source rncrp_venv/bin/activate
-# wandb sweep 07_yilun_nav_2d/sweep_complete.yaml
+# wandb sweep 01_mixture_of_gaussians/sweep_complete.yaml
+# wandb sweep 01_mixture_of_gaussians/sweep_quick.yaml
+# wandb sweep 01_mixture_of_gaussians/sweep_single_alg.yaml
 
-for i in {1..12}
+for i in {1..20}
 do
-  sbatch 07_yilun_nav_2d/run_one.sh 4reny29o
-  sleep 2
+  sbatch 01_mixture_of_gaussians/run_one.sh a56b0b8r
+  sleep 5
 done
