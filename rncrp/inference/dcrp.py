@@ -613,16 +613,10 @@ class DynamicalCRP(BaseModel):
 
         term_to_softmax = term_one + term_two
 
-        # For the new cluster, the likelihood is N(0, likelihood cov + cluster mean prior cov)
+        # For the new cluster, the likelihood is dictated by the DP.
         # Consequently, we need to overwrite the last index with the correct value.
         if self.which_prior_prob == 'DP':
-            # new_cluster_var = sigma_obs_squared + self.component_prior_params['centroids_prior_cov_prefactor']
-            # replacement_term_one = term_one[obs_idx]
-            # # Since mean mu_{nk} = 0, term two is 0 and we can skip.
-            # replacement_term_three = -0.5 * torch.square(torch.linalg.norm(torch_observation)) / \
-            #                          new_cluster_var
-            # replacement_term_four = -obs_dim * np.log(2 * np.pi * new_cluster_var) / 2.
-            # term_to_softmax[obs_idx] = replacement_term_one + replacement_term_three + replacement_term_four
+            # TODO: Implement this
             raise NotImplementedError
 
         cluster_assignment_posterior_params = torch.nn.functional.softmax(
