@@ -60,7 +60,10 @@ def compute_predicted_clusters_scores(cluster_assignment_posteriors: np.ndarray,
                              labels_pred=pred_cluster_labels)
 
     # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
-    f_score = f1_score(true_cluster_assignments, pred_cluster_labels)
+    f_score = f1_score(
+        true_cluster_assignments,
+        pred_cluster_labels,
+        average='macro')
 
     scores_results = {
         'Rand Score': rnd_score,
@@ -68,7 +71,7 @@ def compute_predicted_clusters_scores(cluster_assignment_posteriors: np.ndarray,
         'Adjusted Mutual Info Score': adj_mut_inf_score,
         'Normalized Mutual Info Score': norm_mut_inf_score,
         'Purity Score': pur_score,
-        'F Score': f_score,
+        'F Score (Macro)': f_score,
     }
 
     return scores_results, pred_cluster_labels
