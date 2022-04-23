@@ -16,5 +16,5 @@
 for i in {1..5}
 do
   sbatch 02_ames_housing/run_one.sh 5vkotbim
-  sleep 5
+  sleep 2
 done

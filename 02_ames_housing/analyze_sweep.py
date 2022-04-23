@@ -2,21 +2,24 @@ import numpy as np
 import os
 import pandas as pd
 
-from rncrp.helpers.analyze import download_wandb_project_runs_results, generate_and_save_cluster_ratio_data
+from rncrp.helpers.analyze import download_wandb_project_runs_configs, generate_and_save_cluster_ratio_data
 
 
 exp_dir = '02_ames_housing'
 results_dir = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir, exist_ok=True)
-wandb_sweep_path = "rylan/rncrp-mixture-of-gaussians"
-sweep_name = 'cb4ejxw4'
-sweep_dir = os.path.join(results_dir, sweep_name)
-os.makedirs(sweep_dir, exist_ok=True)
-sweep_results_df_path = os.path.join(sweep_dir, f'sweep={sweep_name}_results.csv')
+wandb_sweep_path = "rylan/dcrp-mixture-of-gaussians"
+sweep_names = [
+    'cb4ejxw4'
+]
+sweep_names_str = ','.join(sweep_names)
+print(f'Analyzing sweeps {sweep_names_str}')
+sweep_results_dir_path = os.path.join(results_dir, sweep_names_str)
+os.makedirs(sweep_results_dir_path, exist_ok=True)
 
 if not os.path.isfile(sweep_results_df_path):
 
-    sweep_results_df = download_wandb_project_runs_results(
+    sweep_results_df = download_wandb_project_runs_configs(
         wandb_project_path=wandb_sweep_path,
         sweep_id=sweep_name)
 

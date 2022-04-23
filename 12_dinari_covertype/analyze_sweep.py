@@ -10,7 +10,7 @@ import plot_dinari_covertype
 exp_dir = '12_dinari_covertype'
 results_dir = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir, exist_ok=True)
-wandb_sweep_path = "rylan/rncrp-dinari-covertype"
+wandb_sweep_path = "rylan/dcrp-dinari-covertype"
 sweep_names = [
     'e8xxtb2x',
 ]
@@ -25,6 +25,11 @@ all_inf_algs_results_df = download_wandb_project_runs_configs(
     sweep_ids=sweep_names,
     finished_only=True,
     refresh=False)
+
+# Compute SNR := rho / sigma
+all_inf_algs_results_df['snr'] = np.sqrt(
+    all_inf_algs_results_df['centroids_prior_cov_prefactor'] \
+    / all_inf_algs_results_df['likelihood_cov_prefactor'])
 
 print(f"Number of runs: {all_inf_algs_results_df.shape[0]} for sweep={sweep_names_str}")
 

@@ -27,3 +27,6 @@
 
 # 10_mixture_of_gaussians_cgs
 #rsync -avh --exclude='*.joblib' rylansch@openmind-dtn.mit.edu:/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/10_mixture_of_gaussians_cgs/results/ 10_mixture_of_gaussians_cgs/results/
+
+# 12_dinari_covertype
+rsync -avh --exclude='*.joblib' rylansch@openmind-dtn.mit.edu:/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/12_dinari_covertype/results/ 12_dinari_covertype/results/
