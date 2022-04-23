@@ -1,4 +1,5 @@
 import itertools
+import joblib
 import json
 import numpy as np
 import os
@@ -8,7 +9,7 @@ import torch
 import torchvision
 import scipy as sp
 from scipy import stats
-import sklearn as sk
+import sklearn
 from sklearn.datasets import fetch_openml
 from sklearn.preprocessing import OneHotEncoder
 import matplotlib.pyplot as plt
@@ -20,6 +21,7 @@ def load_dataset(dataset_name: str,
                  dataset_kwargs: Dict = None,
                  data_dir: str = 'data',
                  ) -> Dict[str, np.ndarray]:
+
     if dataset_kwargs is None:
         dataset_kwargs = dict()
 
