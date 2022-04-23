@@ -3,7 +3,7 @@ import os
 import pandas as pd
 
 import plot_mixture_of_gaussians
-from rncrp.helpers.analyze import download_wandb_project_runs_results, \
+from rncrp.helpers.analyze import download_wandb_project_runs_configs, \
     generate_and_save_cluster_ratio_data
 
 exp_dir_path = '01_mixture_of_gaussians'
@@ -27,26 +27,24 @@ os.makedirs(sweep_results_dir_path, exist_ok=True)
 sweep_results_df_path = os.path.join(sweep_results_dir_path, f'sweeps={sweep_names_str}_results.csv')
 
 
-if not os.path.isfile(sweep_results_df_path):
+all_inf_algs_results_df = download_wandb_project_runs_configs(
+    wandb_project_path=wandb_sweep_path,
+    data_dir=results_dir,
+    sweep_ids=sweep_names,
+    finished_only=True,
+    refresh=False)
 
-    sweep_results_df = download_wandb_project_runs_results(
-        wandb_project_path=wandb_sweep_path,
-        sweep_ids=sweep_names)
 
-    # Compute SNR := rho / sigma
-    sweep_results_df['snr'] = np.sqrt(
-        sweep_results_df['centroids_prior_cov_prefactor'] \
-        / sweep_results_df['likelihood_cov_prefactor'])
+# Compute SNR := rho / sigma
+all_inf_algs_results_df['snr'] = np.sqrt(
+    all_inf_algs_results_df['centroids_prior_cov_prefactor'] \
+    / all_inf_algs_results_df['likelihood_cov_prefactor'])
 
-    sweep_results_df.to_csv(sweep_results_df_path, index=False)
 
-else:
-    sweep_results_df = pd.read_csv(sweep_results_df_path)
-
-print(f"Number of runs: {sweep_results_df.shape[0]} for sweep(s)={sweep_names_str}")
+print(f"Number of runs: {all_inf_algs_results_df.shape[0]} for sweep(s)={sweep_names_str}")
 
 cluster_ratio_dfs_results = generate_and_save_cluster_ratio_data(
-    all_inf_algs_results_df=sweep_results_df,
+    all_inf_algs_results_df=all_inf_algs_results_df,
     sweep_results_dir_path=sweep_results_dir_path)
 
 # Join cluster ratio dataframes with sweep hyperparameters
@@ -59,24 +57,24 @@ cluster_ratio_dfs_results = generate_and_save_cluster_ratio_data(
 #         6) 'inference_alg_str'
 #         7-on) '0', '1', ..., 'max number of observations.'
 num_inferred_clusters_div_num_true_clusters_by_obs_idx_df = pd.merge(
-    left=sweep_results_df[['inf_alg_results_path', 'alpha', 'n_features', 'snr', 'dynamics_str', 'inference_alg_str']],
+    left=all_inf_algs_results_df[['inf_alg_results_path', 'alpha', 'n_features', 'snr', 'dynamics_str', 'inference_alg_str']],
     right=cluster_ratio_dfs_results['num_inferred_clusters_div_num_true_clusters_by_obs_idx_df'],
     how='inner',
     on='inf_alg_results_path')
 num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df = pd.merge(
-    left=sweep_results_df[['inf_alg_results_path', 'alpha', 'n_features', 'snr', 'dynamics_str', 'inference_alg_str']],
+    left=all_inf_algs_results_df[['inf_alg_results_path', 'alpha', 'n_features', 'snr', 'dynamics_str', 'inference_alg_str']],
     right=cluster_ratio_dfs_results['num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df'],
     how='inner',
     on='inf_alg_results_path')
 num_true_clusters_div_total_num_true_clusters_by_obs_idx_df = pd.merge(
-    left=sweep_results_df[['inf_alg_results_path', 'alpha', 'n_features', 'snr', 'dynamics_str', 'inference_alg_str']],
+    left=all_inf_algs_results_df[['inf_alg_results_path', 'alpha', 'n_features', 'snr', 'dynamics_str', 'inference_alg_str']],
     right=cluster_ratio_dfs_results['num_true_clusters_div_total_num_true_clusters_by_obs_idx_df'],
     how='inner',
     on='inf_alg_results_path')
 
 # Generate all plots
 plot_mixture_of_gaussians.plot_analyze_all_inf_algs_results(
-    all_inf_algs_results_df=sweep_results_df,
+    all_inf_algs_results_df=all_inf_algs_results_df,
     num_inferred_clusters_div_num_true_clusters_by_obs_idx_df=num_inferred_clusters_div_num_true_clusters_by_obs_idx_df,
     num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df=num_inferred_clusters_div_total_num_true_clusters_by_obs_idx_df,
     num_true_clusters_div_total_num_true_clusters_by_obs_idx_df=num_true_clusters_div_total_num_true_clusters_by_obs_idx_df,
