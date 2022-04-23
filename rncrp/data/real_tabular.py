@@ -497,12 +497,17 @@ def load_dataset_covid_tracking_2021(data_dir: str = 'data',
 def load_dataset_dinari_covertype_2022(data_dir: str = 'data',
                                        **kwargs,
                                        ) -> Dict[str, Union[np.ndarray, pd.DataFrame]]:
+    """
+    Load Dinari & Freifeld 2022's preprocessed Cover Type dataset (https://archive.ics.uci.edu/ml/datasets/covertype).
+    """
     dataset_dir = os.path.join(data_dir, 'dinari_covertype_2022')
-    data_path = os.path.join(dataset_dir, 'forest_normalized.csv')
 
-    data = pd.read_csv(data_path, index_col=False, header=False).values
-    observations = data.values[:, :-1]
-    labels = data[:, -1].astype(np.int)
+    # This file is publicly available on Dinari's Google Drive.
+    data_path = os.path.join(dataset_dir, 'forest_normalized.csv')
+    preprocessed_data = pd.read_csv(data_path, index_col=False, header=None).values
+    observations = preprocessed_data[:, :-1]
+    labels = preprocessed_data[:, -1].astype(np.int)
+
     dataset_dict = dict(
         observations=observations,
         labels=labels)
