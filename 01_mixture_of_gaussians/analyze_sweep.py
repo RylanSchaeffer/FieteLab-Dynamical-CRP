@@ -20,6 +20,7 @@ sweep_names = [
     '6yypeu59',  # DP-Means (Online)
     'a56b0b8r',  # Collapsed Gibbs Sampler
 ]
+
 sweep_names_str = ','.join(sweep_names)
 print(f'Analyzing sweeps {sweep_names_str}')
 sweep_results_dir_path = os.path.join(results_dir, sweep_names_str)
