@@ -15,14 +15,28 @@ algorithm_color_map = {
     'DP-Means (Offline)': 'tab:orange',
     'DP-Means (Online)': 'tab:purple',
     'Dynamical-CRP': 'tab:blue',
-    'Dynamical-CRP (Cutoff=1e-2)': 'tab:red',
-    'Dynamical-CRP (Cutoff=1e-4)': 'tab:brown',
+    # 'Dynamical-CRP (Cutoff=1e-2)': 'tab:red',
+    # 'Dynamical-CRP (Cutoff=1e-4)': 'tab:brown',
     'K-Means (Offline)': 'tab:pink',
     'K-Means (Online)': 'tab:gray',
     'Recursive-CRP': 'tab:olive',
     'VI-GMM': 'tab:green',
     'CollapsedGibbsSampler': 'tab:cyan',
 }
+
+
+algorithm_hue_order = [
+    'DP-Means (Offline)',
+    'DP-Means (Online)',
+    # 'Dynamical-CRP (Cutoff=1e-2)',
+    # 'Dynamical-CRP (Cutoff=1e-4)',
+    'K-Means (Offline)',
+    'K-Means (Online)',
+    'Recursive-CRP',
+    'VI-GMM',
+    'CollapsedGibbsSampler',
+    'Dynamical-CRP',
+]
 
 
 def plot_cluster_multiclass_classification_score_by_alpha_by_alg(sweep_results_df: pd.DataFrame,
@@ -35,6 +49,7 @@ def plot_cluster_multiclass_classification_score_by_alpha_by_alg(sweep_results_d
                  x='alpha',
                  y='avg_finetune_acc',
                  hue='inference_alg_str',
+                 hue_order=algorithm_hue_order,
                  palette=algorithm_color_map)
     plt.xlabel(r'$\alpha$')
     plt.ylabel('Finetune Accuracy')
@@ -228,6 +243,7 @@ def plot_num_clusters_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
                  x='alpha',
                  y='Num Inferred Clusters',
                  hue='inference_alg_str',
+                 hue_order=algorithm_hue_order,
                  palette=algorithm_color_map)
 
     # Can't figure out how to add another line to Seaborn, so manually adding
@@ -283,7 +299,8 @@ def plot_num_clusters_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
                  x='snr',
                  y='Num Inferred Clusters',
                  hue='inference_alg_str',
-                 palette=algorithm_color_map)
+                 hue_order=algorithm_hue_order,
+                 palette=algorithm_color_map,)
 
     # Can't figure out how to add another line to Seaborn, so manually adding
     # the next line of Num True Clusters.
@@ -463,6 +480,7 @@ def plot_runtime_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
                  x='alpha',
                  y='Runtime',
                  hue='inference_alg_str',
+                 hue_order=algorithm_hue_order,
                  palette=algorithm_color_map)
     plt.yscale('log')
     plt.xlabel(r'$\alpha$')
@@ -496,6 +514,7 @@ def plot_runtime_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
                  x='n_features',
                  y='Runtime',
                  hue='inference_alg_str',
+                 hue_order=algorithm_hue_order,
                  palette=algorithm_color_map,
                  err_style='bars')
     plt.yscale('log')
@@ -534,6 +553,7 @@ def plot_scores_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
                      x='snr',
                      y=score_column,
                      hue='inference_alg_str',
+                     hue_order=algorithm_hue_order,
                      palette=algorithm_color_map)
         plt.xscale('log')
         plt.xlabel(r'SNR')
@@ -546,7 +566,10 @@ def plot_scores_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
         if title_str is not None:
             plt.title(title_str)
 
-        # plt.ylim(0., 1.05)
+        # Standardize y axis for NMI.
+        if score_column == 'Normalized Mutual Info Score':
+            plt.ylim(0.0, 1.0)
+
         plt.tight_layout()
         plt.savefig(os.path.join(plot_dir,
                                  f'comparison_score={score_column}_by_snr.png'),
@@ -574,6 +597,7 @@ def plot_scores_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
                      x='alpha',
                      y=score_column,
                      hue='inference_alg_str',
+                     hue_order=algorithm_hue_order,
                      palette=algorithm_color_map)
         plt.xlabel(r'$\alpha$')
         # plt.legend()
@@ -584,7 +608,7 @@ def plot_scores_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
         if title_str is not None:
             plt.title(title_str)
 
-        # Standardize y axis for NMI metric.
+        # Standardize y axis for NMI.
         if score_column == 'Normalized Mutual Info Score':
             plt.ylim(0.0, 1.0)
 
@@ -614,6 +638,7 @@ def plot_scores_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
                      x='n_features',
                      y=score_column,
                      hue='inference_alg_str',
+                     hue_order=algorithm_hue_order,
                      palette=algorithm_color_map,
                      err_style="bars", )
         plt.xlabel(r'Data Dimension')
@@ -628,7 +653,10 @@ def plot_scores_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
         if title_str is not None:
             plt.title(title_str)
 
-        # plt.ylim(0., 1.05)
+        # Standardize y axis for NMI.
+        if score_column == 'Normalized Mutual Info Score':
+            plt.ylim(0.0, 1.0)
+
         plt.tight_layout()
         plt.savefig(os.path.join(plot_dir,
                                  f'comparison_score={score_column}_by_dimension.png'),
