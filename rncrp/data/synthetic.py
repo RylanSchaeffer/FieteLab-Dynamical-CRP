@@ -314,10 +314,10 @@ def sample_dcrp(num_mc_samples: int,
     # time_sampling_fn = utils.helpers.convert_time_sampling_str_to_time_sampling_fn(
     #     time_sampling_str=time_sampling_str)
 
-    def time_sampling_fn(num_customer: int) -> np.ndarray:
-        return 1. + np.arange(num_customer)
+    def time_sampling_fn(num_customers: int) -> np.ndarray:
+        return 1. + np.arange(num_customers)
 
-    customer_times = time_sampling_fn(num_customer=num_customer)
+    customer_times = time_sampling_fn(num_customers=num_customer)
 
     pseudo_table_occupancies_by_customer = np.zeros(
         shape=(num_mc_samples, num_customer, num_customer))
@@ -343,11 +343,10 @@ def sample_dcrp(num_mc_samples: int,
             state = dynamics.run_dynamics(
                 time_start=customer_times[cstmr_idx - 1],
                 time_end=customer_times[cstmr_idx])
-            current_pseudo_table_occupancies = state['N']
-            pseudo_table_occupancies_by_customer[mc_sample_idx, cstmr_idx, :] = current_pseudo_table_occupancies.copy()
+            current_pseudo_table_occupancies = state['N'].copy()
+            pseudo_table_occupancies_by_customer[mc_sample_idx, cstmr_idx, :] = current_pseudo_table_occupancies
 
             # Add alpha, normalize and sample from that distribution.
-            current_pseudo_table_occupancies = current_pseudo_table_occupancies.copy()
             current_pseudo_table_occupancies[new_table_idx] = alpha
             probs = current_pseudo_table_occupancies / np.sum(current_pseudo_table_occupancies)
             customer_assignment = np.random.choice(np.arange(new_table_idx + 1),
@@ -374,5 +373,11 @@ def sample_dcrp(num_mc_samples: int,
         'one_hot_customer_assignments_by_customer': one_hot_customer_assignments_by_customer,
         'num_tables_by_customer': num_tables_by_customer,
     }
+
+    # import matplotlib.pyplot as plt
+    # plt.close()
+    # plt.imshow(one_hot_customer_assignments_by_customer[0, :, :],
+    #            cmap='Spectral_r',)
+    # plt.show()
 
     return monte_carlo_rncrp_results
