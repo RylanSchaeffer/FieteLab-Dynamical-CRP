@@ -79,7 +79,10 @@ def run_inference_alg(inference_alg_str: str,
 
         if 'lambda' not in gen_model_params['mixing_params']:
             # 20 is arbitrary. Just want a reasonable range.
-            gen_model_params['mixing_params']['lambda'] = 20. / gen_model_params['mixing_params']['alpha']
+            # gen_model_params['mixing_params']['lambda'] = 20. / gen_model_params['mixing_params']['alpha']
+            # gen_model_params['mixing_params']['lambda'] = 20. / np.sqrt(gen_model_params['mixing_params']['alpha'])
+            assert gen_model_params['mixing_params']['alpha'] > 0.
+            gen_model_params['mixing_params']['lambda'] = 20. / np.log(gen_model_params['mixing_params']['alpha'])
 
         inference_alg = DPMeans(
             gen_model_params=gen_model_params,
