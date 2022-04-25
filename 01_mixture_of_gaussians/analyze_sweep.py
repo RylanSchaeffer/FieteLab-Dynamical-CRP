@@ -16,7 +16,7 @@ sweep_names = [
     'lovo5rgf',  # K-Means (Offline)
     'ro1zrkea',  # K-Means (Online)
     'i1h6gz8e',  # VI-GMM
-    '',  # DP-Means (Offline)
+    't5txi00n',  # DP-Means (Offline)
     'rcrdfx0v',  # DP-Means (Online)
     'a56b0b8r',  # Collapsed Gibbs Sampler
 ]
