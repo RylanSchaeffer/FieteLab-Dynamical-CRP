@@ -20,12 +20,13 @@ import rncrp.metrics
 
 config_defaults = {
     'inference_alg_str': 'Dynamical-CRP',
-    'dynamics_str': 'step',
-    'dynamics_a': 1.,
+    'dynamics_str': 'hyperbolic',
+    'dynamics_c': 1.,
     'alpha': 1.1,
     'beta': 0.,
     'likelihood_kappa': 50.,
-    'n_samples': 10,
+    'n_samples': 100,
+    'n_starting_classes': 5,
     'repeat_idx': 0,
     'vi_param_initialization': 'observation',
     'which_prior_prob': 'DP',
@@ -56,10 +57,12 @@ rncrp.helpers.run.set_seed(seed=config['repeat_idx'])
 
 swav_imagenet_dataloader = rncrp.data.real_nontabular.load_dataloader_swav_imagenet_2021(
     split=config['imagenet_split'],
-    n_samples=config['n_samples'])
+    n_samples=config['n_samples'],
+    n_starting_classes=config['n_starting_classes'])
 
 # Construct observation times
 num_obs = len(swav_imagenet_dataloader)
+assert num_obs == config['n_samples']
 observation_times = np.arange(num_obs)
 
 # Compute true cluster assignments
@@ -75,7 +78,8 @@ gen_model_params = {
         'alpha': config['alpha'],
         'beta': config['beta'],
         'dynamics_str': config['dynamics_str'],
-        'dynamics_params': {'a': config['dynamics_a'], 'b': 0.},
+        # 'dynamics_params': {'a': config['dynamics_a'], 'b': 0.},
+        'dynamics_params': {'c': config['dynamics_c']},
     },
     'component_prior_params': {
         # 'centroids_prior_cov_prefactor': config['centroids_prior_cov_prefactor']

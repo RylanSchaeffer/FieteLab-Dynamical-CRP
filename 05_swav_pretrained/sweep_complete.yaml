@@ -11,11 +11,12 @@ parameters:
     ]
   dynamics_str:
     values: [
-        'step']
-  dynamics_a:
-    values: [1.]
+        'hyperbolic',
+    ]
+  dynamics_c:
+    values: [1., 0.5, 0.1, 0.05]
   alpha:
-    values: [0.01, 0.1, 0.5, 1., 2.5, 5., 7.5, 10., 15.,]
+    values: [0.01, 0.1, 0.5, 1., 2.5, 5., 10., 15.,]
   n_samples:
     values: [ 10000 ]
   likelihood_kappa:

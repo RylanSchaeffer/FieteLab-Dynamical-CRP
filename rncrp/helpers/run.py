@@ -82,7 +82,9 @@ def run_inference_alg(inference_alg_str: str,
             # gen_model_params['mixing_params']['lambda'] = 20. / gen_model_params['mixing_params']['alpha']
             # gen_model_params['mixing_params']['lambda'] = 20. / np.sqrt(gen_model_params['mixing_params']['alpha'])
             assert gen_model_params['mixing_params']['alpha'] > 0.
-            gen_model_params['mixing_params']['lambda'] = 20. / np.log(gen_model_params['mixing_params']['alpha'])
+            # 1/log(alpha) seems to work best, of all scalings.
+            # 50 is better prefactor than 20.
+            gen_model_params['mixing_params']['lambda'] = 50. / np.log(gen_model_params['mixing_params']['alpha'])
 
         inference_alg = DPMeans(
             gen_model_params=gen_model_params,

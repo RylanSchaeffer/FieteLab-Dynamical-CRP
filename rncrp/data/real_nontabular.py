@@ -2,8 +2,11 @@ import numpy as np
 import os
 import pandas as pd
 import torch
+from torch import Tensor
+from torch.utils.data.sampler import Sampler
+from typing import Iterator, Optional, Sequence, List, TypeVar, Generic, Sized
 import torch.nn.functional
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, BatchSampler
 import torchvision.transforms
 from typing import Dict, List, Tuple, Union
 
@@ -30,9 +33,12 @@ class SwavImageNet2021Dataset(Dataset):
         self.file_paths = np.random.permutation([
             os.path.join(self.dataset_split_dir, filename)
             for filename in os.listdir(self.dataset_split_dir)])
+
         self.n_samples = n_samples
         if n_samples is not None:
             self.file_paths = self.file_paths[:n_samples]
+
+        self.labels_to_indices_list = self._create_labels_to_indices_list()
 
     def __len__(self):
         return len(self.file_paths)
@@ -51,19 +57,83 @@ class SwavImageNet2021Dataset(Dataset):
 
         return sample
 
+    def _create_labels_to_indices_list(self) -> List[np.ndarray]:
+        labels = np.zeros(self.__len__(), dtype=np.int)
+        indices = np.arange(self.__len__())
+        for file_idx, file_path in enumerate(self.file_paths):
+            labels[file_idx] = self.__getitem__(idx=file_idx)['target']
+        labels_to_indices_list = []
+        for unique_label in np.unique(labels):
+            labels_to_indices_list.append(indices[labels == unique_label])
+        return labels_to_indices_list
+
+
+class ChangingWeightedClassesRandomSampler(BatchSampler):
+    """
+    Great forum: https://discuss.pytorch.org/t/load-the-same-number-of-data-per-class/65198/4?
+    """
+    curr_classes: Tensor
+    initial_class_weights: Tensor
+    curr_classes: Tensor
+    num_samples: int
+
+    def __init__(self,
+                 dataset: SwavImageNet2021Dataset,
+                 initial_classes: np.ndarray,
+                 transition_prob: float = 0.005,
+                 num_samples: int = 1,
+                 generator=None) -> None:
+
+        self.dataset = dataset
+        self.initial_classes = initial_classes
+        self.curr_classes = np.copy(self.initial_classes)
+        self.possible_classes = list(range(len(self.dataset.labels_to_indices_list)))
+        self.transition_prob = transition_prob
+        self.num_samples = num_samples
+        self.generator = generator
+        self.count = 0
+
+    def __iter__(self):
+        self.count = 0
+        while self.count < len(self.dataset):
+            # First, sample the class index.
+            class_idx = np.random.choice(self.curr_classes)
+            # Next, sample uniformly from within the class.
+            sample_idx = np.random.choice(self.dataset.labels_to_indices_list[class_idx])
+            yield sample_idx
+            self.count += 1
+            for class_idx, curr_class in enumerate(self.curr_classes):
+                # With low probability, transition to new classes.
+                if np.random.random() < self.transition_prob:
+                    self.curr_classes[class_idx] = np.random.choice(
+                        self.possible_classes[:curr_class] + self.possible_classes[curr_class+1:])
+
+    def __len__(self) -> int:
+        return len(self.dataset)
+
 
 def load_dataloader_swav_imagenet_2021(data_dir: str = 'data',
                                        split: str = 'val',
                                        include_images: bool = False,
                                        n_samples: int = None,
+                                       n_starting_classes: int = 5,
                                        dataloader_kwargs: Dict = None):
+
     dataset_dir = os.path.join(data_dir, 'swav_imagenet_2021')
 
-    dataset = SwavImageNet2021Dataset(
+    swav_imagenet_dataset = SwavImageNet2021Dataset(
         dataset_dir=dataset_dir,
         split=split,
         include_images=include_images,
         n_samples=n_samples)
+
+    initial_classes = np.random.choice(
+        np.arange(len(swav_imagenet_dataset.labels_to_indices_list)),
+        size=n_starting_classes)
+    sampler = ChangingWeightedClassesRandomSampler(
+        dataset=swav_imagenet_dataset,
+        initial_classes=initial_classes,
+    )
 
     default_dataloader_kwargs = {
         'batch_size': 1,
@@ -77,7 +147,8 @@ def load_dataloader_swav_imagenet_2021(data_dir: str = 'data',
         default_dataloader_kwargs.update(dataloader_kwargs)
 
     dataloader = DataLoader(
-        dataset=dataset,
+        dataset=swav_imagenet_dataset,
+        sampler=sampler,
         **default_dataloader_kwargs
     )
 

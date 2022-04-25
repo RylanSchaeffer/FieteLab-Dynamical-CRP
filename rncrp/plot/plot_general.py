@@ -234,7 +234,18 @@ def plot_cluster_coassignments_inferred_vs_true(cluster_assignment_posteriors: n
 
 def plot_num_clusters_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
                                               plot_dir: str,
-                                              title_str: str = None):
+                                              title_str: str = None,
+                                              hue: str = 'inference_alg_str',
+                                              palette: Dict[str, str] = algorithm_color_map,
+                                              hue_order: List[str] = algorithm_hue_order):
+
+    plot_kwargs = dict()
+    if hue is not None:
+        plot_kwargs['hue'] = hue
+    if hue_order is not None:
+        plot_kwargs['hue_order'] = hue_order
+    if palette is not None:
+        plot_kwargs['palette'] = palette
 
     # Manually make figure bigger to handle external legend
     plt.figure(figsize=(9, 4))
@@ -242,27 +253,25 @@ def plot_num_clusters_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
     sns.lineplot(data=sweep_results_df,
                  x='alpha',
                  y='Num Inferred Clusters',
-                 hue='inference_alg_str',
-                 hue_order=algorithm_hue_order,
-                 palette=algorithm_color_map)
+                 **plot_kwargs)
 
     # Can't figure out how to add another line to Seaborn, so manually adding
     # the next line of Num True Clusters.
-    num_true_clusters_by_lambda = \
+    num_true_clusters_by_alpha = \
         sweep_results_df[['alpha', 'n_clusters']].groupby('alpha').agg({
             'n_clusters': ['mean', 'sem']
         })['n_clusters']
 
-    means = num_true_clusters_by_lambda['mean'].values
-    sems = num_true_clusters_by_lambda['sem'].values
+    means = num_true_clusters_by_alpha['mean'].values
+    sems = num_true_clusters_by_alpha['sem'].values
     plt.plot(
-        num_true_clusters_by_lambda.index.values,
+        num_true_clusters_by_alpha.index.values,
         means,
         label='Num True Clusters',
         color='k',
     )
     plt.fill_between(
-        x=num_true_clusters_by_lambda.index.values,
+        x=num_true_clusters_by_alpha.index.values,
         y1=means - sems,
         y2=means + sems,
         alpha=0.3,
@@ -290,7 +299,19 @@ def plot_num_clusters_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
 
 def plot_num_clusters_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
                                             plot_dir: str,
-                                            title_str: str = None):
+                                            title_str: str = None,
+                                            hue: str = 'inference_alg_str',
+                                            palette: Dict[str, str] = algorithm_color_map,
+                                            hue_order: List[str] = algorithm_hue_order):
+
+
+    plot_kwargs = dict()
+    if hue is not None:
+        plot_kwargs['hue'] = hue
+    if hue_order is not None:
+        plot_kwargs['hue_order'] = hue_order
+    if palette is not None:
+        plot_kwargs['palette'] = palette
 
     # Manually make figure bigger to handle external legend
     plt.figure(figsize=(9, 4))
@@ -298,9 +319,7 @@ def plot_num_clusters_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
     sns.lineplot(data=sweep_results_df,
                  x='snr',
                  y='Num Inferred Clusters',
-                 hue='inference_alg_str',
-                 hue_order=algorithm_hue_order,
-                 palette=algorithm_color_map,)
+                 **plot_kwargs)
 
     # Can't figure out how to add another line to Seaborn, so manually adding
     # the next line of Num True Clusters.
@@ -470,7 +489,19 @@ def plot_num_true_clusters_div_total_num_true_clusters_by_obs_idx(ratio_df: pd.D
 
 def plot_runtime_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
                                          plot_dir: str,
-                                         title_str: str = None):
+                                         title_str: str = None,
+                                         hue: str = 'inference_alg_str',
+                                         palette: Dict[str, str] = algorithm_color_map,
+                                         hue_order: List[str] = algorithm_hue_order):
+
+    plot_kwargs = dict()
+    if hue is not None:
+        plot_kwargs['hue'] = hue
+    if hue_order is not None:
+        plot_kwargs['hue_order'] = hue_order
+    if palette is not None:
+        plot_kwargs['palette'] = palette
+
     plt.close()
 
     # Manually make figure bigger to handle external legend
@@ -479,9 +510,8 @@ def plot_runtime_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
     sns.lineplot(data=sweep_results_df,
                  x='alpha',
                  y='Runtime',
-                 hue='inference_alg_str',
-                 hue_order=algorithm_hue_order,
-                 palette=algorithm_color_map)
+                 **plot_kwargs,
+                 )
     plt.yscale('log')
     plt.xlabel(r'$\alpha$')
 
@@ -503,7 +533,17 @@ def plot_runtime_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
 
 def plot_runtime_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
                                              plot_dir: str,
-                                             title_str: str = None):
+                                             title_str: str = None,
+                                             hue: str = 'inference_alg_str',
+                                             palette: Dict[str, str] = algorithm_color_map,
+                                             hue_order: List[str] = algorithm_hue_order):
+    plot_kwargs = dict()
+    if hue is not None:
+        plot_kwargs['hue'] = hue
+    if hue_order is not None:
+        plot_kwargs['hue_order'] = hue_order
+    if palette is not None:
+        plot_kwargs['palette'] = palette
 
     plt.close()
 
@@ -513,10 +553,9 @@ def plot_runtime_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
     sns.lineplot(data=sweep_results_df,
                  x='n_features',
                  y='Runtime',
-                 hue='inference_alg_str',
-                 hue_order=algorithm_hue_order,
-                 palette=algorithm_color_map,
-                 err_style='bars')
+                 err_style='bars',
+                 **plot_kwargs,
+                 )
     plt.yscale('log')
     plt.xlabel(r'Data Dimension')
 
@@ -538,7 +577,19 @@ def plot_runtime_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
 
 def plot_scores_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
                                       plot_dir: str,
-                                      title_str: str = None):
+                                      title_str: str = None,
+                                      hue: str = 'inference_alg_str',
+                                      palette: Dict[str, str] = algorithm_color_map,
+                                      hue_order: List[str] = algorithm_hue_order):
+
+    plot_kwargs = dict()
+    if hue is not None:
+        plot_kwargs['hue'] = hue
+    if hue_order is not None:
+        plot_kwargs['hue_order'] = hue_order
+    if palette is not None:
+        plot_kwargs['palette'] = palette
+
     scores_columns = [col for col in sweep_results_df.columns.values
                       if 'Score' in col]
 
@@ -552,9 +603,7 @@ def plot_scores_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
         sns.lineplot(data=sweep_results_df,
                      x='snr',
                      y=score_column,
-                     hue='inference_alg_str',
-                     hue_order=algorithm_hue_order,
-                     palette=algorithm_color_map)
+                     **plot_kwargs)
         plt.xscale('log')
         plt.xlabel(r'SNR')
 
@@ -581,7 +630,19 @@ def plot_scores_by_snr_colored_by_alg(sweep_results_df: pd.DataFrame,
 
 def plot_scores_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
                                         plot_dir: str,
-                                        title_str: str = None):
+                                        title_str: str = None,
+                                        hue: str = 'inference_alg_str',
+                                        palette: Dict[str, str] = algorithm_color_map,
+                                        hue_order: List[str] = algorithm_hue_order):
+
+
+    plot_kwargs = dict()
+    if hue is not None:
+        plot_kwargs['hue'] = hue
+    if hue_order is not None:
+        plot_kwargs['hue_order'] = hue_order
+    if palette is not None:
+        plot_kwargs['palette'] = palette
 
     scores_columns = [col for col in sweep_results_df.columns.values
                       if 'Score' in col]
@@ -596,9 +657,7 @@ def plot_scores_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
         sns.lineplot(data=sweep_results_df,
                      x='alpha',
                      y=score_column,
-                     hue='inference_alg_str',
-                     hue_order=algorithm_hue_order,
-                     palette=algorithm_color_map)
+                     **plot_kwargs)
         plt.xlabel(r'$\alpha$')
         # plt.legend()
         # Move legend outside of plot
@@ -623,7 +682,19 @@ def plot_scores_by_alpha_colored_by_alg(sweep_results_df: pd.DataFrame,
 
 def plot_scores_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
                                             plot_dir: str,
-                                            title_str: str = None):
+                                            title_str: str = None,
+                                            hue: str = 'inference_alg_str',
+                                            palette: Dict[str, str] = algorithm_color_map,
+                                            hue_order: List[str] = algorithm_hue_order):
+
+    plot_kwargs = dict()
+    if hue is not None:
+        plot_kwargs['hue'] = hue
+    if hue_order is not None:
+        plot_kwargs['hue_order'] = hue_order
+    if palette is not None:
+        plot_kwargs['palette'] = palette
+
     scores_columns = [col for col in sweep_results_df.columns.values
                       if 'Score' in col]
 
@@ -637,10 +708,9 @@ def plot_scores_by_dimension_colored_by_alg(sweep_results_df: pd.DataFrame,
         sns.lineplot(data=sweep_results_df,
                      x='n_features',
                      y=score_column,
-                     hue='inference_alg_str',
-                     hue_order=algorithm_hue_order,
-                     palette=algorithm_color_map,
-                     err_style="bars", )
+                     err_style="bars",
+                     **plot_kwargs,
+                     )
         plt.xlabel(r'Data Dimension')
         # plt.legend()
 
