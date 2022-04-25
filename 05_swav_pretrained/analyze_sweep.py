@@ -11,7 +11,8 @@ results_dir = os.path.join(exp_dir, 'results')
 os.makedirs(results_dir, exist_ok=True)
 wandb_sweep_path = "rylan/dcrp-swav-pretrained"
 sweep_names = [
-    '1os83486',
+    '0tweh8oo',
+    # '1os83486',  # original sweep used in paper
 ]
 sweep_names_str = ','.join(sweep_names)
 print(f'Analyzing sweeps {sweep_names_str}')
@@ -40,6 +41,11 @@ print(f"Number of runs: {all_inf_algs_results_df.shape[0]} for sweeps={sweep_nam
 cluster_ratio_dfs_results = generate_and_save_cluster_ratio_data(
     all_inf_algs_results_df=all_inf_algs_results_df,
     sweep_results_dir_path=sweep_results_dir_path)
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+plt.hist(all_inf_algs_results_df['Num Inferred Clusters'])
 
 # Join cluster ratio dataframes with sweep hyperparameters
 #     Dataframes will have columns:

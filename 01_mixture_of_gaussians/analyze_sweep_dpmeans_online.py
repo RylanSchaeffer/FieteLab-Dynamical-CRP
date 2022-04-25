@@ -2,9 +2,10 @@ import numpy as np
 import os
 import pandas as pd
 
-import plot_mixture_of_gaussians
 from rncrp.helpers.analyze import download_wandb_project_runs_configs, \
     generate_and_save_cluster_ratio_data
+import matplotlib.pyplot as plt
+import rncrp.plot.plot_general
 
 exp_dir_path = '01_mixture_of_gaussians'
 results_dir = os.path.join(exp_dir_path, 'results')
@@ -14,7 +15,8 @@ wandb_sweep_path = "rylan/dcrp-mixture-of-gaussians"
 sweep_names = [
     '6yypeu59',  # DP-Means (Online) with lambda = 20/alpha
     'd40qja33',  # DP-Means (Online) with lambda = 20/sqrt(alpha)
-    'm082db5o',  # DP-Means (Online) with lambda = 20/log(alpha)
+    'rcrdfx0v',  # DP-Means (Online) with lambda = 20/log(alpha)
+    'zf8f0tu6',  # DP-Means (Online) with lambda = 50/log(alpha)
 ]
 
 sweep_names_str = ','.join(sweep_names)
@@ -37,12 +39,14 @@ all_inf_algs_results_df['snr'] = np.sqrt(
 
 
 def sweep_to_inference_alg_str(row: pd.Series):
-    if row['inference_alg_str'] == '6yypeu59':
+    if row['Sweep'] == '6yypeu59':
         inference_alg_str = r'$\lambda = 20 / \alpha$'
-    if row['inference_alg_str'] == 'd40qja33':
+    elif row['Sweep'] == 'd40qja33':
         inference_alg_str = r'$\lambda = 20 / \sqrt{\alpha}$'
-    if row['inference_alg_str'] == 'm082db5o':
+    elif row['Sweep'] == 'rcrdfx0v':
         inference_alg_str = r'$\lambda = 20 / \log(\alpha)$'
+    elif row['Sweep'] == 'zf8f0tu6':
+        inference_alg_str = r'$\lambda = 50 / \log(\alpha)$'
     else:
         # run_group = f"{row['place_field_loss']}\n{row['place_field_values']}\n{row['place_field_normalization']}"
         raise ValueError
@@ -54,9 +58,6 @@ all_inf_algs_results_df['inference_alg_str'] = all_inf_algs_results_df.apply(
     axis=1)
 
 print(f"Number of runs: {all_inf_algs_results_df.shape[0]} for sweep(s)={sweep_names_str}")
-
-import matplotlib.pyplot as plt
-import rncrp.plot.plot_general
 
 plot_fns = [
     rncrp.plot.plot_general.plot_num_clusters_by_alpha_colored_by_alg,
@@ -70,7 +71,9 @@ plot_fns = [
 for plot_fn in plot_fns:
     # try:
     plot_fn(sweep_results_df=all_inf_algs_results_df,
-            plot_dir=sweep_results_dir_path)
+            plot_dir=sweep_results_dir_path,
+            hue_order=None,
+            palette=None)
     # except Exception as e:
     #     print(f'Exception: {e}')
 

@@ -69,7 +69,7 @@ class DynamicalCRP(BaseModel):
         # For some likelihoods e.g. von Mises-Fisher, we can compute (log)
         # probability of a new cluster since it doesn't depend on the
         # observation.
-        self.log_prob_new_cluster = None
+        self.log_likelihood_new_cluster = None
 
     def fit(self,
             observations: Union[np.ndarray, torch.utils.data.DataLoader],
@@ -184,23 +184,21 @@ class DynamicalCRP(BaseModel):
                         dtype=torch.float32,
                     )))
 
-            # Recall, the log likelihood for a new cluster is:
-            # log(C(k)*C(k)*C(0)) = 2 * log(C(k)) + log(C(0)).
 
+            # This is incorrect. Delete later.
             # Compute log(C(k)).
-            normalizing_const_likelihood = self.compute_vonmisesfisher_normalization(
-                dim=obs_dim,
-                kappa=self.likelihood_params['likelihood_kappa'],
-            )
+            # normalizing_const_likelihood = self.compute_vonmisesfisher_normalization(
+            #     dim=obs_dim,
+            #     kappa=self.likelihood_params['likelihood_kappa'],
+            # )
 
+            # Recall, the log likelihood for a new cluster is: log(C(0)) = log(1/S_n)
             # Compute log(C(0)).
             normalizing_const_prior = self.compute_vonmisesfisher_normalization(
                 dim=obs_dim,
                 kappa=0.)
 
-            # Compute log(C(k)*C(k)*C(0)).
-            self.log_prob_new_cluster = 2. * np.log(normalizing_const_likelihood) \
-                                        + np.log(normalizing_const_prior)
+            self.log_likelihood_new_cluster = np.log(normalizing_const_prior)
 
         else:
             raise NotImplementedError
@@ -209,14 +207,8 @@ class DynamicalCRP(BaseModel):
 
             # Dataloader may return a dictionary. Select the observation from it.
             if isinstance(torch_observation, dict):
+                print(f"class: {torch_observation['target'].item()}")
                 torch_observation = torch_observation['observations'][0]  # Remove the batch index
-
-            # print(f'Observation {obs_idx + 1}: ', torch_observation.numpy())
-
-            # if obs_idx == 5:
-            #     print()
-
-            # print(obs_idx)
 
             if obs_idx == 0:
 
@@ -299,14 +291,13 @@ class DynamicalCRP(BaseModel):
                 # Step 3: Perform coordinate ascent on variational parameters.
                 approx_lower_bounds = []
                 for vi_idx in range(self.num_coord_ascent_steps_per_obs):
-
                     # print(f'Obs Idx: {obs_idx}, VI idx: {vi_idx}')
 
                     if self.numerically_optimize:
                         raise NotImplementedError
                     else:
                         with torch.no_grad():
-                            time_1 = time.time()
+                            # time_1 = time.time()
 
                             optimize_cluster_assignments_fn(
                                 torch_observation=torch_observation,
@@ -357,7 +348,7 @@ class DynamicalCRP(BaseModel):
                     one_minus_cum_table_assignment_posterior[:-1],
                     prev_num_clusters_posterior)
 
-                time_4 = time.time()
+                # time_4 = time.time()
                 # print(f'Time4 - Time3: {time_4 - time_3}')
 
                 # Step 5: Update dynamics state using new cluster assignment posterior.
@@ -365,7 +356,7 @@ class DynamicalCRP(BaseModel):
                     customer_assignment_probs=cluster_assignment_posterior,
                     time=torch_observations_times[obs_idx])
 
-                time_5 = time.time()
+                # time_5 = time.time()
                 # print(f'Time5 - Time4: {time_5 - time_4}')
 
             cum_cluster_assignment_posteriors += cluster_assignment_posterior
@@ -668,7 +659,7 @@ class DynamicalCRP(BaseModel):
             # Recall, we precompute the log probability of a new cluster in self.fit()
             # because, for the von-Mises-Fisher distribution, the probability of an
             # observation with a flat prior on the direction doesn't depend on the observation.
-            term_to_softmax[obs_idx] = term_one[obs_idx] + self.log_prob_new_cluster
+            term_to_softmax[obs_idx] = term_one[obs_idx] + self.log_likelihood_new_cluster
 
         cluster_assignment_posterior_params = torch.nn.functional.softmax(
             term_to_softmax,  # shape: (curr max num clusters i.e. obs idx, )
@@ -1032,8 +1023,8 @@ class DynamicalCRP(BaseModel):
             )
             normalizing_const = term1 / term2 / term3
         elif kappa == 0:
-            # If kappa = 0., we need to compute surface area of sphere.
-            # https://en.wikipedia.org/wiki/N-sphere#Volume_and_surface_area
+            # If kappa = 0., we compute the surface area of a unit hyper-sphere.
+            # https://mathworld.wolfram.com/Hypersphere.html
             sphere_surface_area = 2. * np.power(np.pi, dim / 2.) / scipy.special.gamma(dim / 2.)
             normalizing_const = 1. / sphere_surface_area
         else:

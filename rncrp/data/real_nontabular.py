@@ -38,7 +38,7 @@ class SwavImageNet2021Dataset(Dataset):
         if n_samples is not None:
             self.file_paths = self.file_paths[:n_samples]
 
-        self.labels_to_indices_list = self._create_labels_to_indices_list()
+        self.labels, self.labels_to_indices_list = self._create_labels_to_indices_list()
 
     def __len__(self):
         return len(self.file_paths)
@@ -55,6 +55,7 @@ class SwavImageNet2021Dataset(Dataset):
         if self.transforms:
             sample = self.transforms(sample)
 
+        # print(f'__getitem__ idx: {idx}')
         return sample
 
     def _create_labels_to_indices_list(self) -> List[np.ndarray]:
@@ -65,10 +66,10 @@ class SwavImageNet2021Dataset(Dataset):
         labels_to_indices_list = []
         for unique_label in np.unique(labels):
             labels_to_indices_list.append(indices[labels == unique_label])
-        return labels_to_indices_list
+        return labels, labels_to_indices_list
 
 
-class ChangingWeightedClassesRandomSampler(BatchSampler):
+class ChangingWeightedClassesRandomSampler:
     """
     Great forum: https://discuss.pytorch.org/t/load-the-same-number-of-data-per-class/65198/4?
     """
@@ -100,13 +101,15 @@ class ChangingWeightedClassesRandomSampler(BatchSampler):
             class_idx = np.random.choice(self.curr_classes)
             # Next, sample uniformly from within the class.
             sample_idx = np.random.choice(self.dataset.labels_to_indices_list[class_idx])
-            yield sample_idx
             self.count += 1
+
+            # With low probability, each current class can transition to new class.
             for class_idx, curr_class in enumerate(self.curr_classes):
-                # With low probability, transition to new classes.
                 if np.random.random() < self.transition_prob:
                     self.curr_classes[class_idx] = np.random.choice(
                         self.possible_classes[:curr_class] + self.possible_classes[curr_class+1:])
+            # print(f'Iter sample_idx: {sample_idx}')
+            yield sample_idx
 
     def __len__(self) -> int:
         return len(self.dataset)
@@ -115,6 +118,7 @@ class ChangingWeightedClassesRandomSampler(BatchSampler):
 def load_dataloader_swav_imagenet_2021(data_dir: str = 'data',
                                        split: str = 'val',
                                        include_images: bool = False,
+                                       batch_size: int = 1,
                                        n_samples: int = None,
                                        n_starting_classes: int = 5,
                                        transition_prob: float = 0.005,
@@ -138,19 +142,23 @@ def load_dataloader_swav_imagenet_2021(data_dir: str = 'data',
     )
 
     default_dataloader_kwargs = {
-        'batch_size': 1,
-        'shuffle': False,  # do the permutation in the dataset, not the dataloader
         'num_workers': 2,
-        'drop_last': False,
+        # 'drop_last': False,
     }
 
     # Overwrite default Dataloader kwargs if given.
     if dataloader_kwargs is not None:
         default_dataloader_kwargs.update(dataloader_kwargs)
 
+    batch_sampler = BatchSampler(
+        sampler=sampler,
+        batch_size=batch_size,
+        drop_last=False)
+
     dataloader = DataLoader(
         dataset=swav_imagenet_dataset,
-        sampler=sampler,
+        batch_sampler=batch_sampler,
+        shuffle=False,
         **default_dataloader_kwargs
     )
 

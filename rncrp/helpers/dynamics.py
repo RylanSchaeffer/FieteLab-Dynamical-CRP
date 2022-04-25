@@ -413,7 +413,7 @@ class HyperbolicTorch(Dynamics):
 
         self._weights = width * torch.exp(-self._exponential_rates / params['c']) / params['c']
 
-        # Add a trailing dimension to make addition / multiplication easy
+        # Add a trailing dimension to make addition and multiplication broadcasting easy.
         self._exponential_rates = self._exponential_rates[:, np.newaxis]
 
     def initialize_state(self,
@@ -421,7 +421,6 @@ class HyperbolicTorch(Dynamics):
                          time: torch.Tensor,
                          ) -> Dict[str, torch.Tensor]:
 
-        # TODO: convert this to pytorch
         # Shape: (num exponentials, max num clusters)
         exponential_Ns = customer_assignment_probs[np.newaxis, :].repeat(
             self.params['num_exponentials'], 1)

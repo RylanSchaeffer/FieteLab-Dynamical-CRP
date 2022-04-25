@@ -6,5 +6,5 @@
 #SBATCH --mail-type=FAIL
 
 export PYTHONPATH=.
-python -u analyze_sweep_dpmeans_online.py/analyze_sweep.py       # -u flushes output buffer immediately
+python -u 01_mixture_of_gaussians/analyze_sweep_dpmeans_online.py       # -u flushes output buffer immediately
 

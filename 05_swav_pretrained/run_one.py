@@ -21,12 +21,12 @@ import rncrp.metrics
 config_defaults = {
     'inference_alg_str': 'Dynamical-CRP',
     'dynamics_str': 'hyperbolic',
-    'dynamics_c': 1.,
+    'dynamics_c': 0.1,
     'alpha': 1.1,
     'beta': 0.,
-    'likelihood_kappa': 50.,
+    'likelihood_kappa': 5.,
     'n_samples': 100,
-    'n_starting_classes': 5,
+    'n_starting_classes': 1,
     'repeat_idx': 0,
     'vi_param_initialization': 'observation',
     'which_prior_prob': 'DP',
@@ -67,12 +67,10 @@ num_obs = len(swav_imagenet_dataloader)
 assert num_obs == config['n_samples']
 observation_times = np.arange(num_obs)
 
-# Compute true cluster assignments
-true_cluster_assignments = np.zeros(shape=num_obs)
-for batch_idx, batch_tensors in enumerate(swav_imagenet_dataloader):
-    true_cluster_assignments[batch_idx] = batch_tensors['target'].item()
+# Compute true cluster assignments.
+true_cluster_assignments = swav_imagenet_dataloader.dataset.labels
 
-# Compute number of true clusters
+# Log number of unique true clusters.
 wandb.log({'n_clusters': len(np.unique(true_cluster_assignments))}, step=0)
 
 gen_model_params = {

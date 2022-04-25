@@ -7,7 +7,7 @@ metric:
 parameters:
   inference_alg_str:
     values: [
-        'DP-Means (Online)',
+        'DP-Means (Offline)',
     ]
   dynamics_str:
     values: [

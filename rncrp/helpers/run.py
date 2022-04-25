@@ -54,7 +54,7 @@ def run_inference_alg(inference_alg_str: str,
 
     elif inference_alg_str.startswith('Dynamical-CRP'):
 
-        # TODO: Refactor model names to not contain parameters, you nit wit
+        # TODO: Refactor model names to not contain parameters, you nit wit.
         if inference_alg_str.endswith('(Cutoff=1e-2)'):
             inference_alg_kwargs['cutoff'] = 1e-2
         elif inference_alg_str.endswith('(Cutoff=1e-3)'):
@@ -84,7 +84,7 @@ def run_inference_alg(inference_alg_str: str,
             assert gen_model_params['mixing_params']['alpha'] > 0.
             # 1/log(alpha) seems to work best, of all scalings.
             # 50 is better prefactor than 20.
-            gen_model_params['mixing_params']['lambda'] = 50. / np.log(gen_model_params['mixing_params']['alpha'])
+            gen_model_params['mixing_params']['lambda'] = 20. / np.log(gen_model_params['mixing_params']['alpha'])
 
         inference_alg = DPMeans(
             gen_model_params=gen_model_params,

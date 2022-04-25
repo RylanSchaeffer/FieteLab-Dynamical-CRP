@@ -9,7 +9,7 @@
 #rsync -avh --exclude='*.joblib' --exclude="*.csv" rylansch@openmind-dtn.mit.edu:/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/01_mixture_of_gaussians/results/uvklc6jw,p3rjl0d6,bxuq6fho/ 01_mixture_of_gaussians/results/uvklc6jw,p3rjl0d6,bxuq6fho/
 #rsync -avh --exclude='*.joblib' --exclude="*.csv" rylansch@openmind-dtn.mit.edu:/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/01_mixture_of_gaussians/results/w3ytp57f,wlrc2asb,lovo5rgf,ro1zrkea,i1h6gz8e,bj7ihoq8,6yypeu59/ 01_mixture_of_gaussians/results/w3ytp57f,wlrc2asb,lovo5rgf,ro1zrkea,i1h6gz8e,bj7ihoq8,6yypeu59/
 #rsync -avh --exclude='*.joblib' --exclude="*.csv" rylansch@openmind-dtn.mit.edu:/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/01_mixture_of_gaussians/results/w3ytp57f,wlrc2asb,lovo5rgf,ro1zrkea,i1h6gz8e,bj7ihoq8,6yypeu59,a56b0b8r/ 01_mixture_of_gaussians/results/w3ytp57f,wlrc2asb,lovo5rgf,ro1zrkea,i1h6gz8e,bj7ihoq8,6yypeu59,a56b0b8r/
-#rsync -avh --exclude='*.joblib' rylansch@openmind-dtn.mit.edu:/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/01_mixture_of_gaussians/results/vfbxmqii/step/ 01_mixture_of_gaussians/results/vfbxmqii/step/
+rsync -avh --exclude='*.joblib' --exclude='*.csv' rylansch@openmind-dtn.mit.edu:/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/01_mixture_of_gaussians/results/w3ytp57f,wlrc2asb,lovo5rgf,ro1zrkea,i1h6gz8e,b7qkljvj,zf8f0tu6,a56b0b8r 01_mixture_of_gaussians/results/w3ytp57f,wlrc2asb,lovo5rgf,ro1zrkea,i1h6gz8e,b7qkljvj,zf8f0tu6,a56b0b8r
 
 
 # 03_mixture_of_vonmises_fisher
@@ -29,4 +29,4 @@
 #rsync -avh --exclude='*.joblib' rylansch@openmind-dtn.mit.edu:/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/10_mixture_of_gaussians_cgs/results/ 10_mixture_of_gaussians_cgs/results/
 
 # 12_dinari_covertype
-rsync -avh --exclude='*.joblib' rylansch@openmind-dtn.mit.edu:/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/12_dinari_covertype/results/ 12_dinari_covertype/results/
+#rsync -avh --exclude='*.joblib' rylansch@openmind-dtn.mit.edu:/om2/user/rylansch/FieteLab-Recursive-Nonstationary-CRP/12_dinari_covertype/results/ 12_dinari_covertype/results/

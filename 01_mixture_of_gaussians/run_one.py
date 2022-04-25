@@ -87,9 +87,7 @@ mixture_model_results = rncrp.data.synthetic.sample_mixture_model(
                             'likelihood_cov_prefactor': config['likelihood_cov_prefactor']})
 
 n_clusters = len(np.unique(mixture_model_results['cluster_assignments']))
-wandb.log(
-    {'n_clusters': n_clusters},
-    step=0)
+wandb.log({'n_clusters': n_clusters}, step=0)
 
 gen_model_params = {
     'mixing_params': {
