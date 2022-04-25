@@ -16,13 +16,17 @@ parameters:
   dynamics_c:
     values: [1., 0.5, 0.1, 0.05]
   alpha:
-    values: [0.01, 0.1, 0.5, 1., 2.5, 5., 10., 15.,]
+    values: [0.01, 0.1, 0.5, 1., 2.5]
+  likelihood_kappa:
+    values: [0.1, 1., 5., 10., 20., 50.]
+  imagenet_split:
+    values: [ 'val' ]
   n_samples:
     values: [ 10000 ]
-  likelihood_kappa:
-    values: [1., 5., 10., 20., 40., 80., 120.]
+  n_starting_classes:
+    values: [5]
   repeat_idx:
     values: [0]
-  imagenet_split:
-    values: ['val']
+  transition_prob:
+    values: [0.005]
 

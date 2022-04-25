@@ -33,6 +33,7 @@ config_defaults = {
     'update_new_cluster_parameters': False,
     'robbins_monro_cavi_updates': True,
     'imagenet_split': 'val',
+    'transition_prob': 0.005,
 }
 
 wandb.init(project='dcrp-swav-pretrained',
@@ -58,7 +59,8 @@ rncrp.helpers.run.set_seed(seed=config['repeat_idx'])
 swav_imagenet_dataloader = rncrp.data.real_nontabular.load_dataloader_swav_imagenet_2021(
     split=config['imagenet_split'],
     n_samples=config['n_samples'],
-    n_starting_classes=config['n_starting_classes'])
+    n_starting_classes=config['n_starting_classes'],
+    transition_prob=config['transition_prob'])
 
 # Construct observation times
 num_obs = len(swav_imagenet_dataloader)

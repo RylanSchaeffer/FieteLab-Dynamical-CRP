@@ -13,6 +13,6 @@
 
 for i in {1..12}
 do
-  sbatch 05_swav_pretrained/run_one.sh 1os83486
+  sbatch 05_swav_pretrained/run_one.sh 0tweh8oo
   sleep 2
 done

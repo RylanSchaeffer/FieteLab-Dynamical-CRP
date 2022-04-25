@@ -117,6 +117,7 @@ def load_dataloader_swav_imagenet_2021(data_dir: str = 'data',
                                        include_images: bool = False,
                                        n_samples: int = None,
                                        n_starting_classes: int = 5,
+                                       transition_prob: float = 0.005,
                                        dataloader_kwargs: Dict = None):
 
     dataset_dir = os.path.join(data_dir, 'swav_imagenet_2021')
@@ -133,6 +134,7 @@ def load_dataloader_swav_imagenet_2021(data_dir: str = 'data',
     sampler = ChangingWeightedClassesRandomSampler(
         dataset=swav_imagenet_dataset,
         initial_classes=initial_classes,
+        transition_prob=transition_prob,
     )
 
     default_dataloader_kwargs = {
