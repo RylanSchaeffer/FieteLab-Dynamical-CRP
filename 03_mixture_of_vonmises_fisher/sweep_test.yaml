@@ -1,0 +1,36 @@
+program: 03_mixture_of_vonmises_fisher/run_one.py
+project: dcrp-mixture-of-vonmises-fisher
+method: grid
+metric:
+  goal: minimize
+  name: training_reconstruction_error
+parameters:
+  inference_alg_str:
+    values: [
+        'Dynamical-CRP',
+        'Recursive-CRP',
+    ]
+  dynamics_str:
+    values: [
+        'step',
+        'exp',
+        'sinusoid',
+        'hyperbolic']
+  dynamics_a:
+    values: [1.]
+  dynamics_b:
+    values: [ 0.05 ]
+  dynamics_c:
+    values: [ 0.05 ]
+  dynamics_omega:
+    values: [ 0.15 ]
+  alpha:
+    values: [ 2.5, 5., 7.5, 10., 15.]
+  n_samples:
+    values: [1000]
+  n_features:
+    values: [10, 20, 30]
+  likelihood_kappa:
+    values: [25., 50., 100., 250., 500., 1000.]
+  repeat_idx:
+    values: [0, 1, 2]
